@@ -6,6 +6,7 @@ using Student.Application;
 using Student.Infrastructure;
 using Student.Infrastructure.Persistence;
 using Student.API.Endpoints;
+using Student.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddProblemDetails();
 builder.Services.AddAuthorization();
+builder.Services.AddHostedService<StudentOutboxRelayService>();
 
 var app = builder.Build();
 app.UseExceptionHandler();
@@ -47,6 +49,7 @@ app.UseAuthorization();
 app.MapStudentEndpoints();
 
 app.Run();
+
 
 
 
