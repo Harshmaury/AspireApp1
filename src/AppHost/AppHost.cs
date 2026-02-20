@@ -14,6 +14,7 @@ public partial class Program
             .WithDataVolume("postgres-data");
 
         var identityDb = postgres.AddDatabase("IdentityDb");
+var studentDb = postgres.AddDatabase("StudentDb");
 
         var identityApi = builder.AddProject<Projects.Identity_API>("identity-api")
             .WithReference(identityDb)
@@ -27,7 +28,14 @@ public partial class Program
             .WithReference(kafka)
             .WaitFor(identityApi);
 
-        var apiGateway = builder.AddProject<Projects.ApiGateway>("api-gateway")
+        var studentApi = builder.AddProject<Projects.Student_API>("student-api")
+    .WithHttpHealthCheck("/health")
+    .WithReference(studentDb)
+    .WithReference(kafka)
+    .WaitFor(studentDb)
+    .WaitFor(kafka);
+
+var apiGateway = builder.AddProject<Projects.ApiGateway>("api-gateway")
             .WithExternalHttpEndpoints()
             .WithReference(identityApi)
             .WithReference(apiService)

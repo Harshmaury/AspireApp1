@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Services\ApiService\AspireApp1.ApiService.csproj" />
     <ProjectReference Include="..\Services\Identity\Identity.API\Identity.API.csproj" />
     <ProjectReference Include="..\Web\AspireApp1.Web.csproj" />
+    <ProjectReference Include="..\Services\Student\Student.API\Student.API.csproj" />
   </ItemGroup>
 
 </Project>

@@ -18,6 +18,12 @@
     <Project Path="src/Services/Identity/Identity.Domain/Identity.Domain.csproj" />
     <Project Path="src/Services/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Services/Student/">
+    <Project Path="src/Services/Student/Student.API/Student.API.csproj" />
+    <Project Path="src/Services/Student/Student.Application/Student.Application.csproj" />
+    <Project Path="src/Services/Student/Student.Domain/Student.Domain.csproj" />
+    <Project Path="src/Services/Student/Student.Infrastructure/Student.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Web/">
     <Project Path="src/Web/AspireApp1.Web.csproj" />
   </Folder>
