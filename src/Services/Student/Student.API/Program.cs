@@ -29,9 +29,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.FromSeconds(30)
         };
     });
+builder.Services.AddProblemDetails();
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+app.UseExceptionHandler();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -45,5 +47,6 @@ app.UseAuthorization();
 app.MapStudentEndpoints();
 
 app.Run();
+
 
 
