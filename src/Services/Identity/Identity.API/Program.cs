@@ -2,6 +2,8 @@ using Identity.API.Services;
 using Identity.Application;
 using Identity.Application.Interfaces;
 using Identity.Infrastructure;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 using Identity.Infrastructure.Persistence;
 using Identity.API.Endpoints;
 using Identity.Domain.Entities;
@@ -88,12 +90,18 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.UseAuthentication();
+app.UseMiddleware<Identity.API.Middleware.TenantMiddleware>();
 app.UseAuthorization();
 
 app.MapAuthEndpoints();
 app.MapTenantEndpoints();
 
 app.Run();
+
+
+
+
+
 
 
 
