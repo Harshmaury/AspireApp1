@@ -9,6 +9,12 @@
     <Project Path="src/ServiceDefaults/AspireApp1.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
+  <Folder Name="/src/Services/Academic/">
+    <Project Path="src/Services/Academic/Academic.API/Academic.API.csproj" />
+    <Project Path="src/Services/Academic/Academic.Application/Academic.Application.csproj" />
+    <Project Path="src/Services/Academic/Academic.Domain/Academic.Domain.csproj" />
+    <Project Path="src/Services/Academic/Academic.Infrastructure/Academic.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Services/ApiService/">
     <Project Path="src/Services/ApiService/AspireApp1.ApiService.csproj" />
   </Folder>
