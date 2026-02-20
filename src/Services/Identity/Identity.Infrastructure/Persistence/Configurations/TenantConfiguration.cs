@@ -16,5 +16,10 @@ internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         builder.Property(t => t.LogoUrl).HasMaxLength(500);
         builder.Property(t => t.CreatedAt).IsRequired();
         builder.Property(t => t.IsActive).IsRequired().HasDefaultValue(true);
+        builder.Property(t => t.Tier).IsRequired().HasConversion<string>().HasMaxLength(50);
+        builder.Property(t => t.SubscriptionStatus).IsRequired().HasConversion<string>().HasMaxLength(50);
+        builder.Property(t => t.MaxUsers).IsRequired().HasDefaultValue(100);
+        builder.Property(t => t.Region).IsRequired().HasMaxLength(100).HasDefaultValue("default");
+        builder.Property(t => t.FeaturesJson).IsRequired().HasDefaultValue("{}");
     }
 }

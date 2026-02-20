@@ -1,30 +1,47 @@
-var builder = DistributedApplication.CreateBuilder(args);
+public partial class Program
+{
+    private static void Main(string[] args)
+    {
+        var builder = DistributedApplication.CreateBuilder(args);
 
-// -- Infrastructure --------------------------------------------
-var cache = builder.AddRedis("cache");
+        var cache = builder.AddRedis("cache");
 
-var postgres = builder.AddPostgres("postgres")
-    .WithPgAdmin();  // Gives you a web UI to inspect the DB
+        IResourceBuilder<KafkaServerResource> kafka = builder.AddKafka("kafka")
+            .WithKafkaUI();
 
-var identityDb = postgres.AddDatabase("IdentityDb");
+        var postgres = builder.AddPostgres("postgres")
+            .WithPgAdmin()
+            .WithDataVolume("postgres-data");
 
-// -- Services --------------------------------------------------
-var identityApi = builder.AddProject<Projects.Identity_API>("identity-api")
-    .WithReference(identityDb)
-    .WaitFor(identityDb);
+        var identityDb = postgres.AddDatabase("IdentityDb");
 
-var apiService = builder.AddProject<Projects.AspireApp1_ApiService>("apiservice")
-    .WithHttpHealthCheck("/health")
-    .WithReference(identityApi)
-    .WaitFor(identityApi);
+        var identityApi = builder.AddProject<Projects.Identity_API>("identity-api")
+            .WithReference(identityDb)
+            .WithReference(kafka)
+            .WaitFor(identityDb)
+            .WaitFor(kafka);
 
-// -- Frontend --------------------------------------------------
-builder.AddProject<Projects.AspireApp1_Web>("webfrontend")
-    .WithExternalHttpEndpoints()
-    .WithHttpHealthCheck("/health")
-    .WithReference(cache)
-    .WaitFor(cache)
-    .WithReference(apiService)
-    .WaitFor(apiService);
+        var apiService = builder.AddProject<Projects.AspireApp1_ApiService>("apiservice")
+            .WithHttpHealthCheck("/health")
+            .WithReference(identityApi)
+            .WithReference(kafka)
+            .WaitFor(identityApi);
 
-builder.Build().Run();
+        var apiGateway = builder.AddProject<Projects.ApiGateway>("api-gateway")
+            .WithExternalHttpEndpoints()
+            .WithReference(identityApi)
+            .WithReference(apiService)
+            .WaitFor(identityApi)
+            .WaitFor(apiService);
+
+        builder.AddProject<Projects.AspireApp1_Web>("webfrontend")
+            .WithExternalHttpEndpoints()
+            .WithHttpHealthCheck("/health")
+            .WithReference(cache)
+            .WaitFor(cache)
+            .WithReference(apiGateway)
+            .WaitFor(apiGateway);
+
+        builder.Build().Run();
+    }
+}

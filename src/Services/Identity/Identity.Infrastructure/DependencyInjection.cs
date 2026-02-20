@@ -15,18 +15,18 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // -- Database ---------------------------------------------
-        services.AddDbContext<ApplicationDbContext>(options =>
+        services.AddScoped<DomainEventDispatcherInterceptor>();
+
+        services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.UseNpgsql(
                 configuration.GetConnectionString("IdentityDb"),
                 npgsql => npgsql.MigrationsAssembly(
                     typeof(ApplicationDbContext).Assembly.FullName));
-
             options.UseOpenIddict();
+            options.AddInterceptors(sp.GetRequiredService<DomainEventDispatcherInterceptor>());
         });
 
-        // -- ASP.NET Identity -------------------------------------
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
         {
             options.Password.RequiredLength = 8;
@@ -41,10 +41,18 @@ public static class DependencyInjection
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
 
-        // -- Repositories -----------------------------------------
+        // OpenIddict Core only — server config lives in API layer
+        services.AddOpenIddict()
+            .AddCore(options =>
+            {
+                options.UseEntityFrameworkCore()
+                    .UseDbContext<ApplicationDbContext>();
+            });
+
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ITenantRepository, TenantRepository>();
 
         return services;
     }
 }
+
