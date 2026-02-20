@@ -52,7 +52,7 @@ public sealed class OutboxRelayService : BackgroundService
 
         if (!messages.Any()) return;
 
-        var config = new ProducerConfig { BootstrapServers = _bootstrapServers };
+        var config = new ProducerConfig { BootstrapServers = _bootstrapServers, SecurityProtocol = SecurityProtocol.Plaintext };
         using var producer = new ProducerBuilder<string, string>(config).Build();
 
         foreach (var message in messages)

@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
 using Student.Infrastructure.Persistence;
 
@@ -52,7 +52,7 @@ public sealed class StudentOutboxRelayService : BackgroundService
 
         if (!messages.Any()) return;
 
-        var config = new ProducerConfig { BootstrapServers = _bootstrapServers };
+        var config = new ProducerConfig { BootstrapServers = _bootstrapServers, SecurityProtocol = SecurityProtocol.Plaintext };
         using var producer = new ProducerBuilder<string, string>(config).Build();
 
         foreach (var message in messages)
