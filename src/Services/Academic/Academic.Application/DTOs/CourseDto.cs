@@ -1,0 +1,2 @@
+namespace Academic.Application.DTOs;
+public sealed record CourseDto(Guid Id, Guid TenantId, Guid DepartmentId, string Name, string Code, string? Description, int Credits, int LectureHours, int TutorialHours, int PracticalHours, string CourseType, int MaxEnrollment, string Status, DateTime CreatedAt);

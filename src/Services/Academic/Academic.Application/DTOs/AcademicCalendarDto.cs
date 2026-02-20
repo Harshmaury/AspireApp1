@@ -1,0 +1,2 @@
+namespace Academic.Application.DTOs;
+public sealed record AcademicCalendarDto(Guid Id, Guid TenantId, string AcademicYear, int Semester, DateTime StartDate, DateTime EndDate, DateTime ExamStartDate, DateTime ExamEndDate, DateTime RegistrationOpenDate, DateTime RegistrationCloseDate, bool IsActive);

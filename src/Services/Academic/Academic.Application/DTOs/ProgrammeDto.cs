@@ -1,0 +1,2 @@
+namespace Academic.Application.DTOs;
+public sealed record ProgrammeDto(Guid Id, Guid TenantId, Guid DepartmentId, string Name, string Code, string Degree, int DurationYears, int TotalCredits, int IntakeCapacity, string Status, DateTime CreatedAt);
