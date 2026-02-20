@@ -12,6 +12,7 @@ using OpenIddict.Abstractions;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -93,6 +94,7 @@ app.UseAuthentication();
 app.UseMiddleware<Identity.API.Middleware.TenantMiddleware>();
 app.UseAuthorization();
 
+app.MapDefaultEndpoints();
 app.MapAuthEndpoints();
 app.MapTenantEndpoints();
 
