@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Student.Application.Interfaces;
@@ -13,11 +13,16 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddDbContext<StudentDbContext>(options =>
+        services.AddScoped<DomainEventDispatcherInterceptor>();
+
+        services.AddDbContext<StudentDbContext>((sp, options) =>
+        {
             options.UseNpgsql(
                 configuration.GetConnectionString("StudentDb"),
                 npgsql => npgsql.MigrationsAssembly(
-                    typeof(StudentDbContext).Assembly.FullName)));
+                    typeof(StudentDbContext).Assembly.FullName));
+            options.AddInterceptors(sp.GetRequiredService<DomainEventDispatcherInterceptor>());
+        });
 
         services.AddScoped<IStudentRepository, StudentRepository>();
 
