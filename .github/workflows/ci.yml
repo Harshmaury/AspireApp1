@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, develop, feature/** ]
+  pull_request:
+    branches: [ master, develop ]
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore AspireApp1.slnx
+
+      - name: Build solution
+        run: dotnet build AspireApp1.slnx --no-restore --configuration Release
+
+      - name: Run tests
+        run: dotnet test AspireApp1.slnx --no-build --configuration Release --verbosity normal
