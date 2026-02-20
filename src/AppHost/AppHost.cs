@@ -1,4 +1,4 @@
-public partial class Program
+﻿public partial class Program
 {
     private static void Main(string[] args)
     {
@@ -39,8 +39,10 @@ var apiGateway = builder.AddProject<Projects.ApiGateway>("api-gateway")
             .WithExternalHttpEndpoints()
             .WithReference(identityApi)
             .WithReference(apiService)
+            .WithReference(studentApi)
             .WaitFor(identityApi)
-            .WaitFor(apiService);
+            .WaitFor(apiService)
+            .WaitFor(studentApi);
 
         builder.AddProject<Projects.AspireApp1_Web>("webfrontend")
             .WithExternalHttpEndpoints()
@@ -53,3 +55,5 @@ var apiGateway = builder.AddProject<Projects.ApiGateway>("api-gateway")
         builder.Build().Run();
     }
 }
+
+
