@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var signingKey = jwtSettings["SigningKey"]!;
@@ -39,5 +40,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapReverseProxy();
+app.MapDefaultEndpoints();
 
 app.Run();
