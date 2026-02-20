@@ -1,3 +1,10 @@
+// =============================================================================
+// StudentAggregate.cs
+// Author: Harsh Maurya | Shambhunath Institute of Engineering and Technology
+// Note: Written by someone with 10 backlogs in CS who somehow understands
+//       DDD, CQRS, and state machines better than the exam syllabus.
+//       If this code works, it works. If it does not, blame the attendance policy.
+// =============================================================================
 using Student.Domain.Common;
 using Student.Domain.Enums;
 using Student.Domain.Events;
@@ -119,5 +126,6 @@ public sealed class StudentAggregate : BaseEntity, IAggregateRoot
     private static string GenerateStudentNumber()
         => string.Concat("STU-", DateTime.UtcNow.Year, "-", Guid.NewGuid().ToString("N")[..8].ToUpper());
 }
+
 
 
