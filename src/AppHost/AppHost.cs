@@ -10,6 +10,7 @@ var identityDb    = postgres.AddDatabase("IdentityDb");
 var studentDb     = postgres.AddDatabase("StudentDb");
 var academicDb    = postgres.AddDatabase("AcademicDb");
 var examinationDb = postgres.AddDatabase("ExaminationDb");
+var feeDb         = postgres.AddDatabase("FeeDb");
 var identityApi = builder.AddProject<Projects.Identity_API>("identity-api")
     .WithHttpHealthCheck("/health")
     .WithReference(identityDb)
@@ -39,6 +40,12 @@ var examinationApi = builder.AddProject<Projects.Examination_API>("examination-a
     .WithReference(kafka)
     .WaitFor(examinationDb)
     .WaitFor(kafka);
+var feeApi = builder.AddProject<Projects.Fee_API>("fee-api")
+    .WithHttpHealthCheck("/health")
+    .WithReference(feeDb)
+    .WithReference(kafka)
+    .WaitFor(feeDb)
+    .WaitFor(kafka);
 var apiGateway = builder.AddProject<Projects.ApiGateway>("api-gateway")
     .WithExternalHttpEndpoints()
     .WithReference(identityApi)
@@ -46,11 +53,13 @@ var apiGateway = builder.AddProject<Projects.ApiGateway>("api-gateway")
     .WithReference(studentApi)
     .WithReference(academicApi)
     .WithReference(examinationApi)
+    .WithReference(feeApi)
     .WaitFor(identityApi)
     .WaitFor(apiService)
     .WaitFor(studentApi)
     .WaitFor(academicApi)
-    .WaitFor(examinationApi);
+    .WaitFor(examinationApi)
+    .WaitFor(feeApi);
 builder.AddProject<Projects.AspireApp1_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithHttpHealthCheck("/health")

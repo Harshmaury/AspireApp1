@@ -26,6 +26,13 @@
     <Project Path="src/Services/Examination/Examination.Infrastructure/Examination.Infrastructure.csproj" />
     <Project Path="src/Services/Examination/Examination.Tests/Examination.Tests.csproj" />
   </Folder>
+  <Folder Name="/src/Services/Fee/">
+    <Project Path="src/Services/Fee/Fee.API/Fee.API.csproj" />
+    <Project Path="src/Services/Fee/Fee.Application/Fee.Application.csproj" />
+    <Project Path="src/Services/Fee/Fee.Domain/Fee.Domain.csproj" />
+    <Project Path="src/Services/Fee/Fee.Infrastructure/Fee.Infrastructure.csproj" />
+    <Project Path="src/Services/Fee/Fee.Tests/Fee.Tests.csproj" />
+  </Folder>
   <Folder Name="/src/Services/Identity/">
     <Project Path="src/Services/Identity/Identity.API/Identity.API.csproj" />
     <Project Path="src/Services/Identity/Identity.Application/Identity.Application.csproj" />
