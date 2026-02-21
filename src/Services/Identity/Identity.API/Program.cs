@@ -10,6 +10,7 @@ using Identity.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using static OpenIddict.Abstractions.OpenIddictConstants;
+using Identity.Application.Features.Auth.Commands;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
@@ -38,7 +39,9 @@ builder.Services.AddOpenIddict()
             Scopes.Roles,
             "api");
         options.UseAspNetCore()
+               .EnableTokenEndpointPassthrough()
                .DisableTransportSecurityRequirement();
+        options.AddEventHandler<OpenIddict.Server.OpenIddictServerEvents.HandleTokenRequestContext>(b => b.UseScopedHandler<PasswordGrantHandler>());
     })
     .AddValidation(options =>
     {
@@ -47,6 +50,7 @@ builder.Services.AddOpenIddict()
     });
 
 var app = builder.Build();
+await Identity.API.Services.IdentitySeeder.SeedAsync(app.Services);
 
 using (var scope = app.Services.CreateScope())
 {
@@ -99,6 +103,14 @@ app.MapAuthEndpoints();
 app.MapTenantEndpoints();
 
 app.Run();
+
+
+
+
+
+
+
+
 
 
 

@@ -1,18 +1,28 @@
 using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+
 namespace Fee.Infrastructure.Kafka;
+
 public sealed class FeeOutboxRelayService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<FeeOutboxRelayService> _logger;
-    public FeeOutboxRelayService(IServiceScopeFactory scopeFactory, ILogger<FeeOutboxRelayService> logger)
+    private readonly string _bootstrapServers;
+
+    public FeeOutboxRelayService(
+        IServiceScopeFactory scopeFactory,
+        ILogger<FeeOutboxRelayService> logger,
+        IConfiguration configuration)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _bootstrapServers = configuration.GetConnectionString("kafka") ?? "localhost:9092";
     }
+
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
@@ -26,9 +36,10 @@ public sealed class FeeOutboxRelayService : BackgroundService
                     .OrderBy(m => m.CreatedAt)
                     .Take(20)
                     .ToListAsync(ct);
+
                 if (messages.Any())
                 {
-                    var config = new ProducerConfig { BootstrapServers = "localhost:9092" };
+                    var config = new ProducerConfig { BootstrapServers = _bootstrapServers, SecurityProtocol = SecurityProtocol.Plaintext };
                     using var producer = new ProducerBuilder<string, string>(config).Build();
                     foreach (var msg in messages)
                     {

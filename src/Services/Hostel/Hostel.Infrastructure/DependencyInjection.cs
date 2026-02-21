@@ -22,7 +22,7 @@ public static class DependencyInjection
         // Kafka producer
         var kafkaCfg = new ProducerConfig
         {
-            BootstrapServers = config["Kafka:BootstrapServers"] ?? "localhost:9092",
+            BootstrapServers = config.GetConnectionString("kafka") ?? "localhost:9092",
             Acks = Acks.Leader
         };
         services.AddSingleton<IProducer<string, string>>(

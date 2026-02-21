@@ -1,13 +1,17 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Notification.Application.Events;
 using Notification.Application.Services;
 using Notification.Domain.Enums;
+
 namespace Notification.Infrastructure.Kafka.Consumers;
+
 public sealed class ExaminationEventsConsumer : KafkaConsumerBase<ResultDeclaredEvent>
 {
-    public ExaminationEventsConsumer(IServiceScopeFactory scopeFactory, ILogger<ExaminationEventsConsumer> logger)
-        : base(scopeFactory, logger, "examination-events", "notification-examination-group") { }
+    public ExaminationEventsConsumer(IServiceScopeFactory scopeFactory, ILogger<ExaminationEventsConsumer> logger, IConfiguration configuration)
+        : base(scopeFactory, logger, "examination-events", "notification-examination-group", configuration) { }
+
     protected override async Task ProcessAsync(ResultDeclaredEvent e, IServiceProvider services, CancellationToken ct)
     {
         var dispatcher = services.GetRequiredService<NotificationDispatcher>();

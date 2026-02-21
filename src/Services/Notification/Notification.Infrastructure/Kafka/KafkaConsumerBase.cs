@@ -1,32 +1,42 @@
 using Confluent.Kafka;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+
 namespace Notification.Infrastructure.Kafka;
+
 public abstract class KafkaConsumerBase<TEvent> : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger _logger;
     private readonly string _topic;
     private readonly string _groupId;
+    private readonly string _bootstrapServers;
 
-    protected KafkaConsumerBase(IServiceScopeFactory scopeFactory, ILogger logger, string topic, string groupId)
+    protected KafkaConsumerBase(
+        IServiceScopeFactory scopeFactory,
+        ILogger logger,
+        string topic,
+        string groupId,
+        IConfiguration configuration)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
         _topic = topic;
         _groupId = groupId;
+        _bootstrapServers = configuration.GetConnectionString("kafka") ?? "localhost:9092";
     }
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         var config = new ConsumerConfig
         {
-            BootstrapServers = "localhost:9092",
+            BootstrapServers = _bootstrapServers,
             GroupId = _groupId,
             AutoOffsetReset = AutoOffsetReset.Earliest,
-            EnableAutoCommit = false  // manual commit only after successful processing
+            EnableAutoCommit = false
         };
 
         using var consumer = new ConsumerBuilder<string, string>(config).Build();
@@ -48,13 +58,11 @@ public abstract class KafkaConsumerBase<TEvent> : BackgroundService
                         using var scope = _scopeFactory.CreateScope();
                         await ProcessAsync(eventData, scope.ServiceProvider, ct);
                     }
-                    // Manual commit only after successful processing
                     consumer.Commit(result);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to process message from topic {Topic} offset {Offset}", _topic, result.Offset);
-                    // Do NOT commit — message will be reprocessed
                 }
             }
             catch (OperationCanceledException) { break; }
