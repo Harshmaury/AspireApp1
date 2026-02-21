@@ -16,6 +16,7 @@
     <PackageReference Include="Aspire.Hosting.Kafka" Version="9.3.1" />
     <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.3.1" />
     <PackageReference Include="Aspire.Hosting.Redis" Version="9.3.1" />
+    <PackageReference Include="KubernetesClient" Version="17.0.4"><NoWarn>NU1902</NoWarn></PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -25,6 +26,7 @@
     <ProjectReference Include="..\Services\Academic\Academic.API\Academic.API.csproj" />
     <ProjectReference Include="..\Web\AspireApp1.Web.csproj" />
     <ProjectReference Include="..\Services\Student\Student.API\Student.API.csproj" />
+    <ProjectReference Include="..\Services\Examination\Examination.API\Examination.API.csproj" />
   </ItemGroup>
 
 </Project>

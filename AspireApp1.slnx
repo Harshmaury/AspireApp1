@@ -19,6 +19,13 @@
   <Folder Name="/src/Services/ApiService/">
     <Project Path="src/Services/ApiService/AspireApp1.ApiService.csproj" />
   </Folder>
+  <Folder Name="/src/Services/Examination/">
+    <Project Path="src/Services/Examination/Examination.API/Examination.API.csproj" />
+    <Project Path="src/Services/Examination/Examination.Application/Examination.Application.csproj" />
+    <Project Path="src/Services/Examination/Examination.Domain/Examination.Domain.csproj" />
+    <Project Path="src/Services/Examination/Examination.Infrastructure/Examination.Infrastructure.csproj" />
+    <Project Path="src/Services/Examination/Examination.Tests/Examination.Tests.csproj" />
+  </Folder>
   <Folder Name="/src/Services/Identity/">
     <Project Path="src/Services/Identity/Identity.API/Identity.API.csproj" />
     <Project Path="src/Services/Identity/Identity.Application/Identity.Application.csproj" />
