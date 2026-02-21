@@ -16,4 +16,8 @@
     <ProjectReference Include="..\Identity.Domain\Identity.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Identity.Tests" />
+  </ItemGroup>
 </Project>
+
