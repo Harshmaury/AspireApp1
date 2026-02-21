@@ -44,11 +44,13 @@ public sealed class AttendanceSummary : AggregateRoot
         TotalClasses = totalClasses;
         AttendedClasses = attendedClasses;
         Percentage = totalClasses == 0 ? 100m : Math.Round((decimal)attendedClasses / totalClasses * 100, 2);
+        var wasShortage = IsShortage;
         IsWarning = Percentage < 80m && Percentage >= 75m;
         IsShortage = Percentage < 75m;
         LastUpdated = DateTime.UtcNow;
-        if (IsShortage)
+        if (IsShortage && !wasShortage)
             RaiseDomainEvent(new AttendanceShortageFlaggedEvent(StudentId, TenantId, CourseId, Percentage));
     }
     public bool IsEligibleForExam() => Percentage >= 75m;
 }
+

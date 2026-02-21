@@ -19,7 +19,7 @@ public sealed class ApproveCondonationCommandHandler : IRequestHandler<ApproveCo
     public ApproveCondonationCommandHandler(ICondonationRequestRepository repository) => _repository = repository;
     public async Task Handle(ApproveCondonationCommand cmd, CancellationToken ct)
     {
-        var request = await _repository.GetByIdAsync(cmd.RequestId, cmd.TenantId, ct) ?? throw new Exception("Condonation request not found.");
+        var request = await _repository.GetByIdAsync(cmd.RequestId, cmd.TenantId, ct) ?? throw new Attendance.Domain.Exceptions.AttendanceDomainException("NOT_FOUND", $"Condonation request {cmd.RequestId} not found.");
         request.Approve(cmd.ReviewedBy, cmd.Note);
         await _repository.UpdateAsync(request, ct);
     }
@@ -30,8 +30,9 @@ public sealed class RejectCondonationCommandHandler : IRequestHandler<RejectCond
     public RejectCondonationCommandHandler(ICondonationRequestRepository repository) => _repository = repository;
     public async Task Handle(RejectCondonationCommand cmd, CancellationToken ct)
     {
-        var request = await _repository.GetByIdAsync(cmd.RequestId, cmd.TenantId, ct) ?? throw new Exception("Condonation request not found.");
+        var request = await _repository.GetByIdAsync(cmd.RequestId, cmd.TenantId, ct) ?? throw new Attendance.Domain.Exceptions.AttendanceDomainException("NOT_FOUND", $"Condonation request {cmd.RequestId} not found.");
         request.Reject(cmd.ReviewedBy, cmd.Note);
         await _repository.UpdateAsync(request, ct);
     }
 }
+

@@ -18,15 +18,14 @@ public sealed class MarkAttendanceCommandHandler : IRequestHandler<MarkAttendanc
         var classType = Enum.Parse<ClassType>(cmd.ClassType, true);
         var record = AttendanceRecordEntity.Create(cmd.TenantId, cmd.StudentId, cmd.CourseId, cmd.AcademicYear, cmd.Semester, cmd.Date, classType, cmd.IsPresent, cmd.MarkedBy);
         await _recordRepository.AddAsync(record, ct);
-        // Refresh summary
-        var allRecords = await _recordRepository.GetByStudentCourseAsync(cmd.StudentId, cmd.CourseId, cmd.TenantId, ct);
+        var (total, attended) = await _recordRepository.GetCountsAsync(cmd.StudentId, cmd.CourseId, cmd.TenantId, ct);
         var summary = await _summaryRepository.GetByStudentCourseAsync(cmd.StudentId, cmd.CourseId, cmd.TenantId, ct);
         if (summary is null)
         {
             summary = AttendanceSummaryEntity.Create(cmd.TenantId, cmd.StudentId, cmd.CourseId, cmd.AcademicYear, cmd.Semester);
             await _summaryRepository.AddAsync(summary, ct);
         }
-        summary.Refresh(allRecords.Count, allRecords.Count(r => r.IsPresent));
+        summary.Refresh(total, attended);
         await _summaryRepository.UpdateAsync(summary, ct);
         return record.Id;
     }
