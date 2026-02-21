@@ -1,0 +1,12 @@
+using Notification.Application;
+using Notification.Infrastructure;
+using Notification.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+var builder = WebApplication.CreateBuilder(args);
+builder.AddServiceDefaults();
+builder.Services.AddNotificationApplication();
+builder.Services.AddNotificationInfrastructure(builder.Configuration);
+var app = builder.Build();
+await Notification.Infrastructure.DependencyInjection.SeedDefaultTemplatesAsync(app.Services);
+app.MapDefaultEndpoints();
+app.Run();

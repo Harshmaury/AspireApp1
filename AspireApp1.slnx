@@ -19,6 +19,13 @@
   <Folder Name="/src/Services/ApiService/">
     <Project Path="src/Services/ApiService/AspireApp1.ApiService.csproj" />
   </Folder>
+  <Folder Name="/src/Services/Attendance/">
+    <Project Path="src/Services/Attendance/Attendance.API/Attendance.API.csproj" />
+    <Project Path="src/Services/Attendance/Attendance.Application/Attendance.Application.csproj" />
+    <Project Path="src/Services/Attendance/Attendance.Domain/Attendance.Domain.csproj" />
+    <Project Path="src/Services/Attendance/Attendance.Infrastructure/Attendance.Infrastructure.csproj" />
+    <Project Path="src/Services/Attendance/Attendance.Tests/Attendance.Tests.csproj" />
+  </Folder>
   <Folder Name="/src/Services/Examination/">
     <Project Path="src/Services/Examination/Examination.API/Examination.API.csproj" />
     <Project Path="src/Services/Examination/Examination.Application/Examination.Application.csproj" />
@@ -39,6 +46,13 @@
     <Project Path="src/Services/Identity/Identity.Domain/Identity.Domain.csproj" />
     <Project Path="src/Services/Identity/Identity.Infrastructure/Identity.Infrastructure.csproj" />
     <Project Path="src/Services/Identity/Identity.Tests/Identity.Tests.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Notification/">
+    <Project Path="src/Services/Notification/Notification.API/Notification.API.csproj" />
+    <Project Path="src/Services/Notification/Notification.Application/Notification.Application.csproj" />
+    <Project Path="src/Services/Notification/Notification.Domain/Notification.Domain.csproj" />
+    <Project Path="src/Services/Notification/Notification.Infrastructure/Notification.Infrastructure.csproj" />
+    <Project Path="src/Services/Notification/Notification.Tests/Notification.Tests.csproj" />
   </Folder>
   <Folder Name="/src/Services/Student/">
     <Project Path="src/Services/Student/Student.API/Student.API.csproj" />
