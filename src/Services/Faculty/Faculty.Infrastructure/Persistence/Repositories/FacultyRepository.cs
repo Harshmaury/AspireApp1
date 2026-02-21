@@ -27,4 +27,17 @@ public sealed class FacultyRepository : IFacultyRepository
 
     public async Task<IReadOnlyList<FacultyEntity>> GetAllByTenantAsync(Guid tenantId, CancellationToken ct = default)
         => await _db.Faculty.Where(f => f.TenantId == tenantId).ToListAsync(ct);
+
+    public async Task<FacultyEntity?> GetByUserIdAsync(Guid userId, Guid tenantId, CancellationToken ct = default)
+        => await _db.Faculty.FirstOrDefaultAsync(f => f.UserId == userId && f.TenantId == tenantId, ct);
+
+    public async Task<List<FacultyEntity>> GetByDepartmentAsync(Guid departmentId, Guid tenantId, CancellationToken ct = default)
+        => await _db.Faculty.Where(f => f.DepartmentId == departmentId && f.TenantId == tenantId).ToListAsync(ct);
+
+    public async Task<List<FacultyEntity>> GetAllAsync(Guid tenantId, CancellationToken ct = default)
+        => await _db.Faculty.Where(f => f.TenantId == tenantId).ToListAsync(ct);
+
+    public async Task<int> GetPhdCountAsync(Guid tenantId, CancellationToken ct = default)
+        => await _db.Faculty.CountAsync(f => f.TenantId == tenantId && f.IsPhD, ct);
 }
+
