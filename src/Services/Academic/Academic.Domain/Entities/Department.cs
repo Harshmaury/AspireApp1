@@ -47,6 +47,11 @@ public sealed class Department : AggregateRoot
     }
 
     public void AssignHOD(Guid hodId) { HeadOfDepartmentId = hodId; UpdatedAt = DateTime.UtcNow; }
-    public void Deactivate() { Status = DepartmentStatus.Inactive; UpdatedAt = DateTime.UtcNow; }
+    public void Deactivate() {
+    if (Status == DepartmentStatus.Inactive)
+        throw new AcademicDomainException("ALREADY_INACTIVE", "Department is already inactive.");
+    Status = DepartmentStatus.Inactive;
+    UpdatedAt = DateTime.UtcNow;
+}
     public void Activate() { Status = DepartmentStatus.Active; UpdatedAt = DateTime.UtcNow; }
 }
