@@ -11,6 +11,7 @@ var academicDb      = postgres.AddDatabase("AcademicDb");
 var examinationDb   = postgres.AddDatabase("ExaminationDb");
 var feeDb           = postgres.AddDatabase("FeeDb");
 var notificationDb  = postgres.AddDatabase("NotificationDb");
+var hostelDb        = postgres.AddDatabase("HostelDb");
 var identityApi = builder.AddProject<Projects.Identity_API>("identity-api")
     .WithHttpHealthCheck("/health")
     .WithReference(identityDb).WithReference(kafka)
@@ -41,17 +42,22 @@ var notificationApi = builder.AddProject<Projects.Notification_API>("notificatio
     .WaitFor(notificationDb).WaitFor(kafka)
     .WaitFor(identityApi).WaitFor(studentApi)
     .WaitFor(academicApi).WaitFor(examinationApi).WaitFor(feeApi);
+var hostelApi = builder.AddProject<Projects.Hostel_API>("hostel-api")
+    .WithHttpHealthCheck("/health")
+    .WithReference(hostelDb).WithReference(kafka)
+    .WaitFor(hostelDb).WaitFor(kafka);
 var apiGateway = builder.AddProject<Projects.ApiGateway>("api-gateway")
     .WithExternalHttpEndpoints()
     .WithReference(identityApi).WithReference(apiService)
     .WithReference(studentApi).WithReference(academicApi)
-    .WithReference(examinationApi).WithReference(feeApi)
+    .WithReference(examinationApi).WithReference(feeApi).WithReference(hostelApi)
     .WaitFor(identityApi).WaitFor(apiService)
     .WaitFor(studentApi).WaitFor(academicApi)
-    .WaitFor(examinationApi).WaitFor(feeApi);
+    .WaitFor(examinationApi).WaitFor(feeApi).WaitFor(hostelApi);
 builder.AddProject<Projects.AspireApp1_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithHttpHealthCheck("/health")
     .WithReference(cache).WaitFor(cache)
     .WithReference(apiGateway).WaitFor(apiGateway);
 builder.Build().Run();
+

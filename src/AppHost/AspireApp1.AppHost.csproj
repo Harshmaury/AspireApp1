@@ -30,6 +30,7 @@
     <ProjectReference Include="..\Services\Fee\Fee.API\Fee.API.csproj" />
     <ProjectReference Include="..\Services\Notification\Notification.API\Notification.API.csproj" />
     <ProjectReference Include="..\Services\Attendance\Attendance.API\Attendance.API.csproj" />
+    <ProjectReference Include="..\Services\Hostel\Hostel.API\Hostel.API.csproj" />
   </ItemGroup>
 
 </Project>
