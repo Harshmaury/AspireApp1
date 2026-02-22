@@ -48,6 +48,7 @@
     <Project Path="src/Services/Hostel/Hostel.Application/Hostel.Application.csproj" />
     <Project Path="src/Services/Hostel/Hostel.Domain/Hostel.Domain.csproj" />
     <Project Path="src/Services/Hostel/Hostel.Infrastructure/Hostel.Infrastructure.csproj" />
+    <Project Path="src/Services/Hostel/Hostel.Tests/Hostel.Tests.csproj" />
   </Folder>
   <Folder Name="/src/Services/Identity/">
     <Project Path="src/Services/Identity/Identity.API/Identity.API.csproj" />
