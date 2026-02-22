@@ -71,6 +71,9 @@
     <Project Path="src/Services/Student/Student.Infrastructure/Student.Infrastructure.csproj" />
     <Project Path="src/Services/Student/Student.Tests/Student.Tests.csproj" />
   </Folder>
+  <Folder Name="/src/Tests/">
+    <Project Path="src/Tests/TenantIsolation.Tests/TenantIsolation.Tests.csproj" />
+  </Folder>
   <Folder Name="/src/Web/">
     <Project Path="src/Web/AspireApp1.Web.csproj" />
   </Folder>
