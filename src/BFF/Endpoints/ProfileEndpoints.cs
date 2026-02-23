@@ -7,34 +7,32 @@ public static class ProfileEndpoints
     public static void MapProfileEndpoints(this WebApplication app)
     {
         app.MapGet("/api/mobile/profile", async (
-            HttpContext ctx,
+            HttpContext httpContext,
             IHttpClientFactory factory) =>
         {
-            var tenantId = ctx.Request.Headers["X-Tenant-Id"].ToString();
-            var userId   = ctx.Request.Headers["X-User-Id"].ToString();
+            var tenantId = httpContext.Request.Headers["X-Tenant-Id"].FirstOrDefault() ?? "";
+            var userId   = httpContext.Request.Headers["X-User-Id"].FirstOrDefault()   ?? "";
 
-            var studentClient  = factory.CreateClient("student-api");
-            var academicClient = factory.CreateClient("academic-api");
+            var student  = factory.CreateClient("student");
+            var academic = factory.CreateClient("academic");
 
-            AddForwardedHeaders(studentClient,  tenantId, userId);
-            AddForwardedHeaders(academicClient, tenantId, userId);
+            ForwardHeaders(student,  tenantId, userId);
+            ForwardHeaders(academic, tenantId, userId);
 
-            var studentTask  = studentClient.GetAsync($"/api/students/{userId}/profile");
-            var academicTask = academicClient.GetAsync($"/api/academic/{userId}/profile");
+            var studentTask  = SafeGetAsync(student,  $"/api/students/{userId}");
+            var academicTask = SafeGetAsync(academic, $"/api/academic/{userId}/profile");
 
             await Task.WhenAll(studentTask, academicTask);
 
-            var result = new
+            return Results.Ok(new
             {
-                student  = await ParseOrNull(studentTask.Result),
-                academic = await ParseOrNull(academicTask.Result)
-            };
-
-            return Results.Ok(result);
-        }).RequireAuthorization();
+                student  = studentTask.Result,
+                academic = academicTask.Result
+            });
+        });
     }
 
-    private static void AddForwardedHeaders(HttpClient client, string tenantId, string userId)
+    private static void ForwardHeaders(HttpClient client, string tenantId, string userId)
     {
         client.DefaultRequestHeaders.Remove("X-Tenant-Id");
         client.DefaultRequestHeaders.Remove("X-User-Id");
@@ -42,10 +40,20 @@ public static class ProfileEndpoints
         client.DefaultRequestHeaders.Add("X-User-Id",   userId);
     }
 
-    private static async Task<object?> ParseOrNull(HttpResponseMessage response)
+    private static async Task<object> SafeGetAsync(HttpClient client, string path)
     {
-        if (!response.IsSuccessStatusCode) return null;
-        var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<object>(json);
+        try
+        {
+            var response = await client.GetAsync(path);
+            if (!response.IsSuccessStatusCode)
+                return new { error = $"Service returned {(int)response.StatusCode}", data = (object?)null };
+
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<JsonElement>(json);
+        }
+        catch (Exception ex)
+        {
+            return new { error = ex.Message, data = (object?)null };
+        }
     }
 }
