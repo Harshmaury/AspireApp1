@@ -13,8 +13,14 @@ public sealed class MarksEntryRepository : IMarksEntryRepository
         await _context.MarksEntries.Where(e => e.ExamScheduleId == examScheduleId && e.TenantId == tenantId).ToListAsync(ct);
     public async Task<List<MarksEntryEntity>> GetByStudentAsync(Guid studentId, Guid tenantId, CancellationToken ct = default) =>
         await _context.MarksEntries.Where(e => e.StudentId == studentId && e.TenantId == tenantId).ToListAsync(ct);
-    public async Task AddAsync(MarksEntryEntity entry, CancellationToken ct = default) =>
+    public async Task AddAsync(MarksEntryEntity entry, CancellationToken ct = default)
+    {
         await _context.MarksEntries.AddAsync(entry, ct);
-    public async Task UpdateAsync(MarksEntryEntity entry, CancellationToken ct = default) =>
-        await Task.FromResult(_context.MarksEntries.Update(entry));
+        await _context.SaveChangesAsync(ct);
+    }
+    public async Task UpdateAsync(MarksEntryEntity entry, CancellationToken ct = default)
+    {
+        _context.MarksEntries.Update(entry);
+        await _context.SaveChangesAsync(ct);
+    }
 }

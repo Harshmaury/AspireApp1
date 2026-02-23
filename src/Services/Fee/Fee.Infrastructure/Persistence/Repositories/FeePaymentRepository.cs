@@ -13,8 +13,14 @@ public sealed class FeePaymentRepository : IFeePaymentRepository
         await _context.FeePayments.Where(e => e.StudentId == studentId && e.TenantId == tenantId).ToListAsync(ct);
     public async Task<List<FeePaymentEntity>> GetDefaultersAsync(Guid tenantId, string academicYear, CancellationToken ct = default) =>
         await _context.FeePayments.Where(e => e.TenantId == tenantId && e.Status == Fee.Domain.Enums.PaymentStatus.Pending).ToListAsync(ct);
-    public async Task AddAsync(FeePaymentEntity payment, CancellationToken ct = default) =>
+    public async Task AddAsync(FeePaymentEntity payment, CancellationToken ct = default)
+    {
         await _context.FeePayments.AddAsync(payment, ct);
-    public async Task UpdateAsync(FeePaymentEntity payment, CancellationToken ct = default) =>
-        await Task.FromResult(_context.FeePayments.Update(payment));
+        await _context.SaveChangesAsync(ct);
+    }
+    public async Task UpdateAsync(FeePaymentEntity payment, CancellationToken ct = default)
+    {
+        _context.FeePayments.Update(payment);
+        await _context.SaveChangesAsync(ct);
+    }
 }
