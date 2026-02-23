@@ -26,20 +26,27 @@ public static class SerilogExtensions
                     : new CompactJsonFormatter())
             .CreateBootstrapLogger();
 
-        builder.Services.AddSerilog((sp, lc) => lc
-            .ReadFrom.Services(sp)
-            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-            .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
-            .MinimumLevel.Override("System", LogEventLevel.Warning)
-            .Enrich.FromLogContext()
-            .Enrich.WithCorrelationId()
-            .Enrich.WithMachineName()
-            .Enrich.WithEnvironmentName()
-            .WriteTo.Console(
-                builder.Environment.IsDevelopment()
-                    ? new Serilog.Formatting.Display.MessageTemplateTextFormatter(
-                        "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj} {Properties}{NewLine}{Exception}", null)
-                    : new CompactJsonFormatter()));
+        builder.Services.AddSerilog((sp, lc) =>
+        {
+            lc.ReadFrom.Services(sp)
+              .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+              .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+              .MinimumLevel.Override("System", LogEventLevel.Warning)
+              .Enrich.FromLogContext()
+              .Enrich.WithCorrelationId()
+              .Enrich.WithMachineName()
+              .Enrich.WithEnvironmentName()
+              .WriteTo.Console(
+                  builder.Environment.IsDevelopment()
+                      ? new Serilog.Formatting.Display.MessageTemplateTextFormatter(
+                          "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj} {Properties}{NewLine}{Exception}", null)
+                      : new CompactJsonFormatter());
+
+            // Seq — only active when Aspire injects the endpoint
+            var seqUrl = builder.Configuration["Seq:ServerUrl"];
+            if (!string.IsNullOrWhiteSpace(seqUrl))
+                lc.WriteTo.Seq(seqUrl);
+        });
 
         return builder;
     }

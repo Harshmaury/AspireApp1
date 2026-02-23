@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using System.Security.Claims;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -19,19 +18,18 @@ public sealed class TenantMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        var tenantIdClaim = context.User.FindFirstValue("tenant_id");
-        var tenantSlug = context.User.FindFirstValue("tenant_slug") ?? string.Empty;
+        // ADR-006: Gateway owns auth — read forwarded headers, not JWT claims
+        var tenantIdHeader = context.Request.Headers["X-Tenant-Id"].FirstOrDefault();
+        var tenantSlug     = context.Request.Headers["X-Tenant-Slug"].FirstOrDefault() ?? string.Empty;
 
-        var resolved = Guid.TryParse(tenantIdClaim, out var tenantId);
+        var resolved = Guid.TryParse(tenantIdHeader, out var tenantId);
 
-        var tenantContext = new TenantContext
+        context.Items["TenantContext"] = new TenantContext
         {
-            TenantId = tenantId,
+            TenantId   = tenantId,
             TenantSlug = tenantSlug,
             IsResolved = resolved
         };
-
-        context.Items["TenantContext"] = tenantContext;
 
         await _next(context);
     }
