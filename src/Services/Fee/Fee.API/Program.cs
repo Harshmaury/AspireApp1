@@ -10,8 +10,6 @@ builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("FeeDb");
 builder.Services.AddFeeApplication();
 builder.Services.AddFeeInfrastructure(builder.Configuration);
-builder.Services.AddAuthentication("Bearer").AddJwtBearer();
-builder.Services.AddAuthorization();
 var app = builder.Build();
 app.UseSerilogDefaults();
 app.UseGlobalExceptionHandler();
@@ -21,12 +19,11 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 app.MapDefaultEndpoints();
-app.UseAuthentication();
-app.UseAuthorization();
 app.MapFeeStructureEndpoints();
 app.MapFeePaymentEndpoints();
 app.MapScholarshipEndpoints();
 app.Run();
+
 
 
 

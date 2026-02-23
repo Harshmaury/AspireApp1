@@ -18,8 +18,9 @@ function ub {
         "defaults"     = "src/ServiceDefaults/AspireApp1.ServiceDefaults.csproj"
         "shared"       = "src/Shared/UMS.SharedKernel/UMS.SharedKernel.csproj"
         "kafka"        = "src/Tests/Kafka.IntegrationTests/Kafka.IntegrationTests.csproj"
+        "gateway"      = "src/ApiGateway/ApiGateway.csproj"
         "apphost"      = "src/Tests/AppHost.IntegrationTests/AppHost.IntegrationTests.csproj"
-        "all"          = "AspireApp1.sln"
+        "all"          = "AspireApp1.slnx"
     }
     if ($map[$svc]) { dotnet build $map[$svc] -v q 2>&1 | ue }
     else { Write-Host "Unknown: $svc. Options: $($map.Keys -join ', ')" }
@@ -74,3 +75,5 @@ function ut-all {
 }
 
 function ut_identity_int { dotnet test 'src/Tests/Identity.IntegrationTests/Identity.IntegrationTests.csproj' -v q }
+
+

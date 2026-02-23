@@ -3,7 +3,6 @@ using Hostel.API.Endpoints;
 using Hostel.API.Middleware;
 using Hostel.Application;
 using Hostel.Infrastructure;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,14 +10,6 @@ builder.AddServiceDefaults();
 builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("HostelDb");
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(opts =>
-    {
-        opts.Authority = builder.Configuration["Auth:Authority"];
-        opts.Audience = builder.Configuration["Auth:Audience"];
-        opts.RequireHttpsMetadata = false;
-    });
-builder.Services.AddAuthorization();
 
 builder.Services.AddHostelApplication();
 builder.Services.AddHostelInfrastructure(builder.Configuration);
@@ -28,8 +19,6 @@ app.UseSerilogDefaults();
 app.UseGlobalExceptionHandler();
 
 app.MapDefaultEndpoints();
-app.UseAuthentication();
-app.UseAuthorization();
 app.UseTenantMiddleware();
 
 app.MapHostelEndpoints();
@@ -38,6 +27,7 @@ app.MapAllotmentEndpoints();
 app.MapComplaintEndpoints();
 
 app.Run();
+
 
 
 

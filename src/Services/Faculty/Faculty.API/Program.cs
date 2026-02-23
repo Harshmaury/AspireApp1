@@ -10,8 +10,6 @@ builder.AddServiceDefaults();
 builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("FacultyDb");
 builder.Services.AddOpenApi();
-builder.Services.AddAuthorization();
-builder.Services.AddAuthentication("Bearer").AddJwtBearer();
 builder.Services.AddFacultyApplication();
 builder.Services.AddFacultyInfrastructure(builder.Configuration);
 
@@ -23,12 +21,11 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.MapDefaultEndpoints();
-app.UseAuthentication();
-app.UseAuthorization();
 app.UseMiddleware<Faculty.API.Middleware.TenantMiddleware>();
 app.UseHttpsRedirection();
 app.MapFacultyEndpoints();
 app.Run();
+
 
 
 

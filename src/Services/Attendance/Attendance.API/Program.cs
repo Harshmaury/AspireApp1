@@ -10,8 +10,6 @@ builder.AddServiceDefaults();
 builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("AttendanceDb");
 builder.Services.AddOpenApi();
-builder.Services.AddAuthorization();
-builder.Services.AddAuthentication("Bearer").AddJwtBearer();
 builder.Services.AddAttendanceApplication();
 builder.Services.AddAttendanceInfrastructure(builder.Configuration);
 
@@ -23,12 +21,11 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.MapDefaultEndpoints();
-app.UseAuthentication();
-app.UseAuthorization();
 app.UseMiddleware<Attendance.API.Middleware.TenantMiddleware>();
 app.UseHttpsRedirection();
 app.MapAttendanceEndpoints();
 app.Run();
+
 
 
 
