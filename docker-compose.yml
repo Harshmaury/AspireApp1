@@ -1,0 +1,317 @@
+version: "3.9"
+
+networks:
+  ums-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  seq-data:
+
+services:
+
+  # --- Infrastructure --------------------------------------------
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: ums-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - ums-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: ums-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - ums-network
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: ums-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+    networks:
+      - ums-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  seq:
+    image: datalust/seq:latest
+    container_name: ums-seq
+    environment:
+      ACCEPT_EULA: "Y"
+    volumes:
+      - seq-data:/data
+    ports:
+      - "5341:5341"
+      - "5342:80"
+    networks:
+      - ums-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: ums-jaeger
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+    networks:
+      - ums-network
+
+  # --- Services --------------------------------------------------
+
+  identity-api:
+    build:
+      context: .
+      dockerfile: src/Services/Identity/Identity.API/Dockerfile
+    container_name: ums-identity
+    env_file: .env
+    environment:
+      ConnectionStrings__IdentityDb: ${ConnectionStrings__IdentityDb}
+      ConnectionStrings__kafka: ${ConnectionStrings__kafka}
+      Seq__ServerUrl: ${Seq__ServerUrl}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_SERVICE_NAME: identity-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - ums-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  academic-api:
+    build:
+      context: .
+      dockerfile: src/Services/Academic/Academic.API/Dockerfile
+    container_name: ums-academic
+    env_file: .env
+    environment:
+      ConnectionStrings__AcademicDb: ${ConnectionStrings__AcademicDb}
+      ConnectionStrings__kafka: ${ConnectionStrings__kafka}
+      Seq__ServerUrl: ${Seq__ServerUrl}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_SERVICE_NAME: academic-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - ums-network
+
+  student-api:
+    build:
+      context: .
+      dockerfile: src/Services/Student/Student.API/Dockerfile
+    container_name: ums-student
+    env_file: .env
+    environment:
+      ConnectionStrings__StudentDb: ${ConnectionStrings__StudentDb}
+      ConnectionStrings__kafka: ${ConnectionStrings__kafka}
+      Seq__ServerUrl: ${Seq__ServerUrl}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_SERVICE_NAME: student-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - ums-network
+
+  attendance-api:
+    build:
+      context: .
+      dockerfile: src/Services/Attendance/Attendance.API/Dockerfile
+    container_name: ums-attendance
+    env_file: .env
+    environment:
+      ConnectionStrings__AttendanceDb: ${ConnectionStrings__AttendanceDb}
+      ConnectionStrings__kafka: ${ConnectionStrings__kafka}
+      Seq__ServerUrl: ${Seq__ServerUrl}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_SERVICE_NAME: attendance-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - ums-network
+
+  examination-api:
+    build:
+      context: .
+      dockerfile: src/Services/Examination/Examination.API/Dockerfile
+    container_name: ums-examination
+    env_file: .env
+    environment:
+      ConnectionStrings__ExaminationDb: ${ConnectionStrings__ExaminationDb}
+      ConnectionStrings__kafka: ${ConnectionStrings__kafka}
+      Seq__ServerUrl: ${Seq__ServerUrl}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_SERVICE_NAME: examination-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - ums-network
+
+  fee-api:
+    build:
+      context: .
+      dockerfile: src/Services/Fee/Fee.API/Dockerfile
+    container_name: ums-fee
+    env_file: .env
+    environment:
+      ConnectionStrings__FeeDb: ${ConnectionStrings__FeeDb}
+      ConnectionStrings__kafka: ${ConnectionStrings__kafka}
+      Seq__ServerUrl: ${Seq__ServerUrl}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_SERVICE_NAME: fee-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - ums-network
+
+  notification-api:
+    build:
+      context: .
+      dockerfile: src/Services/Notification/Notification.API/Dockerfile
+    container_name: ums-notification
+    env_file: .env
+    environment:
+      ConnectionStrings__NotificationDb: ${ConnectionStrings__NotificationDb}
+      ConnectionStrings__kafka: ${ConnectionStrings__kafka}
+      Seq__ServerUrl: ${Seq__ServerUrl}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_SERVICE_NAME: notification-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - ums-network
+
+  faculty-api:
+    build:
+      context: .
+      dockerfile: src/Services/Faculty/Faculty.API/Dockerfile
+    container_name: ums-faculty
+    env_file: .env
+    environment:
+      ConnectionStrings__FacultyDb: ${ConnectionStrings__FacultyDb}
+      ConnectionStrings__kafka: ${ConnectionStrings__kafka}
+      Seq__ServerUrl: ${Seq__ServerUrl}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_SERVICE_NAME: faculty-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - ums-network
+
+  hostel-api:
+    build:
+      context: .
+      dockerfile: src/Services/Hostel/Hostel.API/Dockerfile
+    container_name: ums-hostel
+    env_file: .env
+    environment:
+      ConnectionStrings__HostelDb: ${ConnectionStrings__HostelDb}
+      ConnectionStrings__kafka: ${ConnectionStrings__kafka}
+      Seq__ServerUrl: ${Seq__ServerUrl}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_SERVICE_NAME: hostel-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - ums-network
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: src/ApiGateway/Dockerfile
+    container_name: ums-gateway
+    env_file: .env
+    environment:
+      Auth__Authority: ${Auth__Authority}
+      Auth__Audience: ${Auth__Audience}
+      Seq__ServerUrl: ${Seq__ServerUrl}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_SERVICE_NAME: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      identity-api:
+        condition: service_healthy
+    networks:
+      - ums-network
+
+  bff:
+    build:
+      context: .
+      dockerfile: src/BFF/Dockerfile
+    container_name: ums-bff
+    env_file: .env
+    environment:
+      Seq__ServerUrl: ${Seq__ServerUrl}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_SERVICE_NAME: bff
+    depends_on:
+      - student-api
+      - fee-api
+      - attendance-api
+      - academic-api
+      - notification-api
+    networks:
+      - ums-network
