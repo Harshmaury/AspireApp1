@@ -126,3 +126,55 @@ ut kafka
 ut apphost
 git log --oneline -5
 git status
+
+---
+
+## Session 13 Additions (Applied Session 14)
+
+### No RequireAuthorization on Service Endpoints (ADR-006)
+# Individual services MUST NOT have .RequireAuthorization() on any endpoint.
+# Gateway owns auth. Services have no auth middleware in their pipeline.
+# .RequireAuthorization() without UseAuthorization() causes hard runtime exception.
+
+### GetTenantId — Always Read from Header
+// NEVER — no JWT in services:
+// httpContext.User.FindFirstValue("tenant_id")
+
+// ALWAYS — gateway forwards header:
+// httpContext.Request.Headers["X-Tenant-Id"].FirstOrDefault()
+
+### MigrateWithRetryAsync — Required Pattern
+# Never use bare db.Database.Migrate() or MigrateAsync() at startup.
+# Always use MigrateWithRetryAsync<TDb> local static function (see Phase 8 in Phase Plan).
+
+### Seq Configuration Key
+# "Seq__ServerUrl" (double underscore — standard ASP.NET Core config binding)
+# Read in SerilogExtensions.cs: builder.Configuration["Seq:ServerUrl"]
+
+### Jaeger — ContainerResource Wiring
+# Jaeger is AddContainer() ? ContainerResource ? does NOT support .WithReference()
+# Wire via .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", jaeger.GetEndpoint("otlp-grpc")) only.
+
+### TenantMiddleware — Header Based (ADR-006)
+# ServiceDefaults\TenantMiddleware.cs reads X-Tenant-Id and X-Tenant-Slug from request headers.
+# NOT from JWT claims. Updated Session 13.
+
+### AppHost csproj Correct Path
+# src\AppHost\AspireApp1.AppHost.csproj  (NOT src\AppHost\AppHost.csproj)
+
+### AppHost Integration Tests — Three-Layer Fix (Session 13)
+# 1. Strip .RequireAuthorization() from all endpoint files
+# 2. Fix GetTenantId to read X-Tenant-Id header
+# 3. Add default headers to ServiceFixture.InitializeAsync():
+#    Client.DefaultRequestHeaders.Add("X-Tenant-Id", TestTenant.Id.ToString());
+#    Client.DefaultRequestHeaders.Add("X-User-Id", Guid.NewGuid().ToString());
+
+### ServiceDefaults Package: Serilog.Sinks.Seq
+# Version: 8.0.0 — added Session 13
+
+### Observability Resources in AppHost
+# var seq    = builder.AddSeq("seq").ExcludeFromManifest();
+# var jaeger = builder.AddContainer("jaeger", "jaegertracing/all-in-one", "1.57")
+#                     .WithEndpoint(port: 16686, targetPort: 16686, name: "ui")
+#                     .WithEndpoint(port: 4317,  targetPort: 4317,  name: "otlp-grpc")
+#                     .ExcludeFromManifest();

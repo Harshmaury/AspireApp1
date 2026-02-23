@@ -6,6 +6,7 @@
     <UserSecretsId>1532d735-2a74-4f1b-a09d-4ed8da289332</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Http" Version="8.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.16.0" />
     <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
