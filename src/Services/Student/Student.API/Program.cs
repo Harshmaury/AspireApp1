@@ -12,6 +12,7 @@ using Student.API.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddNpgsqlHealthCheck("StudentDb");
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -51,6 +52,7 @@ app.UseAuthorization();
 app.MapStudentEndpoints();
 
 app.Run();
+
 
 
 

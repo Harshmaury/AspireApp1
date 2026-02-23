@@ -7,6 +7,7 @@ using Microsoft.Extensions.ServiceDiscovery;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using Microsoft.Extensions.Configuration;
 using HealthChecks.NpgSql;
 
 namespace Microsoft.Extensions.Hosting;
@@ -77,7 +78,7 @@ public static class Extensions
         where TBuilder : IHostApplicationBuilder
     {
         builder.Services.AddHealthChecks()
-            .AddNpgsql(builder.Configuration.GetConnectionString(connectionName) ?? string.Empty, name: "db-$connectionName", tags: new[] { "ready", "db" });
+            .AddNpgSql(builder.Configuration.GetConnectionString(connectionName) ?? string.Empty, name: "db-$connectionName", tags: new[] { "ready", "db" });
         return builder;
     }
 
@@ -100,6 +101,8 @@ public static class Extensions
         return app;
     }
 }
+
+
 
 
 

@@ -5,6 +5,7 @@ using Notification.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
+builder.AddNpgsqlHealthCheck("NotificationDb");
 builder.Services.AddNotificationApplication();
 builder.Services.AddNotificationInfrastructure(builder.Configuration);
 var app = builder.Build();
@@ -12,5 +13,6 @@ app.UseGlobalExceptionHandler();
 await Notification.Infrastructure.DependencyInjection.SeedDefaultTemplatesAsync(app.Services);
 app.MapDefaultEndpoints();
 app.Run();
+
 
 

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddNpgsqlHealthCheck("HostelDb");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opts =>
@@ -35,5 +36,6 @@ app.MapAllotmentEndpoints();
 app.MapComplaintEndpoints();
 
 app.Run();
+
 
 

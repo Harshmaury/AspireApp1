@@ -9,6 +9,7 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddNpgsqlHealthCheck("AcademicDb");
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -53,4 +54,5 @@ app.MapCurriculumEndpoints();
 app.MapAcademicCalendarEndpoints();
 
 app.Run();
+
 

@@ -15,6 +15,7 @@ using Identity.Application.Features.Auth.Commands;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
+builder.AddNpgsqlHealthCheck("IdentityDb");
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -105,6 +106,7 @@ app.MapAuthEndpoints();
 app.MapTenantEndpoints();
 
 app.Run();
+
 
 
 

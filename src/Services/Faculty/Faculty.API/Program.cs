@@ -7,6 +7,7 @@ using Faculty.API.Middleware;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddNpgsqlHealthCheck("FacultyDb");
 builder.Services.AddOpenApi();
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication("Bearer").AddJwtBearer();
@@ -26,5 +27,6 @@ app.UseMiddleware<Faculty.API.Middleware.TenantMiddleware>();
 app.UseHttpsRedirection();
 app.MapFacultyEndpoints();
 app.Run();
+
 
 

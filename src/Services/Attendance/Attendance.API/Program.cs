@@ -7,6 +7,7 @@ using Attendance.API.Middleware;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddNpgsqlHealthCheck("AttendanceDb");
 builder.Services.AddOpenApi();
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication("Bearer").AddJwtBearer();
@@ -26,6 +27,7 @@ app.UseMiddleware<Attendance.API.Middleware.TenantMiddleware>();
 app.UseHttpsRedirection();
 app.MapAttendanceEndpoints();
 app.Run();
+
 
 
 

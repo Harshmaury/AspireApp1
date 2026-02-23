@@ -6,6 +6,7 @@ using Examination.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
+builder.AddNpgsqlHealthCheck("ExaminationDb");
 builder.Services.AddExaminationApplication();
 builder.Services.AddExaminationInfrastructure(builder.Configuration);
 builder.Services.AddAuthentication("Bearer").AddJwtBearer();
@@ -23,5 +24,6 @@ app.UseAuthorization();
 app.MapExamScheduleEndpoints();
 app.MapMarksEntryEndpoints();
 app.Run();
+
 
 
