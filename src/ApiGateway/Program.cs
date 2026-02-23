@@ -48,6 +48,7 @@ app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<ApiGateway.Middleware.ClaimsForwardingMiddleware>();
 app.MapReverseProxy();
 app.MapDefaultEndpoints();
 app.Run();
