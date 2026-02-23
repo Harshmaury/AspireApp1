@@ -75,6 +75,6 @@ function ut-all {
     Write-Host "`n=== TOTAL: $total | FAILED: $totalFailed ==="
 }
 
-function ut_identity_int { dotnet test 'src/Tests/Identity.IntegrationTests/Identity.IntegrationTests.csproj' -v q }
+function ut_identity_int { dotnet test 'src/Tests/Identity.IntegrationTests/Identity.IntegrationTests.csproj' -v normal 2>&1 | ue }
 
 
