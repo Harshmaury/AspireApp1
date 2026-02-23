@@ -289,6 +289,9 @@ services:
       OTEL_SERVICE_NAME: api-gateway
     ports:
       - "8080:8080"
+      - "8443:8443"
+    volumes:
+      - ./certs:/certs:ro
     depends_on:
       identity-api:
         condition: service_healthy
@@ -313,6 +316,8 @@ services:
       - notification-api
     networks:
       - ums-network
+
+
 
 
 

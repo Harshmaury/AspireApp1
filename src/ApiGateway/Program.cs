@@ -85,7 +85,8 @@ builder.Services.AddApiVersioning(options =>
 
 var app = builder.Build();
 
-app.UseSerilogDefaults();
+
+app.UseHttpsRedirection();
 app.UseGlobalExceptionHandler();
 app.UseCors();
 app.UseRateLimiter();
@@ -98,4 +99,5 @@ app.MapReverseProxy();
 app.MapDefaultEndpoints();
 
 app.Run();
+
 
