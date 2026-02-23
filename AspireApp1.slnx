@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/ApiGateway/ApiGateway.csproj" />
+    <Project Path="src/BFF/BFF.csproj" />
   </Folder>
   <Folder Name="/src/AppHost/">
     <Project Path="src/AppHost/AspireApp1.AppHost.csproj" />

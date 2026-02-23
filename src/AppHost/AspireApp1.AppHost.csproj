@@ -34,4 +34,8 @@
     <ProjectReference Include="..\Services\Faculty\Faculty.API\Faculty.API.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\BFF\BFF.csproj" />
+  </ItemGroup>
 </Project>
+

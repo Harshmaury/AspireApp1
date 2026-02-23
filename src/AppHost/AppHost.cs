@@ -64,4 +64,14 @@ builder.AddProject<Projects.ApiGateway>("api-gateway")
     .WithReference(facultyApi)
     .WithReference(hostelApi)
     .WaitFor(identityApi);
+// BFF
+builder.AddProject<Projects.BFF>("bff")
+    .WithHttpHealthCheck("/health")
+    .WithReference(identityApi)
+    .WithReference(studentApi)
+    .WithReference(academicApi)
+    .WithReference(attendanceApi)
+    .WithReference(feeApi)
+    .WaitFor(identityApi);
+
 builder.Build().Run();

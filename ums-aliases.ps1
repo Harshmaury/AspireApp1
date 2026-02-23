@@ -19,6 +19,7 @@ function ub {
         "shared"       = "src/Shared/UMS.SharedKernel/UMS.SharedKernel.csproj"
         "kafka"        = "src/Tests/Kafka.IntegrationTests/Kafka.IntegrationTests.csproj"
         "gateway"      = "src/ApiGateway/ApiGateway.csproj"
+        "bff"          = "src/BFF/BFF.csproj"
         "apphost"      = "src/Tests/AppHost.IntegrationTests/AppHost.IntegrationTests.csproj"
         "all"          = "AspireApp1.slnx"
     }
