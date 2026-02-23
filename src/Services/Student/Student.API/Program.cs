@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using UMS.SharedKernel.Extensions;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -35,6 +36,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddHostedService<StudentOutboxRelayService>();
 
 var app = builder.Build();
+app.UseGlobalExceptionHandler();
 app.UseExceptionHandler();
 
 using (var scope = app.Services.CreateScope())
@@ -49,6 +51,8 @@ app.UseAuthorization();
 app.MapStudentEndpoints();
 
 app.Run();
+
+
 
 
 

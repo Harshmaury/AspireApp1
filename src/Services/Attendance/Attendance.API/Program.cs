@@ -1,3 +1,4 @@
+using UMS.SharedKernel.Extensions;
 using Attendance.Application;
 using Attendance.Infrastructure;
 using Attendance.API.Endpoints;
@@ -13,6 +14,7 @@ builder.Services.AddAttendanceApplication();
 builder.Services.AddAttendanceInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+app.UseGlobalExceptionHandler();
 
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
@@ -24,4 +26,6 @@ app.UseMiddleware<Attendance.API.Middleware.TenantMiddleware>();
 app.UseHttpsRedirection();
 app.MapAttendanceEndpoints();
 app.Run();
+
+
 

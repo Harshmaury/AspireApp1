@@ -20,6 +20,7 @@
     <ProjectReference Include="..\Notification.Application\Notification.Application.csproj" />
     <ProjectReference Include="..\Notification.Infrastructure\Notification.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\ServiceDefaults\AspireApp1.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.SharedKernel\UMS.SharedKernel.csproj" />
   </ItemGroup>
 
 </Project>

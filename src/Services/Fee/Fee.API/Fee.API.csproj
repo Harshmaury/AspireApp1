@@ -21,6 +21,7 @@
     <ProjectReference Include="..\Fee.Application\Fee.Application.csproj" />
     <ProjectReference Include="..\Fee.Infrastructure\Fee.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\ServiceDefaults\AspireApp1.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.SharedKernel\UMS.SharedKernel.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Student.Infrastructure\Student.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\ServiceDefaults\AspireApp1.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.SharedKernel\UMS.SharedKernel.csproj" />
   </ItemGroup>
 
   <ItemGroup>

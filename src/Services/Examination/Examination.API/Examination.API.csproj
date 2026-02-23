@@ -21,6 +21,7 @@
     <ProjectReference Include="..\Examination.Application\Examination.Application.csproj" />
     <ProjectReference Include="..\Examination.Infrastructure\Examination.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\ServiceDefaults\AspireApp1.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.SharedKernel\UMS.SharedKernel.csproj" />
   </ItemGroup>
 
 </Project>

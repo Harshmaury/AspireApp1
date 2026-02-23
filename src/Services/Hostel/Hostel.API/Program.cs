@@ -1,3 +1,4 @@
+using UMS.SharedKernel.Extensions;
 using Hostel.API.Endpoints;
 using Hostel.API.Middleware;
 using Hostel.Application;
@@ -21,6 +22,7 @@ builder.Services.AddHostelApplication();
 builder.Services.AddHostelInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+app.UseGlobalExceptionHandler();
 
 app.MapDefaultEndpoints();
 app.UseAuthentication();
@@ -33,3 +35,5 @@ app.MapAllotmentEndpoints();
 app.MapComplaintEndpoints();
 
 app.Run();
+
+

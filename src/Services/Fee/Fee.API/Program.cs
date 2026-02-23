@@ -1,3 +1,4 @@
+using UMS.SharedKernel.Extensions;
 using Fee.Application;
 using Fee.Infrastructure;
 using Fee.API.Endpoints;
@@ -10,6 +11,7 @@ builder.Services.AddFeeInfrastructure(builder.Configuration);
 builder.Services.AddAuthentication("Bearer").AddJwtBearer();
 builder.Services.AddAuthorization();
 var app = builder.Build();
+app.UseGlobalExceptionHandler();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<FeeDbContext>();
@@ -22,3 +24,5 @@ app.MapFeeStructureEndpoints();
 app.MapFeePaymentEndpoints();
 app.MapScholarshipEndpoints();
 app.Run();
+
+

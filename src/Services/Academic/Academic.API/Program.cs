@@ -1,3 +1,4 @@
+using UMS.SharedKernel.Extensions;
 using Academic.Application;
 using Academic.Infrastructure;
 using Academic.API.Endpoints;
@@ -32,6 +33,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+app.UseGlobalExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
@@ -51,3 +53,4 @@ app.MapCurriculumEndpoints();
 app.MapAcademicCalendarEndpoints();
 
 app.Run();
+

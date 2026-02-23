@@ -1,3 +1,4 @@
+using UMS.SharedKernel.Extensions;
 using Faculty.Application;
 using Faculty.Infrastructure;
 using Faculty.API.Endpoints;
@@ -13,6 +14,7 @@ builder.Services.AddFacultyApplication();
 builder.Services.AddFacultyInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+app.UseGlobalExceptionHandler();
 
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
@@ -24,3 +26,5 @@ app.UseMiddleware<Faculty.API.Middleware.TenantMiddleware>();
 app.UseHttpsRedirection();
 app.MapFacultyEndpoints();
 app.Run();
+
+

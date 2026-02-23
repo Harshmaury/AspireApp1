@@ -1,3 +1,4 @@
+using UMS.SharedKernel.Extensions;
 using Examination.Application;
 using Examination.Infrastructure;
 using Examination.API.Endpoints;
@@ -10,6 +11,7 @@ builder.Services.AddExaminationInfrastructure(builder.Configuration);
 builder.Services.AddAuthentication("Bearer").AddJwtBearer();
 builder.Services.AddAuthorization();
 var app = builder.Build();
+app.UseGlobalExceptionHandler();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ExaminationDbContext>();
@@ -21,3 +23,5 @@ app.UseAuthorization();
 app.MapExamScheduleEndpoints();
 app.MapMarksEntryEndpoints();
 app.Run();
+
+

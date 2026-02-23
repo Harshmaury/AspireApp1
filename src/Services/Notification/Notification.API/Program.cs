@@ -1,3 +1,4 @@
+using UMS.SharedKernel.Extensions;
 using Notification.Application;
 using Notification.Infrastructure;
 using Notification.Infrastructure.Persistence;
@@ -7,6 +8,9 @@ builder.AddServiceDefaults();
 builder.Services.AddNotificationApplication();
 builder.Services.AddNotificationInfrastructure(builder.Configuration);
 var app = builder.Build();
+app.UseGlobalExceptionHandler();
 await Notification.Infrastructure.DependencyInjection.SeedDefaultTemplatesAsync(app.Services);
 app.MapDefaultEndpoints();
 app.Run();
+
+

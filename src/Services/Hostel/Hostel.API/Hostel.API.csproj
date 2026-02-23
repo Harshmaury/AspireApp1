@@ -16,5 +16,6 @@
     <ProjectReference Include="..\Hostel.Application\Hostel.Application.csproj" />
     <ProjectReference Include="..\Hostel.Infrastructure\Hostel.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\ServiceDefaults\AspireApp1.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.SharedKernel\UMS.SharedKernel.csproj" />
   </ItemGroup>
 </Project>

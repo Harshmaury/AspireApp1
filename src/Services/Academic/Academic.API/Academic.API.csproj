@@ -4,6 +4,7 @@
     <ProjectReference Include="..\Academic.Application\Academic.Application.csproj" />
     <ProjectReference Include="..\Academic.Infrastructure\Academic.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\ServiceDefaults\AspireApp1.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.SharedKernel\UMS.SharedKernel.csproj" />
   </ItemGroup>
 
   <ItemGroup>

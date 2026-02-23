@@ -1,3 +1,4 @@
+using UMS.SharedKernel.Extensions;
 using Identity.API.Services;
 using Identity.Application;
 using Identity.Application.Interfaces;
@@ -50,6 +51,7 @@ builder.Services.AddOpenIddict()
     });
 
 var app = builder.Build();
+app.UseGlobalExceptionHandler();
 await Identity.API.Services.IdentitySeeder.SeedAsync(app.Services);
 
 using (var scope = app.Services.CreateScope())
@@ -103,6 +105,8 @@ app.MapAuthEndpoints();
 app.MapTenantEndpoints();
 
 app.Run();
+
+
 
 
 
