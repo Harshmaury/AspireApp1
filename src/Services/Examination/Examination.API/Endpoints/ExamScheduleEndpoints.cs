@@ -5,7 +5,7 @@ public static class ExamScheduleEndpoints
 {
     public static void MapExamScheduleEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/exam-schedules").RequireAuthorization();
+        var group = app.MapGroup("/api/exam-schedules");
         group.MapPost("/", async (CreateExamScheduleCommand cmd, IMediator mediator, CancellationToken ct) =>
         {
             var id = await mediator.Send(cmd, ct);

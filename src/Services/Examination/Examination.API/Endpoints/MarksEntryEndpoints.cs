@@ -5,7 +5,7 @@ public static class MarksEntryEndpoints
 {
     public static void MapMarksEntryEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/marks").RequireAuthorization();
+        var group = app.MapGroup("/api/marks");
         group.MapPost("/", async (EnterMarksCommand cmd, IMediator mediator, CancellationToken ct) =>
         {
             var id = await mediator.Send(cmd, ct);

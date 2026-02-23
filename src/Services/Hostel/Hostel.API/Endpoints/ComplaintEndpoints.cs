@@ -8,7 +8,7 @@ public static class ComplaintEndpoints
 {
     public static void MapComplaintEndpoints(this WebApplication app)
     {
-        var grp = app.MapGroup("/api/complaints").RequireAuthorization();
+        var grp = app.MapGroup("/api/complaints");
 
         grp.MapGet("/", async (HttpContext ctx, IMediator med, ComplaintStatus? status, int page = 1, int pageSize = 20) =>
         {

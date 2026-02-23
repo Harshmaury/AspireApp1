@@ -9,7 +9,7 @@ public static class AttendanceEndpoints
 {
     public static void MapAttendanceEndpoints(this WebApplication app)
     {
-        var grp = app.MapGroup("/api").RequireAuthorization();
+        var grp = app.MapGroup("/api");
 
         // --- Attendance Records ---
         grp.MapPost("/attendance", async (MarkAttendanceCommand cmd, IMediator mediator) =>

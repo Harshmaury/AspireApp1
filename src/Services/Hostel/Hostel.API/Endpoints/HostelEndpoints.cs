@@ -8,7 +8,7 @@ public static class HostelEndpoints
 {
     public static void MapHostelEndpoints(this WebApplication app)
     {
-        var grp = app.MapGroup("/api/hostels").RequireAuthorization();
+        var grp = app.MapGroup("/api/hostels");
 
         grp.MapGet("/", async (HttpContext ctx, IMediator med, int page = 1, int pageSize = 20) =>
         {

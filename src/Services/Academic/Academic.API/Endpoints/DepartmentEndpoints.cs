@@ -8,7 +8,7 @@ public static class DepartmentEndpoints
 {
     public static void MapDepartmentEndpoints(this IEndpointRouteBuilder app)
     {
-        var grp = app.MapGroup("/api/departments").RequireAuthorization();
+        var grp = app.MapGroup("/api/departments");
 
         grp.MapGet("/", async (HttpContext ctx, IMediator mediator, CancellationToken ct) =>
         {

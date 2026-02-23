@@ -8,7 +8,7 @@ public static class CourseEndpoints
 {
     public static void MapCourseEndpoints(this IEndpointRouteBuilder app)
     {
-        var grp = app.MapGroup("/api/courses").RequireAuthorization();
+        var grp = app.MapGroup("/api/courses");
 
         grp.MapGet("/department/{departmentId:guid}", async (Guid departmentId, HttpContext ctx, IMediator mediator, CancellationToken ct) =>
         {

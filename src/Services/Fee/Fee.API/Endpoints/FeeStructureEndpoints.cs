@@ -5,7 +5,7 @@ public static class FeeStructureEndpoints
 {
     public static void MapFeeStructureEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/fee-structures").RequireAuthorization();
+        var group = app.MapGroup("/api/fee-structures");
         group.MapPost("/", async (CreateFeeStructureCommand cmd, IMediator mediator, CancellationToken ct) =>
         {
             var id = await mediator.Send(cmd, ct);

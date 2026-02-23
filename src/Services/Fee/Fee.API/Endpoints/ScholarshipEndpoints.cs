@@ -5,7 +5,7 @@ public static class ScholarshipEndpoints
 {
     public static void MapScholarshipEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/scholarships").RequireAuthorization();
+        var group = app.MapGroup("/api/scholarships");
         group.MapPost("/", async (CreateScholarshipCommand cmd, IMediator mediator, CancellationToken ct) =>
         {
             var id = await mediator.Send(cmd, ct);

@@ -10,7 +10,7 @@ public static class FacultyEndpoints
 {
     public static void MapFacultyEndpoints(this WebApplication app)
     {
-        var grp = app.MapGroup("/api").RequireAuthorization();
+        var grp = app.MapGroup("/api");
 
         // --- Faculty ---
         grp.MapPost("/faculty", async (CreateFacultyCommand cmd, IMediator mediator) =>

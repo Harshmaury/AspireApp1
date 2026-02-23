@@ -5,7 +5,7 @@ public static class FeePaymentEndpoints
 {
     public static void MapFeePaymentEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/fee-payments").RequireAuthorization();
+        var group = app.MapGroup("/api/fee-payments");
         group.MapPost("/", async (CreateFeePaymentCommand cmd, IMediator mediator, CancellationToken ct) =>
         {
             var id = await mediator.Send(cmd, ct);

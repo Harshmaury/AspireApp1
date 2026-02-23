@@ -8,7 +8,7 @@ public static class AcademicCalendarEndpoints
 {
     public static void MapAcademicCalendarEndpoints(this IEndpointRouteBuilder app)
     {
-        var grp = app.MapGroup("/api/academic-calendars").RequireAuthorization();
+        var grp = app.MapGroup("/api/academic-calendars");
 
         grp.MapGet("/", async (HttpContext ctx, IMediator mediator, CancellationToken ct) =>
         {

@@ -7,7 +7,7 @@ public static class AllotmentEndpoints
 {
     public static void MapAllotmentEndpoints(this WebApplication app)
     {
-        var grp = app.MapGroup("/api/allotments").RequireAuthorization();
+        var grp = app.MapGroup("/api/allotments");
 
         grp.MapGet("/", async (HttpContext ctx, IMediator med, int page = 1, int pageSize = 20) =>
         {

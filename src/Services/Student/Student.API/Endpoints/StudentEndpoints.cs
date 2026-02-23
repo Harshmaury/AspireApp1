@@ -1,10 +1,9 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Student.Application.Features.Students.Commands;
 using Student.Application.Features.Students.Queries;
-using System.Security.Claims;
 
 namespace Student.API.Endpoints;
 
@@ -25,7 +24,7 @@ public static class StudentEndpoints
                 new CreateStudentCommand(tenantId, req.UserId,
                     req.FirstName, req.LastName, req.Email), ct);
             return Results.Created($"/api/students/{result.StudentId}", result);
-        }).RequireAuthorization();
+        });
 
         app.MapGet("/api/students/{id:guid}", async (
             Guid id,
@@ -38,7 +37,7 @@ public static class StudentEndpoints
 
             var result = await sender.Send(new GetStudentByIdQuery(id, tenantId), ct);
             return result is null ? Results.NotFound() : Results.Ok(result);
-        }).RequireAuthorization();
+        });
 
         app.MapPut("/api/students/{id:guid}/admit", async (
             Guid id,
@@ -51,15 +50,15 @@ public static class StudentEndpoints
 
             await sender.Send(new AdmitStudentCommand(id, tenantId), ct);
             return Results.NoContent();
-        }).RequireAuthorization();
+        });
 
         return app;
     }
 
     private static Guid GetTenantId(HttpContext httpContext)
     {
-        var claim = httpContext.User.FindFirstValue("tenant_id");
-        return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
+        var header = httpContext.Request.Headers["X-Tenant-Id"].FirstOrDefault();
+        return Guid.TryParse(header, out var id) ? id : Guid.Empty;
     }
 }
 
