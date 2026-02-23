@@ -6,12 +6,14 @@ using Examination.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
+builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("ExaminationDb");
 builder.Services.AddExaminationApplication();
 builder.Services.AddExaminationInfrastructure(builder.Configuration);
 builder.Services.AddAuthentication("Bearer").AddJwtBearer();
 builder.Services.AddAuthorization();
 var app = builder.Build();
+app.UseSerilogDefaults();
 app.UseGlobalExceptionHandler();
 using (var scope = app.Services.CreateScope())
 {
@@ -24,6 +26,7 @@ app.UseAuthorization();
 app.MapExamScheduleEndpoints();
 app.MapMarksEntryEndpoints();
 app.Run();
+
 
 
 

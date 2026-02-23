@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("HostelDb");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -23,6 +24,7 @@ builder.Services.AddHostelApplication();
 builder.Services.AddHostelInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+app.UseSerilogDefaults();
 app.UseGlobalExceptionHandler();
 
 app.MapDefaultEndpoints();
@@ -36,6 +38,7 @@ app.MapAllotmentEndpoints();
 app.MapComplaintEndpoints();
 
 app.Run();
+
 
 
 

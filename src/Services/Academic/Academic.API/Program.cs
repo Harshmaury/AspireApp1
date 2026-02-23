@@ -9,6 +9,7 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("AcademicDb");
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -34,6 +35,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+app.UseSerilogDefaults();
 app.UseGlobalExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -54,5 +56,6 @@ app.MapCurriculumEndpoints();
 app.MapAcademicCalendarEndpoints();
 
 app.Run();
+
 
 

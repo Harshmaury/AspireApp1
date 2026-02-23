@@ -12,6 +12,7 @@ using Student.API.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("StudentDb");
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -37,6 +38,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddHostedService<StudentOutboxRelayService>();
 
 var app = builder.Build();
+app.UseSerilogDefaults();
 app.UseGlobalExceptionHandler();
 app.UseExceptionHandler();
 
@@ -52,6 +54,7 @@ app.UseAuthorization();
 app.MapStudentEndpoints();
 
 app.Run();
+
 
 
 

@@ -15,6 +15,7 @@ using Identity.Application.Features.Auth.Commands;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
+builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("IdentityDb");
 
 builder.Services.AddApplication();
@@ -52,6 +53,7 @@ builder.Services.AddOpenIddict()
     });
 
 var app = builder.Build();
+app.UseSerilogDefaults();
 app.UseGlobalExceptionHandler();
 await Identity.API.Services.IdentitySeeder.SeedAsync(app.Services);
 
@@ -106,6 +108,7 @@ app.MapAuthEndpoints();
 app.MapTenantEndpoints();
 
 app.Run();
+
 
 
 

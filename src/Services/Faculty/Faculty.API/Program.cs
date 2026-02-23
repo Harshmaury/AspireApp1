@@ -7,6 +7,7 @@ using Faculty.API.Middleware;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("FacultyDb");
 builder.Services.AddOpenApi();
 builder.Services.AddAuthorization();
@@ -15,6 +16,7 @@ builder.Services.AddFacultyApplication();
 builder.Services.AddFacultyInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+app.UseSerilogDefaults();
 app.UseGlobalExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -27,6 +29,7 @@ app.UseMiddleware<Faculty.API.Middleware.TenantMiddleware>();
 app.UseHttpsRedirection();
 app.MapFacultyEndpoints();
 app.Run();
+
 
 
 

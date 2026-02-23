@@ -7,6 +7,7 @@ using Attendance.API.Middleware;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("AttendanceDb");
 builder.Services.AddOpenApi();
 builder.Services.AddAuthorization();
@@ -15,6 +16,7 @@ builder.Services.AddAttendanceApplication();
 builder.Services.AddAttendanceInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+app.UseSerilogDefaults();
 app.UseGlobalExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -27,6 +29,7 @@ app.UseMiddleware<Attendance.API.Middleware.TenantMiddleware>();
 app.UseHttpsRedirection();
 app.MapAttendanceEndpoints();
 app.Run();
+
 
 
 
