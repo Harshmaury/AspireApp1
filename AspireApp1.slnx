@@ -76,6 +76,7 @@
   </Folder>
   <Folder Name="/src/Tests/">
     <Project Path="src/Tests/AppHost.IntegrationTests/AppHost.IntegrationTests.csproj" />
+    <Project Path="src/Tests/Identity.IntegrationTests/Identity.IntegrationTests.csproj" />
     <Project Path="src/Tests/Kafka.IntegrationTests/Kafka.IntegrationTests.csproj" />
     <Project Path="src/Tests/TenantIsolation.Tests/TenantIsolation.Tests.csproj" />
   </Folder>
