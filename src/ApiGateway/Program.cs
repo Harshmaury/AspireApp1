@@ -18,7 +18,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         options.Authority = builder.Configuration["Auth:Authority"];
         options.Audience  = builder.Configuration["Auth:Audience"];
-        options.RequireHttpsMetadata = false;
+        options.RequireHttpsMetadata = builder.Configuration.GetValue<bool>("Auth:RequireHttpsMetadata", false);
     });
 
 // Authorization
@@ -98,3 +98,4 @@ app.MapReverseProxy();
 app.MapDefaultEndpoints();
 
 app.Run();
+
