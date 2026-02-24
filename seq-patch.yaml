@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seq
+  namespace: ums
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seq
+  template:
+    metadata:
+      labels:
+        app: seq
+    spec:
+      containers:
+      - name: seq
+        image: datalust/seq:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5341
+        - containerPort: 80
+        env:
+        - name: ACCEPT_EULA
+          value: "Y"
+        - name: SEQ_DATA_PATH
+          value: /data
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 250m
+          limits:
+            memory: 512Mi
+            cpu: 500m
+        volumeMounts:
+        - name: seq-data
+          mountPath: /data
+      volumes:
+      - name: seq-data
+        emptyDir: {}

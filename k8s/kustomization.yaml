@@ -1,0 +1,42 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ums
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - infra/postgres-pvc.yaml
+  - infra/postgres-statefulset.yaml
+  - infra/postgres-service.yaml
+  - infra/zookeeper-deployment.yaml
+  - infra/zookeeper-service.yaml
+  - infra/kafka-deployment.yaml
+  - infra/kafka-service.yaml
+  - infra/seq-deployment.yaml
+  - infra/seq-service.yaml
+  - infra/jaeger-deployment.yaml
+  - infra/jaeger-service.yaml
+  - services/identity-api-deployment.yaml
+  - services/identity-api-service.yaml
+  - services/identity-hpa.yaml
+  - services/academic-api-deployment.yaml
+  - services/academic-api-service.yaml
+  - services/student-api-deployment.yaml
+  - services/student-api-service.yaml
+  - services/attendance-api-deployment.yaml
+  - services/attendance-api-service.yaml
+  - services/examination-api-deployment.yaml
+  - services/examination-api-service.yaml
+  - services/fee-api-deployment.yaml
+  - services/fee-api-service.yaml
+  - services/notification-api-deployment.yaml
+  - services/notification-api-service.yaml
+  - services/faculty-api-deployment.yaml
+  - services/faculty-api-service.yaml
+  - services/hostel-api-deployment.yaml
+  - services/hostel-api-service.yaml
+  - gateway/deployment.yaml
+  - gateway/service.yaml
+  - gateway/hpa.yaml
+  - bff/deployment.yaml
+  - bff/service.yaml
