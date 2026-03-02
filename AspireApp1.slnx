@@ -6,6 +6,12 @@
   <Folder Name="/src/AppHost/">
     <Project Path="src/AppHost/AspireApp1.AppHost.csproj" />
   </Folder>
+  <Folder Name="/src/Cli/">
+    <Project Path="src/Cli/Ums.Cli/Ums.Cli.csproj" />
+  </Folder>
+  <Folder Name="/src/Governance/">
+    <Project Path="src/Governance/Aegis.Core/Aegis.Core.csproj" />
+  </Folder>
   <Folder Name="/src/ServiceDefaults/">
     <Project Path="src/ServiceDefaults/AspireApp1.ServiceDefaults.csproj" />
   </Folder>
@@ -16,9 +22,6 @@
     <Project Path="src/Services/Academic/Academic.Domain/Academic.Domain.csproj" />
     <Project Path="src/Services/Academic/Academic.Infrastructure/Academic.Infrastructure.csproj" />
     <Project Path="src/Services/Academic/Academic.Tests/Academic.Tests.csproj" />
-  </Folder>
-  <Folder Name="/src/Services/ApiService/">
-    <Project Path="src/Services/ApiService/AspireApp1.ApiService.csproj" />
   </Folder>
   <Folder Name="/src/Services/Attendance/">
     <Project Path="src/Services/Attendance/Attendance.API/Attendance.API.csproj" />
@@ -35,6 +38,10 @@
     <Project Path="src/Services/Examination/Examination.Tests/Examination.Tests.csproj" />
   </Folder>
   <Folder Name="/src/Services/Faculty/">
+    <Project Path="src/Services/Faculty/Faculty.API/Faculty.API.csproj" />
+    <Project Path="src/Services/Faculty/Faculty.Application/Faculty.Application.csproj" />
+    <Project Path="src/Services/Faculty/Faculty.Domain/Faculty.Domain.csproj" />
+    <Project Path="src/Services/Faculty/Faculty.Infrastructure/Faculty.Infrastructure.csproj" />
     <Project Path="src/Services/Faculty/Faculty.Tests/Faculty.Tests.csproj" />
   </Folder>
   <Folder Name="/src/Services/Fee/">
@@ -80,8 +87,5 @@
     <Project Path="src/Tests/Identity.IntegrationTests/Identity.IntegrationTests.csproj" />
     <Project Path="src/Tests/Kafka.IntegrationTests/Kafka.IntegrationTests.csproj" />
     <Project Path="src/Tests/TenantIsolation.Tests/TenantIsolation.Tests.csproj" />
-  </Folder>
-  <Folder Name="/src/Web/">
-    <Project Path="src/Web/AspireApp1.Web.csproj" />
   </Folder>
 </Solution>

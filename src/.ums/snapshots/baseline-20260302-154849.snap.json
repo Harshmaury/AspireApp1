@@ -1,0 +1,1978 @@
+{
+  "FormatVersion": "2.0",
+  "CapturedAt": "2026-03-02T15:48:49.9253728Z",
+  "ContentHash": "e3b7ed6bf30efb9c46de33f37963ee38854b86965c945fa04ee4a077f6d7b7c7",
+  "Services": [
+    {
+      "Name": "ApiGateway",
+      "ServiceHash": "9367295bbc98a610ee95eaffaa175589a6cb8c069a782b9b9b2a403de9cf7eb3",
+      "Types": [
+        {
+          "FullName": "ApiGateway.Middleware.ClaimsForwardingMiddleware",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "InvokeAsync:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "AspireApp1.AppHost",
+      "ServiceHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "Types": [],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "Ums.Cli",
+      "ServiceHash": "e474e7ec670ea483faadc74d8e1a71f47abb1f77f250bbf1543a11fdc3b0c6dd",
+      "Types": [
+        {
+          "FullName": "Ums.Cli.Adapters.SnapshotAdapter",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Build:System.CommandLine.Command"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Ums.Cli.Adapters.VerifyBoundariesAdapter",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Build:System.CommandLine.Command"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Ums.Cli.Adapters.VerifyDependenciesAdapter",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Build:System.CommandLine.Command"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Ums.Cli.Adapters.VerifyEventContractsAdapter",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Build:System.CommandLine.Command"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Ums.Cli.Adapters.VerifyRegionAdapter",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Build:System.CommandLine.Command"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Ums.Cli.Adapters.VerifyResilienceAdapter",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Build:System.CommandLine.Command"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Ums.Cli.ExitCodeResolver",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Resolve:int",
+            "ApplyAndExit:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Ums.Cli.Rendering.CompactReportRenderer",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Render:string"
+          ],
+          "Interfaces": [
+            "Ums.Cli.Rendering.IReportRenderer"
+          ],
+          "BaseTypes": [
+            "object",
+            "Ums.Cli.Rendering.IReportRenderer"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Ums.Cli.Rendering.IReportRenderer",
+          "Layer": "Unknown",
+          "Kind": "Interface",
+          "Methods": [
+            "Render:string"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Ums.Cli.Rendering.JsonReportRenderer",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Render:string"
+          ],
+          "Interfaces": [
+            "Ums.Cli.Rendering.IReportRenderer"
+          ],
+          "BaseTypes": [
+            "object",
+            "Ums.Cli.Rendering.IReportRenderer"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Ums.Cli.Rendering.RendererFactory",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Create:Ums.Cli.Rendering.IReportRenderer"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Ums.Cli.Rendering.TextReportRenderer",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Render:string"
+          ],
+          "Interfaces": [
+            "Ums.Cli.Rendering.IReportRenderer"
+          ],
+          "BaseTypes": [
+            "object",
+            "Ums.Cli.Rendering.IReportRenderer"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "AppHost.IntegrationTests",
+      "ServiceHash": "5f190fe9430e4d0616acd8fa167e8a410c2c1a8352f0ad4544c191f320f29044",
+      "Types": [
+        {
+          "FullName": "AppHost.IntegrationTests.Examination.ExaminationIntegrationTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "CreateExamSchedule_Valid_Returns201:System.Threading.Tasks.Task",
+            "EnterMarks_Valid_Returns201:System.Threading.Tasks.Task",
+            "SubmitMarks_Returns204:System.Threading.Tasks.Task",
+            "SubmitAndApproveMarks_Returns204:System.Threading.Tasks.Task",
+            "FullMarksFlow_SubmitApprovePublish_Returns204:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [
+            "Xunit.IClassFixture\u003CAppHost.IntegrationTests.Helpers.ServiceFixture\u003CProgram, Examination.Infrastructure.Persistence.ExaminationDbContext\u003E\u003E"
+          ],
+          "BaseTypes": [
+            "object",
+            "Xunit.IClassFixture\u003CAppHost.IntegrationTests.Helpers.ServiceFixture\u003CProgram, Examination.Infrastructure.Persistence.ExaminationDbContext\u003E\u003E"
+          ],
+          "Attributes": [
+            "CollectionAttribute"
+          ],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AppHost.IntegrationTests.Fee.FeeIntegrationTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "CreateFeeStructure_Valid_Returns201:System.Threading.Tasks.Task",
+            "CreateFeePayment_Valid_Returns201:System.Threading.Tasks.Task",
+            "MarkPaymentSuccess_Returns204:System.Threading.Tasks.Task",
+            "MarkPaymentFailed_Returns204:System.Threading.Tasks.Task",
+            "CreateScholarship_Valid_Returns201:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [
+            "Xunit.IClassFixture\u003CAppHost.IntegrationTests.Helpers.ServiceFixture\u003CProgram, Fee.Infrastructure.Persistence.FeeDbContext\u003E\u003E"
+          ],
+          "BaseTypes": [
+            "object",
+            "Xunit.IClassFixture\u003CAppHost.IntegrationTests.Helpers.ServiceFixture\u003CProgram, Fee.Infrastructure.Persistence.FeeDbContext\u003E\u003E"
+          ],
+          "Attributes": [
+            "CollectionAttribute"
+          ],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AppHost.IntegrationTests.Helpers.PostgresContainerFixture",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "InitializeAsync:System.Threading.Tasks.Task",
+            "DisposeAsync:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [
+            "Xunit.IAsyncLifetime"
+          ],
+          "BaseTypes": [
+            "object",
+            "Xunit.IAsyncLifetime"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AppHost.IntegrationTests.Helpers.ServiceFixture\u003CTProgram, TDbContext\u003E",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "InitializeAsync:System.Threading.Tasks.Task",
+            "DisposeAsync:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [
+            "Xunit.IAsyncLifetime"
+          ],
+          "BaseTypes": [
+            "object",
+            "Xunit.IAsyncLifetime"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AppHost.IntegrationTests.Helpers.TestTenant",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AppHost.IntegrationTests.Helpers.ServiceWebFactory\u003CTProgram, TDbContext\u003E",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "EnsureCreatedAsync:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory\u003CTProgram\u003E"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AppHost.IntegrationTests.Helpers.TestAuthHandler",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "Microsoft.AspNetCore.Authentication.AuthenticationHandler\u003CMicrosoft.AspNetCore.Authentication.AuthenticationSchemeOptions\u003E"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AppHost.IntegrationTests.Student.StudentIntegrationTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "CreateStudent_ValidRequest_Returns201WithStudentNumber:System.Threading.Tasks.Task",
+            "CreateStudent_DuplicateUserId_Returns500:System.Threading.Tasks.Task",
+            "GetStudent_Existing_Returns200WithData:System.Threading.Tasks.Task",
+            "GetStudent_NotFound_Returns404:System.Threading.Tasks.Task",
+            "CreateStudent_ThenCheckStudentNumber_StartsWithSTU:System.Threading.Tasks.Task",
+            "AdmitStudent_ValidStudent_Returns204:System.Threading.Tasks.Task",
+            "AdmitStudent_NotFound_Returns500:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [
+            "Xunit.IClassFixture\u003CAppHost.IntegrationTests.Helpers.ServiceFixture\u003CProgram, Student.Infrastructure.Persistence.StudentDbContext\u003E\u003E"
+          ],
+          "BaseTypes": [
+            "object",
+            "Xunit.IClassFixture\u003CAppHost.IntegrationTests.Helpers.ServiceFixture\u003CProgram, Student.Infrastructure.Persistence.StudentDbContext\u003E\u003E"
+          ],
+          "Attributes": [
+            "CollectionAttribute"
+          ],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AppHost.IntegrationTests.UnitTest1",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Test1:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AutoGeneratedProgram",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "TestSDKAutoGeneratedCode"
+          ],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "Identity.IntegrationTests",
+      "ServiceHash": "4d9784f0fc6d9f6a975c3d457009708db364f1a582c0235e8cad8b832cead508",
+      "Types": [
+        {
+          "FullName": "Identity.IntegrationTests.Fixtures.IdentityIntegrationFixture",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "InitializeAsync:System.Threading.Tasks.Task",
+            "DisposeAsync:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [
+            "Xunit.IAsyncLifetime"
+          ],
+          "BaseTypes": [
+            "object",
+            "Xunit.IAsyncLifetime"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Identity.IntegrationTests.IdentityIntegrationCollection",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [
+            "Xunit.ICollectionFixture\u003CIdentity.IntegrationTests.Fixtures.IdentityIntegrationFixture\u003E"
+          ],
+          "BaseTypes": [
+            "object",
+            "Xunit.ICollectionFixture\u003CIdentity.IntegrationTests.Fixtures.IdentityIntegrationFixture\u003E"
+          ],
+          "Attributes": [
+            "CollectionDefinitionAttribute"
+          ],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Identity.IntegrationTests.Tests.OpenIddictTokenFlowTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "PasswordGrant_ValidCredentials_Returns200WithAccessToken:System.Threading.Tasks.Task",
+            "PasswordGrant_InvalidPassword_Returns400WithInvalidGrant:System.Threading.Tasks.Task",
+            "PasswordGrant_UnknownUser_Returns400WithInvalidGrant:System.Threading.Tasks.Task",
+            "RefreshToken_ValidRefreshToken_ReturnsNewAccessToken:System.Threading.Tasks.Task",
+            "RefreshToken_FakeToken_Returns400:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "CollectionAttribute"
+          ],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AutoGeneratedProgram",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "TestSDKAutoGeneratedCode"
+          ],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "Kafka.IntegrationTests",
+      "ServiceHash": "588b4b5dd8fc6a41caa9857ff624f5eb57ca30ee7edffc2973cbf52588057909",
+      "Types": [
+        {
+          "FullName": "Kafka.IntegrationTests.Fixtures.KafkaPostgresFixture",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "InitializeAsync:System.Threading.Tasks.Task",
+            "DisposeAsync:System.Threading.Tasks.Task",
+            "CreateConsumer:Confluent.Kafka.IConsumer\u003Cstring, string\u003E",
+            "ConsumeOneAsync:System.Threading.Tasks.Task\u003CConfluent.Kafka.ConsumeResult\u003Cstring, string\u003E?\u003E"
+          ],
+          "Interfaces": [
+            "Xunit.IAsyncLifetime"
+          ],
+          "BaseTypes": [
+            "object",
+            "Xunit.IAsyncLifetime"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Kafka.IntegrationTests.KafkaPostgresCollection",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [
+            "Xunit.ICollectionFixture\u003CKafka.IntegrationTests.Fixtures.KafkaPostgresFixture\u003E"
+          ],
+          "BaseTypes": [
+            "object",
+            "Xunit.ICollectionFixture\u003CKafka.IntegrationTests.Fixtures.KafkaPostgresFixture\u003E"
+          ],
+          "Attributes": [
+            "CollectionDefinitionAttribute"
+          ],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Kafka.IntegrationTests.Tests.AcademicOutboxRelayTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Relay_publishes_outbox_message_to_academic_events_topic:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "CollectionAttribute"
+          ],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Kafka.IntegrationTests.Tests.ExaminationOutboxRelayTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Relay_publishes_outbox_message_to_examination_events_topic:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "CollectionAttribute"
+          ],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Kafka.IntegrationTests.Tests.FeeOutboxRelayTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Relay_publishes_outbox_message_to_fee_events_topic:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "CollectionAttribute"
+          ],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Kafka.IntegrationTests.Tests.HostelOutboxRelayTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Relay_publishes_outbox_message_to_hostel_events_topic:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "CollectionAttribute"
+          ],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Kafka.IntegrationTests.Tests.StudentOutboxRelayTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Relay_publishes_outbox_message_to_student_events_topic:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "CollectionAttribute"
+          ],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AutoGeneratedProgram",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "TestSDKAutoGeneratedCode"
+          ],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "TenantIsolation.Tests",
+      "ServiceHash": "5b7d7749f2f050d1ed267eae3be666b3e7aa14c223e79c161a674a9d1f12ba89",
+      "Types": [
+        {
+          "FullName": "TenantIsolation.Tests.Attendance.AttendanceIsolationTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "AttendanceRecord_GetById_OwnTenant_Returns:System.Threading.Tasks.Task",
+            "AttendanceRecord_GetById_CrossTenant_ReturnsNull:System.Threading.Tasks.Task",
+            "AttendanceRecord_GetByStudentCourse_CrossTenant_ReturnsEmpty:System.Threading.Tasks.Task",
+            "AttendanceRecord_GetByStudentCourse_OwnTenant_Returns:System.Threading.Tasks.Task",
+            "Condonation_GetById_CrossTenant_ReturnsNull:System.Threading.Tasks.Task",
+            "Condonation_GetByStudent_CrossTenant_ReturnsEmpty:System.Threading.Tasks.Task",
+            "Condonation_GetByStudent_OwnTenant_Returns:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "TenantIsolation.Tests.Examination.ExaminationIsolationTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "ExamSchedule_GetById_OwnTenant_Returns:System.Threading.Tasks.Task",
+            "ExamSchedule_GetById_CrossTenant_ReturnsNull:System.Threading.Tasks.Task",
+            "MarksEntry_GetByStudent_OwnTenant_Returns:System.Threading.Tasks.Task",
+            "MarksEntry_GetByStudent_CrossTenant_ReturnsEmpty:System.Threading.Tasks.Task",
+            "ResultCard_GetByStudent_CrossTenant_ReturnsEmpty:System.Threading.Tasks.Task",
+            "ResultCard_GetByStudentSemester_CrossTenant_ReturnsNull:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "TenantIsolation.Tests.Fee.FeeIsolationTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "FeeStructure_GetById_OwnTenant_Returns:System.Threading.Tasks.Task",
+            "FeeStructure_GetById_CrossTenant_ReturnsNull:System.Threading.Tasks.Task",
+            "FeePayment_GetByStudent_OwnTenant_Returns:System.Threading.Tasks.Task",
+            "FeePayment_GetByStudent_CrossTenant_ReturnsEmpty:System.Threading.Tasks.Task",
+            "FeePayment_GetById_CrossTenant_ReturnsNull:System.Threading.Tasks.Task",
+            "Scholarship_GetByStudent_CrossTenant_ReturnsEmpty:System.Threading.Tasks.Task",
+            "Scholarship_GetById_CrossTenant_ReturnsNull:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "TenantIsolation.Tests.Helpers.DbFactory",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Create:T"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "TenantIsolation.Tests.Hostel.HostelIsolationTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Hostel_GetById_OwnTenant_Returns:System.Threading.Tasks.Task",
+            "Hostel_GetById_CrossTenant_ReturnsNull:System.Threading.Tasks.Task",
+            "Room_GetById_CrossTenant_ReturnsNull:System.Threading.Tasks.Task",
+            "Room_GetById_OwnTenant_Returns:System.Threading.Tasks.Task",
+            "Allotment_GetById_CrossTenant_ReturnsNull:System.Threading.Tasks.Task",
+            "Allotment_GetActiveByStudent_CrossTenant_ReturnsNull:System.Threading.Tasks.Task",
+            "Complaint_GetById_CrossTenant_ReturnsNull:System.Threading.Tasks.Task",
+            "Complaint_GetByStudent_CrossTenant_ReturnsEmpty:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "TenantIsolation.Tests.Student.StudentIsolationTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "GetByIdAsync_OwnTenant_ReturnsRecord:System.Threading.Tasks.Task",
+            "GetByIdAsync_CrossTenant_ReturnsNull:System.Threading.Tasks.Task",
+            "GetByUserIdAsync_CrossTenant_ReturnsNull:System.Threading.Tasks.Task",
+            "ExistsAsync_CrossTenant_ReturnsFalse:System.Threading.Tasks.Task",
+            "ExistsAsync_OwnTenant_ReturnsTrue:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AutoGeneratedProgram",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "TestSDKAutoGeneratedCode"
+          ],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "Academic.Tests",
+      "ServiceHash": "695636dd92758ea6dfa5ce0a4fd9bc65b865429aaba42c065406aa97bc5add00",
+      "Types": [
+        {
+          "FullName": "Academic.Tests.Application.CreateCourseHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCommand_ReturnsCourseDto:System.Threading.Tasks.Task",
+            "Handle_DuplicateCode_ThrowsException:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Academic.Tests.Application.CreateDepartmentHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCommand_ReturnsDepartmentDto:System.Threading.Tasks.Task",
+            "Handle_DuplicateCode_ThrowsException:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Academic.Tests.Domain.CourseTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidInput_ReturnsCourse:void",
+            "Create_InvalidCredits_ThrowsException:void",
+            "Publish_DraftCourse_SetsPublished:void",
+            "Publish_RetiredCourse_ThrowsException:void",
+            "Publish_RaisesCoursePublishedEvent:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Academic.Tests.Domain.DepartmentTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidInput_ReturnsDepartment:void",
+            "Create_EmptyName_ThrowsException:void",
+            "Create_EmptyCode_ThrowsException:void",
+            "Deactivate_ActiveDepartment_SetsInactive:void",
+            "Deactivate_AlreadyInactive_ThrowsException:void",
+            "Create_RaisesDomainEvent:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Academic.Tests.Domain.ProgrammeTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidInput_ReturnsProgramme:void",
+            "Create_InvalidDuration_ThrowsException:void",
+            "Activate_DraftProgramme_SetsActive:void",
+            "Activate_RetiredProgramme_ThrowsException:void",
+            "Activate_RaisesProgrammeActivatedEvent:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AutoGeneratedProgram",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "TestSDKAutoGeneratedCode"
+          ],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "Attendance.Tests",
+      "ServiceHash": "e7a251e1ded0bf08a845cbf18a08a3e86851e281f57a535224fda4ae22697e0b",
+      "Types": [
+        {
+          "FullName": "Attendance.Tests.Application.MarkAttendanceCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCommand_AddsRecordAndReturnId:System.Threading.Tasks.Task",
+            "Handle_ExistingSummary_UpdatesWithoutAdding:System.Threading.Tasks.Task",
+            "Handle_InvalidClassType_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Attendance.Tests.Application.CreateCondonationRequestCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCommand_AddsRequestAndReturnsId:System.Threading.Tasks.Task",
+            "Handle_EmptyReason_ThrowsDomainException:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Attendance.Tests.Application.ApproveCondonationCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidRequest_ApprovesAndUpdates:System.Threading.Tasks.Task",
+            "Handle_NotFound_ThrowsDomainException:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Attendance.Tests.Application.RejectCondonationCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidRequest_RejectsAndUpdates:System.Threading.Tasks.Task",
+            "Handle_NotFound_ThrowsDomainException:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Attendance.Tests.Domain.AttendanceRecordTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_SetsProperties:void",
+            "Create_EmptyAcademicYear_Throws:void",
+            "Create_InvalidSemester_Throws:void",
+            "Create_FutureDate_Throws:void",
+            "Create_TooOldDate_Throws:void",
+            "Create_RaisesAttendanceMarkedEvent:void",
+            "Lock_UnlockedRecord_SetsIsLockedTrue:void",
+            "Lock_AlreadyLocked_Throws:void",
+            "Correct_UpdatesIsPresent:void",
+            "Correct_LockedRecord_Throws:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Attendance.Tests.Domain.AttendanceSummaryTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_SetsDefaults:void",
+            "Create_EmptyYear_Throws:void",
+            "Create_InvalidSemester_Throws:void",
+            "Refresh_ZeroClasses_PercentageIs100:void",
+            "Refresh_CalculatesPercentageCorrectly:void",
+            "Refresh_WarningBand_SetsIsWarning:void",
+            "Refresh_BelowShortageThreshold_SetsIsShortage:void",
+            "Refresh_FirstShortage_RaisesAttendanceShortageFlaggedEvent:void",
+            "Refresh_AlreadyShortage_DoesNotRaiseEventAgain:void",
+            "Refresh_NegativeTotal_Throws:void",
+            "Refresh_AttendedExceedsTotal_Throws:void",
+            "IsEligibleForExam_ReturnsCorrectly:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Attendance.Tests.Domain.CondonationRequestTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_StatusIsPending:void",
+            "Create_EmptyReason_Throws:void",
+            "Create_ReasonTooLong_Throws:void",
+            "Approve_PendingRequest_SetsApprovedAndNote:void",
+            "Approve_RaisesCondonationApprovedEvent:void",
+            "Approve_NotPending_Throws:void",
+            "Reject_PendingRequest_SetsRejected:void",
+            "Reject_NotPending_Throws:void",
+            "Reject_EmptyNote_Throws:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AutoGeneratedProgram",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "TestSDKAutoGeneratedCode"
+          ],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "Examination.Tests",
+      "ServiceHash": "ceeb56f44a5b5d9a8a7d7e65d231bf6108e57173df34aa9dba54e21a46e024ad",
+      "Types": [
+        {
+          "FullName": "Examination.Tests.Application.CreateExamScheduleCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCommand_AddsScheduleAndReturnsId:System.Threading.Tasks.Task",
+            "Handle_InvalidExamType_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Examination.Tests.Application.EnterMarksCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCommand_AddsEntryAndReturnsId:System.Threading.Tasks.Task",
+            "Handle_InvalidMarks_ThrowsDomainException:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Examination.Tests.Application.SubmitMarksCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidEntry_SubmitsAndUpdates:System.Threading.Tasks.Task",
+            "Handle_NotFound_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Examination.Tests.Application.ApproveMarksCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_SubmittedEntry_ApprovesAndUpdates:System.Threading.Tasks.Task",
+            "Handle_NotFound_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Examination.Tests.Application.PublishMarksCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ApprovedEntry_PublishesAndUpdates:System.Threading.Tasks.Task",
+            "Handle_NotFound_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Examination.Tests.Domain.ExamScheduleTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_SetsProperties:void",
+            "Create_RaisesExamScheduledEvent:void",
+            "Create_EmptyAcademicYear_Throws:void",
+            "Create_InvalidSemester_Throws:void",
+            "Create_ZeroDuration_Throws:void",
+            "Create_EmptyVenue_Throws:void",
+            "Create_ZeroMaxMarks_Throws:void",
+            "Create_PassingMarksExceedsMax_Throws:void",
+            "Start_ScheduledExam_SetsOngoing:void",
+            "Start_NotScheduled_Throws:void",
+            "Complete_OngoingExam_SetsCompleted:void",
+            "Complete_NotOngoing_Throws:void",
+            "Cancel_CompletedExam_Throws:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Examination.Tests.Domain.HallTicketTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_EligibleStudent_SetsProperties:void",
+            "Create_IneligibleWithReason_SetsReason:void",
+            "Create_EmptyRollNumber_Throws:void",
+            "Create_EmptySeatNumber_Throws:void",
+            "Create_IneligibleWithoutReason_Throws:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Examination.Tests.Domain.MarksEntryTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidMarks_StatusIsDraft:void",
+            "Create_NegativeMarks_Throws:void",
+            "Create_MarksExceedMax_Throws:void",
+            "Create_Absent_GradeIsFWithZeroMarks:void",
+            "Create_GradeComputedCorrectly:void",
+            "Submit_DraftEntry_SetsSubmitted:void",
+            "Submit_NotDraft_Throws:void",
+            "Approve_SubmittedEntry_SetsApproved:void",
+            "Approve_NotSubmitted_Throws:void",
+            "Publish_ApprovedEntry_SetsPublishedAndRaisesEvent:void",
+            "Publish_NotApproved_Throws:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Examination.Tests.Domain.ResultCardTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_SetsProperties:void",
+            "Create_EmptyYear_Throws:void",
+            "Create_InvalidSemester_Throws:void",
+            "Create_SGPAOutOfRange_Throws:void",
+            "Create_CGPAOutOfRange_Throws:void",
+            "Create_CreditsEarnedExceedsAttempted_Throws:void",
+            "Create_WithBacklog_SetsHasBacklogAndRaisesEvent:void",
+            "Create_NoBacklog_DoesNotRaiseEvent:void",
+            "Publish_SetsPublishedAtAndRaisesEvent:void",
+            "Publish_AlreadyPublished_Throws:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AutoGeneratedProgram",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "TestSDKAutoGeneratedCode"
+          ],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "Faculty.Tests",
+      "ServiceHash": "bc9d88a8ac4d17070f1bd8b7818a6f2d67dae6baacadd8746e92dd52d79884a1",
+      "Types": [
+        {
+          "FullName": "Faculty.Tests.Application.CreateFacultyHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCommand_ReturnsGuid:System.Threading.Tasks.Task",
+            "Handle_DuplicateEmployeeId_ThrowsFacultyDomainException:System.Threading.Tasks.Task",
+            "Handle_InvalidDesignation_ThrowsException:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Faculty.Tests.Domain.FacultyTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidInput_ReturnsFaculty:void",
+            "Create_EmptyEmployeeId_ThrowsFacultyDomainException:void",
+            "Create_EmptyFirstName_ThrowsFacultyDomainException:void",
+            "Create_NegativeExperience_ThrowsFacultyDomainException:void",
+            "Create_FutureJoiningDate_ThrowsFacultyDomainException:void",
+            "Create_RaisesFacultyCreatedEvent:void",
+            "SetStatus_SameStatus_ThrowsFacultyDomainException:void",
+            "SetStatus_NewStatus_RaisesFacultyStatusChangedEvent:void",
+            "UpdateExperience_Negative_ThrowsFacultyDomainException:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AutoGeneratedProgram",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "TestSDKAutoGeneratedCode"
+          ],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "Fee.Tests",
+      "ServiceHash": "e2223411cf01401d92796c32cd0c1af6f6925b12c0349c8b47084f1fa191cfe7",
+      "Types": [
+        {
+          "FullName": "Fee.Tests.Application.CreateFeeStructureCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCommand_AddsStructureAndReturnsId:System.Threading.Tasks.Task",
+            "Handle_NegativeTuition_ThrowsDomainException:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Fee.Tests.Application.CreateFeePaymentCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCommand_AddsPaymentAndReturnsId:System.Threading.Tasks.Task",
+            "Handle_InvalidPaymentMode_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Fee.Tests.Application.MarkPaymentSuccessCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_PendingPayment_MarksSuccessAndUpdates:System.Threading.Tasks.Task",
+            "Handle_NotFound_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Fee.Tests.Application.MarkPaymentFailedCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_PendingPayment_MarksFailedAndUpdates:System.Threading.Tasks.Task",
+            "Handle_NotFound_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Fee.Tests.Application.RefundPaymentCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_SuccessPayment_RefundsAndUpdates:System.Threading.Tasks.Task",
+            "Handle_NotFound_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Fee.Tests.Application.CreateScholarshipCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCommand_AddsScholarshipAndReturnsId:System.Threading.Tasks.Task",
+            "Handle_EmptyName_ThrowsDomainException:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Fee.Tests.Domain.FeeStructureTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_SetsProperties:void",
+            "Create_WithHostelAndMess_TotalIncludesBoth:void",
+            "Create_EmptyAcademicYear_Throws:void",
+            "Create_InvalidSemester_Throws:void",
+            "Create_NegativeTuitionFee_Throws:void",
+            "Create_NegativeExamFee_Throws:void",
+            "Create_NegativeDevelopmentFee_Throws:void",
+            "Create_NegativeMedicalFee_Throws:void",
+            "Create_DoesNotRaiseDomainEvents:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Fee.Tests.Domain.FeePaymentTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_StatusIsPending:void",
+            "Create_ZeroAmount_Throws:void",
+            "Create_NegativeAmount_Throws:void",
+            "Create_NoDomainEventsOnCreate:void",
+            "MarkSuccess_PendingPayment_SetsSuccessAndPaidAt:void",
+            "MarkSuccess_RaisesFeePaymentReceivedEvent:void",
+            "MarkSuccess_NotPending_Throws:void",
+            "MarkFailed_PendingPayment_SetsFailed:void",
+            "MarkFailed_NotPending_Throws:void",
+            "Refund_SuccessPayment_SetsRefunded:void",
+            "Refund_PendingPayment_Throws:void",
+            "Refund_FailedPayment_Throws:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Fee.Tests.Domain.ScholarshipTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_IsActiveAndRaisesEvent:void",
+            "Create_EmptyName_Throws:void",
+            "Create_ZeroAmount_Throws:void",
+            "Create_NegativeAmount_Throws:void",
+            "Create_EmptyAcademicYear_Throws:void",
+            "Deactivate_ActiveScholarship_SetsInactive:void",
+            "Deactivate_AlreadyInactive_Throws:void",
+            "Activate_InactiveScholarship_SetsActive:void",
+            "Activate_AlreadyActive_Throws:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AutoGeneratedProgram",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "TestSDKAutoGeneratedCode"
+          ],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "Hostel.Tests",
+      "ServiceHash": "2f16652aaecf5b67f8887898a02a7ce5fbd32e311fb1cb7e3e689eb04b3daabd",
+      "Types": [
+        {
+          "FullName": "Hostel.Tests.Application.HandlerTestBase",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Hostel.Tests.Application.CreateHostelHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCommand_ReturnsHostelDto:System.Threading.Tasks.Task",
+            "Handle_SaveCalled_Once:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "Hostel.Tests.Application.HandlerTestBase"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Hostel.Tests.Application.UpdateWardenHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_HostelFound_UpdatesAndSaves:System.Threading.Tasks.Task",
+            "Handle_HostelNotFound_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "Hostel.Tests.Application.HandlerTestBase"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Hostel.Tests.Application.CreateRoomHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidRoom_ReturnsRoomDto:System.Threading.Tasks.Task",
+            "Handle_HostelNotFound_Throws:System.Threading.Tasks.Task",
+            "Handle_DuplicateRoomNumber_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "Hostel.Tests.Application.HandlerTestBase"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Hostel.Tests.Application.SetMaintenanceHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_SetTrue_RoomUnderMaintenance:System.Threading.Tasks.Task",
+            "Handle_SetFalse_ClearsMaintenance:System.Threading.Tasks.Task",
+            "Handle_RoomNotFound_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "Hostel.Tests.Application.HandlerTestBase"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Hostel.Tests.Application.AllocateRoomHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidAllocation_ReturnsAllotmentDto:System.Threading.Tasks.Task",
+            "Handle_AlreadyAllotted_Throws:System.Threading.Tasks.Task",
+            "Handle_RoomNotFound_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "Hostel.Tests.Application.HandlerTestBase"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Hostel.Tests.Application.VacateRoomHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidVacate_VacatesAllotmentAndDecrementsRoom:System.Threading.Tasks.Task",
+            "Handle_AllotmentNotFound_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "Hostel.Tests.Application.HandlerTestBase"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Hostel.Tests.Application.RaiseComplaintHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidComplaint_ReturnsComplaintDto:System.Threading.Tasks.Task",
+            "Handle_SaveCalled_Once:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "Hostel.Tests.Application.HandlerTestBase"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Hostel.Tests.Application.UpdateComplaintStatusHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_InProgress_SetsStatus:System.Threading.Tasks.Task",
+            "Handle_Resolve_WithNote_SetsResolved:System.Threading.Tasks.Task",
+            "Handle_Resolve_WithoutNote_Throws:System.Threading.Tasks.Task",
+            "Handle_Close_AfterResolve_SetsClosed:System.Threading.Tasks.Task",
+            "Handle_InvalidAction_Throws:System.Threading.Tasks.Task",
+            "Handle_ComplaintNotFound_Throws:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "Hostel.Tests.Application.HandlerTestBase"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Hostel.Tests.Domain.HostelEntityTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_ReturnsActiveHostel:void",
+            "Create_EmptyName_Throws:void",
+            "Create_InvalidTotalRooms_Throws:void",
+            "Create_EmptyWardenName_Throws:void",
+            "Create_EmptyWardenContact_Throws:void",
+            "UpdateWarden_ValidArgs_UpdatesBoth:void",
+            "Deactivate_ActiveHostel_SetsInactive:void",
+            "Deactivate_AlreadyInactive_Throws:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Hostel.Tests.Domain.RoomTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_ReturnsAvailableRoom:void",
+            "Create_RoomNumberStoredUpperCase:void",
+            "Create_EmptyRoomNumber_Throws:void",
+            "Create_InvalidCapacity_Throws:void",
+            "Create_NegativeFloor_Throws:void",
+            "IncrementOccupancy_BelowCapacity_Increments:void",
+            "IncrementOccupancy_ReachesCapacity_SetsFullyOccupied:void",
+            "IncrementOccupancy_AtCapacity_Throws:void",
+            "DecrementOccupancy_FromFullyOccupied_SetsAvailable:void",
+            "DecrementOccupancy_AtZero_Throws:void",
+            "SetMaintenance_EmptyRoom_SetsUnderMaintenance:void",
+            "SetMaintenance_OccupiedRoom_Throws:void",
+            "ClearMaintenance_UnderMaintenance_SetsAvailable:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Hostel.Tests.Domain.RoomAllotmentTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_ReturnsActiveAllotment:void",
+            "Create_RaisesRoomAllottedEvent:void",
+            "Create_EmptyAcademicYear_Throws:void",
+            "Create_InvalidBedNumber_Throws:void",
+            "Vacate_ActiveAllotment_SetsVacatedAndRaisesEvent:void",
+            "Vacate_AlreadyVacated_Throws:void",
+            "Cancel_ActiveAllotment_SetsCancelled:void",
+            "Cancel_AfterVacate_Throws:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Hostel.Tests.Domain.HostelComplaintTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_ReturnsOpenComplaint:void",
+            "Create_RaisesComplaintRaisedEvent:void",
+            "Create_EmptyDescription_Throws:void",
+            "Create_DescriptionOver1000Chars_Throws:void",
+            "MarkInProgress_OpenComplaint_SetsInProgress:void",
+            "MarkInProgress_NonOpenComplaint_Throws:void",
+            "Resolve_OpenComplaint_SetsResolvedAndRaisesEvent:void",
+            "Resolve_InProgressComplaint_SetsResolved:void",
+            "Resolve_AlreadyResolved_Throws:void",
+            "Resolve_EmptyNote_Throws:void",
+            "Close_ResolvedComplaint_SetsClosed:void",
+            "Close_NotResolved_Throws:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AutoGeneratedProgram",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "TestSDKAutoGeneratedCode"
+          ],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "Identity.Tests",
+      "ServiceHash": "2b9f7e33670035ae14b3b026d109c72417616ffc4778d49af784f1fdeb81d844",
+      "Types": [
+        {
+          "FullName": "Identity.Tests.Application.LoginCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCredentials_ReturnsToken:System.Threading.Tasks.Task",
+            "Handle_TenantNotFound_ThrowsTenantNotFoundException:System.Threading.Tasks.Task",
+            "Handle_UserNotFound_ReturnsFailure:System.Threading.Tasks.Task",
+            "Handle_WrongPassword_ReturnsFailure:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Identity.Tests.Application.RegisterCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCommand_ReturnsSuccess:System.Threading.Tasks.Task",
+            "Handle_TenantNotFound_ThrowsTenantNotFoundException:System.Threading.Tasks.Task",
+            "Handle_DuplicateEmail_ReturnsFailure:System.Threading.Tasks.Task",
+            "Handle_IdentityFailure_ReturnsFailure:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Identity.Tests.Domain.ApplicationUserTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidInput_ReturnsUser:void",
+            "Create_EmailNormalisedToLower:void",
+            "Create_EmptyEmail_Throws:void",
+            "Create_EmptyFirstName_Throws:void",
+            "Create_EmptyLastName_Throws:void",
+            "Create_RaisesUserRegisteredEvent:void",
+            "RecordLogin_SetsLastLoginAt:void",
+            "Deactivate_SetsIsActiveFalse:void",
+            "FullName_ReturnsFirstAndLastName:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AutoGeneratedProgram",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "TestSDKAutoGeneratedCode"
+          ],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "Notification.Tests",
+      "ServiceHash": "87bc440fe5921df6a131be3f1051871c12a8a80e8382f568f3fc60a0ee4eb46e",
+      "Types": [
+        {
+          "FullName": "Notification.Tests.Application.NotificationDispatcherTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "DispatchAsync_EmailPreferenceDisabled_DoesNotAddLog:System.Threading.Tasks.Task",
+            "DispatchAsync_NoTemplateFound_DoesNotAddLog:System.Threading.Tasks.Task",
+            "DispatchAsync_SendSuccess_LogMarkedSent:System.Threading.Tasks.Task",
+            "DispatchAsync_NoChannel_LogStaysPending:System.Threading.Tasks.Task",
+            "DispatchAsync_FallsBackToDefaultTemplate_WhenTenantTemplateNull:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "HasStaticState"
+          ],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Notification.Tests.Domain.NotificationLogTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_ReturnsPendingLog:void",
+            "Create_EmptyAddress_Throws:void",
+            "Create_EmptySubject_Throws:void",
+            "MarkSent_SetsSentStatusAndSentAt:void",
+            "MarkFailed_FirstCall_SetsFailedAndIncrementsRetry:void",
+            "MarkFailed_EmptyMessage_Throws:void",
+            "MarkFailed_FiveTimes_SetsDeadLettered:void",
+            "CanRetry_WhenFailed_AndUnderLimit_ReturnsTrue:void",
+            "CanRetry_WhenDeadLettered_ReturnsFalse:void",
+            "CanRetry_WhenSent_ReturnsFalse:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Notification.Tests.Domain.NotificationPreferenceTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_ReturnsPreferenceWithDefaults:void",
+            "Create_EmptyTenantId_Throws:void",
+            "Create_EmptyUserId_Throws:void",
+            "Create_CustomFlags_StoredCorrectly:void",
+            "Update_ChangesAllFlags_AndSetsUpdatedAt:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Notification.Tests.Domain.NotificationTemplateTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidArgs_ReturnsActiveTemplate:void",
+            "Create_EmptyEventType_Throws:void",
+            "Create_EmptySubjectTemplate_Throws:void",
+            "Create_EmptyBodyTemplate_Throws:void",
+            "Update_ValidArgs_UpdatesTemplatesAndSetsUpdatedAt:void",
+            "Update_EmptySubject_Throws:void",
+            "Deactivate_ActiveTemplate_SetsIsActiveFalse:void",
+            "Deactivate_AlreadyInactive_Throws:void",
+            "RenderSubject_ReplacesPlaceholders:void",
+            "RenderBody_ReplacesMultiplePlaceholders:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AutoGeneratedProgram",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "TestSDKAutoGeneratedCode"
+          ],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [
+        "NotificationDispatcherTests:string",
+        "NotificationDispatcherTests:string"
+      ],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    },
+    {
+      "Name": "Student.Tests",
+      "ServiceHash": "b715ee96f5a48b263da825c57e9411fc9ac1cebb660668131cfa2eb4abe9eb14",
+      "Types": [
+        {
+          "FullName": "Student.Tests.Application.AdmitStudentCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidStudent_ReturnsTrue:System.Threading.Tasks.Task",
+            "Handle_StudentNotFound_ThrowsInvalidOperationException:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Student.Tests.Application.CreateStudentCommandHandlerTests",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [
+            "Handle_ValidCommand_ReturnsResult:System.Threading.Tasks.Task",
+            "Handle_DuplicateUser_ThrowsInvalidOperationException:System.Threading.Tasks.Task"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "Student.Tests.Domain.StudentAggregateTests",
+          "Layer": "Domain",
+          "Kind": "Class",
+          "Methods": [
+            "Create_ValidInput_ReturnsApplicant:void",
+            "Create_EmailNormalisedToLower:void",
+            "Create_EmptyFirstName_Throws:void",
+            "Create_EmptyLastName_Throws:void",
+            "Create_EmptyEmail_Throws:void",
+            "Create_RaisesStudentCreatedEvent:void",
+            "Admit_FromApplicant_SetsAdmittedStatus:void",
+            "Admit_NotApplicant_Throws:void",
+            "Enroll_FromAdmitted_SetsEnrolledStatus:void",
+            "Enroll_NotAdmitted_Throws:void",
+            "Suspend_FromEnrolled_SetsSuspendedStatus:void",
+            "Suspend_NotEnrolled_Throws:void",
+            "Reinstate_FromSuspended_SetsEnrolled:void",
+            "Graduate_FromEnrolled_SetsAlumni:void",
+            "Archive_AlreadyArchived_Throws:void",
+            "StateTransitions_RaiseStatusChangedEvents:void"
+          ],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [],
+          "Endpoints": []
+        },
+        {
+          "FullName": "AutoGeneratedProgram",
+          "Layer": "Unknown",
+          "Kind": "Class",
+          "Methods": [],
+          "Interfaces": [],
+          "BaseTypes": [
+            "object"
+          ],
+          "Attributes": [
+            "TestSDKAutoGeneratedCode"
+          ],
+          "Endpoints": []
+        }
+      ],
+      "KafkaProducers": [],
+      "KafkaConsumers": [],
+      "DiRegistrations": []
+    }
+  ]
+}

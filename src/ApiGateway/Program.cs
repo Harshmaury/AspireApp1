@@ -5,8 +5,8 @@ using System.Threading.RateLimiting;
 using Asp.Versioning;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.AddServiceDefaults();
-builder.AddSerilogDefaults();
+
+
 
 // Reverse Proxy
 builder.Services.AddReverseProxy()
@@ -37,7 +37,7 @@ builder.Services.AddCors(options =>
 // Rate Limiting
 builder.Services.AddRateLimiter(options =>
 {
-    // Strict policy for auth endpoint — per IP, 10 req/min
+    // Strict policy for auth endpoint ï¿½ per IP, 10 req/min
     options.AddFixedWindowLimiter("token-endpoint", o =>
     {
         o.PermitLimit   = 10;
@@ -45,7 +45,7 @@ builder.Services.AddRateLimiter(options =>
         o.QueueLimit    = 0;
     });
 
-    // Default policy — per tenant (100 req/min), fallback to IP if no tenant header
+    // Default policy ï¿½ per tenant (100 req/min), fallback to IP if no tenant header
     options.AddPolicy("tenant-fixed", httpContext =>
     {
         var tenantId = httpContext.Request.Headers["X-Tenant-Id"].FirstOrDefault();
@@ -86,7 +86,6 @@ builder.Services.AddApiVersioning(options =>
 var app = builder.Build();
 
 
-app.UseHttpsRedirection();
 app.UseGlobalExceptionHandler();
 app.UseCors();
 app.UseRateLimiter();
@@ -96,7 +95,9 @@ app.UseMiddleware<ApiGateway.Middleware.ClaimsForwardingMiddleware>();
 
 // Map versioned YARP proxy
 app.MapReverseProxy();
-app.MapDefaultEndpoints();
+
+// Simple health endpoint (minimal, production safe)
+app.MapGet("/health", () => Results.Ok("Healthy"));
 
 app.Run();
 

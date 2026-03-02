@@ -10,7 +10,7 @@ namespace Notification.Infrastructure.Kafka.Consumers;
 public sealed class AcademicEventsConsumer : KafkaConsumerBase<AcademicCalendarPublishedEvent>
 {
     public AcademicEventsConsumer(IServiceScopeFactory scopeFactory, ILogger<AcademicEventsConsumer> logger, IConfiguration configuration)
-        : base(scopeFactory, logger, "academic-events", "notification-academic-group", configuration) { }
+        : base(scopeFactory, logger, "academic-events", "notification-api", "academic-events", configuration) { }
 
     protected override async Task ProcessAsync(AcademicCalendarPublishedEvent e, IServiceProvider services, CancellationToken ct)
     {

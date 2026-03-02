@@ -10,7 +10,7 @@ namespace Notification.Infrastructure.Kafka.Consumers;
 public sealed class ExaminationEventsConsumer : KafkaConsumerBase<ResultDeclaredEvent>
 {
     public ExaminationEventsConsumer(IServiceScopeFactory scopeFactory, ILogger<ExaminationEventsConsumer> logger, IConfiguration configuration)
-        : base(scopeFactory, logger, "examination-events", "notification-examination-group", configuration) { }
+        : base(scopeFactory, logger, "examination-events", "notification-api", "examination-events", configuration) { }
 
     protected override async Task ProcessAsync(ResultDeclaredEvent e, IServiceProvider services, CancellationToken ct)
     {

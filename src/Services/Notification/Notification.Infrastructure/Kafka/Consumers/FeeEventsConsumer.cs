@@ -10,7 +10,7 @@ namespace Notification.Infrastructure.Kafka.Consumers;
 public sealed class FeeEventsConsumer : KafkaConsumerBase<FeePaymentReceivedEvent>
 {
     public FeeEventsConsumer(IServiceScopeFactory scopeFactory, ILogger<FeeEventsConsumer> logger, IConfiguration configuration)
-        : base(scopeFactory, logger, "fee-events", "notification-fee-group", configuration) { }
+        : base(scopeFactory, logger, "fee-events", "notification-api", "fee-events", configuration) { }
 
     protected override async Task ProcessAsync(FeePaymentReceivedEvent e, IServiceProvider services, CancellationToken ct)
     {

@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
@@ -6,7 +6,6 @@ ENV ASPNETCORE_URLS=http://+:8080
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ["src/ApiGateway/ApiGateway.csproj",                              "ApiGateway/"]
-COPY ["src/ServiceDefaults/AspireApp1.ServiceDefaults.csproj",          "ServiceDefaults/"]
 COPY ["src/Shared/UMS.SharedKernel/UMS.SharedKernel.csproj",           "Shared/UMS.SharedKernel/"]
 RUN dotnet restore "ApiGateway/ApiGateway.csproj"
 COPY src/ .

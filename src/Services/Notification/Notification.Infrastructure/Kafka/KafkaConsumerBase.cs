@@ -19,29 +19,42 @@ public abstract class KafkaConsumerBase<TEvent> : BackgroundService
         IServiceScopeFactory scopeFactory,
         ILogger logger,
         string topic,
-        string groupId,
+        string serviceName,
+        string purpose,
         IConfiguration configuration)
     {
-        _scopeFactory = scopeFactory;
-        _logger = logger;
-        _topic = topic;
-        _groupId = groupId;
+        _scopeFactory     = scopeFactory;
+        _logger           = logger;
+        _topic            = topic;
         _bootstrapServers = configuration.GetConnectionString("kafka") ?? "localhost:9092";
+
+        var regionId = configuration["REGION_ID"]
+            ?? throw new InvalidOperationException(
+                "REGION_ID is not set. Ensure k8s overlay configmap-patch.yaml injects REGION_ID.");
+
+        _groupId = $"{serviceName}.{regionId}.{purpose}";
+
+        _logger.LogInformation(
+            "Kafka consumer group resolved: {GroupId}", _groupId);
     }
+
+    public static string BuildGroupId(string serviceName, string regionId, string purpose)
+        => $"{serviceName}.{regionId}.{purpose}";
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         var config = new ConsumerConfig
         {
             BootstrapServers = _bootstrapServers,
-            GroupId = _groupId,
-            AutoOffsetReset = AutoOffsetReset.Earliest,
+            GroupId          = _groupId,
+            AutoOffsetReset  = AutoOffsetReset.Earliest,
             EnableAutoCommit = false
         };
 
         using var consumer = new ConsumerBuilder<string, string>(config).Build();
         consumer.Subscribe(_topic);
-        _logger.LogInformation("Kafka consumer started for topic {Topic}", _topic);
+
+        _logger.LogInformation("Kafka consumer started. Topic={Topic} GroupId={GroupId}", _topic, _groupId);
 
         while (!ct.IsCancellationRequested)
         {
@@ -74,7 +87,7 @@ public abstract class KafkaConsumerBase<TEvent> : BackgroundService
         }
 
         consumer.Close();
-        _logger.LogInformation("Kafka consumer stopped for topic {Topic}", _topic);
+        _logger.LogInformation("Kafka consumer stopped. Topic={Topic} GroupId={GroupId}", _topic, _groupId);
     }
 
     protected abstract Task ProcessAsync(TEvent eventData, IServiceProvider services, CancellationToken ct);

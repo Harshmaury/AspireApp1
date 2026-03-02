@@ -10,7 +10,7 @@ namespace Notification.Infrastructure.Kafka.Consumers;
 public sealed class IdentityEventsConsumer : KafkaConsumerBase<UserRegisteredEvent>
 {
     public IdentityEventsConsumer(IServiceScopeFactory scopeFactory, ILogger<IdentityEventsConsumer> logger, IConfiguration configuration)
-        : base(scopeFactory, logger, "identity-events", "notification-identity-group", configuration) { }
+        : base(scopeFactory, logger, "identity-events", "notification-api", "identity-events", configuration) { }
 
     protected override async Task ProcessAsync(UserRegisteredEvent e, IServiceProvider services, CancellationToken ct)
     {
