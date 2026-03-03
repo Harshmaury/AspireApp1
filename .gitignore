@@ -363,3 +363,7 @@ MigrationBackup/
 FodyWeavers.xsd
 # Docker secrets
 .env
+
+certs/*.pfx
+*.bak
+*.zip
