@@ -22,6 +22,7 @@ app.MapDefaultEndpoints();
 app.MapFeeStructureEndpoints();
 app.MapFeePaymentEndpoints();
 app.MapScholarshipEndpoints();
+app.MapRegionHealthEndpoints();
 app.Run();
 
 static async Task MigrateWithRetryAsync<TDb>(IServiceProvider services,

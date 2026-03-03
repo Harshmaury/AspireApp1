@@ -39,6 +39,7 @@ app.MapCourseEndpoints();
 app.MapCurriculumEndpoints();
 app.MapAcademicCalendarEndpoints();
 
+app.MapRegionHealthEndpoints();
 app.Run();
 
 

@@ -1,3 +1,4 @@
+using Notification.API.Endpoints;
 using UMS.SharedKernel.Extensions;
 using Notification.Application;
 using Notification.Infrastructure;
@@ -14,6 +15,7 @@ app.UseSerilogDefaults();
 app.UseGlobalExceptionHandler();
 await Notification.Infrastructure.DependencyInjection.SeedDefaultTemplatesAsync(app.Services);
 app.MapDefaultEndpoints();
+app.MapRegionHealthEndpoints();
 app.Run();
 
 

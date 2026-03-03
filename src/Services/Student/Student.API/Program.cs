@@ -31,6 +31,7 @@ using (var scope = app.Services.CreateScope())
 app.MapDefaultEndpoints();
 app.MapStudentEndpoints();
 
+app.MapRegionHealthEndpoints();
 app.Run();
 
 static async Task MigrateWithRetryAsync<TDb>(IServiceProvider services,

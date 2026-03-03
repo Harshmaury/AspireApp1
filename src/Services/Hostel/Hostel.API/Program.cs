@@ -30,6 +30,7 @@ app.MapRoomEndpoints();
 app.MapAllotmentEndpoints();
 app.MapComplaintEndpoints();
 
+app.MapRegionHealthEndpoints();
 app.Run();
 
 

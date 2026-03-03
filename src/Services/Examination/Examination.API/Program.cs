@@ -21,6 +21,7 @@ using (var scope = app.Services.CreateScope())
 app.MapDefaultEndpoints();
 app.MapExamScheduleEndpoints();
 app.MapMarksEntryEndpoints();
+app.MapRegionHealthEndpoints();
 app.Run();
 
 static async Task MigrateWithRetryAsync<TDb>(IServiceProvider services,
@@ -44,5 +45,5 @@ static async Task MigrateWithRetryAsync<TDb>(IServiceProvider services,
             await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
         }
     }
-    await db.Database.MigrateAsync(); // final attempt — throws naturally
+    await db.Database.MigrateAsync(); // final attempt ï¿½ throws naturally
 }

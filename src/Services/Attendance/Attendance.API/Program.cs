@@ -28,6 +28,7 @@ app.MapDefaultEndpoints();
 app.UseMiddleware<Attendance.API.Middleware.TenantMiddleware>();
 app.UseHttpsRedirection();
 app.MapAttendanceEndpoints();
+app.MapRegionHealthEndpoints();
 app.Run();
 
 

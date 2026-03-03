@@ -209,6 +209,7 @@ app.MapPost("/connect/token", async (
 app.MapDefaultEndpoints();
 app.MapAuthEndpoints();
 app.MapTenantEndpoints();
+app.MapRegionHealthEndpoints();
 app.Run();
 
 static async Task MigrateWithRetryAsync<TDb>(IServiceProvider services,
