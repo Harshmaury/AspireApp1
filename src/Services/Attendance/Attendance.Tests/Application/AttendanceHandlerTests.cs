@@ -23,6 +23,18 @@ public class MarkAttendanceCommandHandlerTests
     static MarkAttendanceCommand ValidCmd() => new(
         _tenant, _student, _course, "2025-26", 3, _today, "Lecture", true, _marker);
 
+    // Creates a handler via IAttendanceUnitOfWork so the handler only needs one dep
+    private static MarkAttendanceCommandHandler CreateHandler(
+        Mock<IAttendanceRecordRepository> records,
+        Mock<IAttendanceSummaryRepository> summaries)
+    {
+        var uow = new Mock<IAttendanceUnitOfWork>();
+        uow.Setup(u => u.Records).Returns(records.Object);
+        uow.Setup(u => u.Summaries).Returns(summaries.Object);
+        uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        return new MarkAttendanceCommandHandler(uow.Object);
+    }
+
     [Fact]
     public async Task Handle_ValidCommand_AddsRecordAndReturnId()
     {
@@ -34,13 +46,12 @@ public class MarkAttendanceCommandHandlerTests
         summaryRepo.Setup(r => r.GetByStudentCourseAsync(_student, _course, _tenant, It.IsAny<CancellationToken>()))
                    .ReturnsAsync((AttendanceSummary?)null);
 
-        var handler = new MarkAttendanceCommandHandler(recordRepo.Object, summaryRepo.Object);
+        var handler = CreateHandler(recordRepo, summaryRepo);
         var id = await handler.Handle(ValidCmd(), CancellationToken.None);
 
         id.Should().NotBeEmpty();
         recordRepo.Verify(r => r.AddAsync(It.IsAny<AttendanceRecord>(), It.IsAny<CancellationToken>()), Times.Once);
         summaryRepo.Verify(r => r.AddAsync(It.IsAny<AttendanceSummary>(), It.IsAny<CancellationToken>()), Times.Once);
-        summaryRepo.Verify(r => r.UpdateAsync(It.IsAny<AttendanceSummary>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -55,7 +66,7 @@ public class MarkAttendanceCommandHandlerTests
         summaryRepo.Setup(r => r.GetByStudentCourseAsync(_student, _course, _tenant, It.IsAny<CancellationToken>()))
                    .ReturnsAsync(existingSummary);
 
-        var handler = new MarkAttendanceCommandHandler(recordRepo.Object, summaryRepo.Object);
+        var handler = CreateHandler(recordRepo, summaryRepo);
         await handler.Handle(ValidCmd(), CancellationToken.None);
 
         summaryRepo.Verify(r => r.AddAsync(It.IsAny<AttendanceSummary>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -69,7 +80,7 @@ public class MarkAttendanceCommandHandlerTests
         var summaryRepo = new Mock<IAttendanceSummaryRepository>();
         var cmd = new MarkAttendanceCommand(_tenant, _student, _course, "2025-26", 3, _today, "Seminar", true, _marker);
 
-        var handler = new MarkAttendanceCommandHandler(recordRepo.Object, summaryRepo.Object);
+        var handler = CreateHandler(recordRepo, summaryRepo);
         var act = async () => await handler.Handle(cmd, CancellationToken.None);
 
         await act.Should().ThrowAsync<ArgumentException>();

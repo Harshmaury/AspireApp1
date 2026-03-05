@@ -1,4 +1,4 @@
-using HealthChecks.NpgSql;
+﻿using HealthChecks.NpgSql;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Configuration;
@@ -78,7 +78,7 @@ public static class Extensions
         where TBuilder : IHostApplicationBuilder
     {
         builder.Services.AddHealthChecks()
-            .AddNpgSql(builder.Configuration.GetConnectionString(connectionName) ?? string.Empty, name: "db-$connectionName", tags: new[] { "ready", "db" });
+            .AddNpgSql(builder.Configuration.GetConnectionString(connectionName) ?? string.Empty, name: $"db-{connectionName}", tags: new[] { "ready", "db" });
         return builder;
     }
 
@@ -101,6 +101,7 @@ public static class Extensions
         return app;
     }
 }
+
 
 
 

@@ -15,6 +15,7 @@ resources:
   - infra/seq-service.yaml
   - infra/jaeger-deployment.yaml
   - infra/jaeger-service.yaml
+  - infra/ingress.yaml
   - services/identity-api-deployment.yaml
   - services/identity-api-service.yaml
   - services/identity-hpa.yaml

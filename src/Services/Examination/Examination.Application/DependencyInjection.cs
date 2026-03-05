@@ -12,7 +12,7 @@ public static class DependencyInjection
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
-            // FIX ATT-3/A3: ValidationBehavior was never wired into the MediatR pipeline.
+            // FIX EXM-3/A3: ValidationBehavior was never wired into the MediatR pipeline.
             // Validators existed but were silently never called.
             // Pattern copied from Faculty.Application (gold standard).
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));

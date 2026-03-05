@@ -29,20 +29,20 @@ builder.Services.AddAuthorization(options =>
 // including attacker-controlled sites to make credentialed cross-origin requests.
 // Now reads Cors:AllowedOrigins from config (set per-environment in appsettings).
 // Development falls back to localhost only if config is absent.
+// FIX G2: AllowAnyOrigin replaced with an explicit allowlist.
+// AllowAnyOrigin lets any website make credentialed requests to the gateway
+// and is incompatible with AllowCredentials() per the CORS spec.
+// Set origins in appsettings: "Cors": { "AllowedOrigins": ["https://yourdomain.com"] }
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>();
+
+if (allowedOrigins is null || allowedOrigins.Length == 0)
+    throw new InvalidOperationException(
+        "Cors:AllowedOrigins is not configured. Add at least one origin to appsettings.");
+
 builder.Services.AddCors(options =>
 {
-    var allowedOrigins = builder.Configuration
-        .GetSection("Cors:AllowedOrigins")
-        .Get<string[]>();
-
-    if (allowedOrigins is null || allowedOrigins.Length == 0)
-    {
-        // Safe fallback: localhost only — never allow any origin in production
-        allowedOrigins = builder.Environment.IsDevelopment()
-            ? new[] { "http://localhost:3000", "https://localhost:3000", "http://localhost:5173", "https://localhost:5173" }
-            : Array.Empty<string>();
-    }
-
     options.AddDefaultPolicy(policy =>
         policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
