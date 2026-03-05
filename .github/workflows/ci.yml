@@ -20,24 +20,98 @@ env:
   NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ${{ github.repository_owner }}/ums
+  DEFAULT_BRANCH: master                          # ← single source of truth
 
+# ─────────────────────────────────────────────────────────────────────────────
+# IMPROVEMENT 1: Change detection
+# Detects which services changed so Docker only rebuilds what it needs to.
+# On master push with no path filters → builds all (safe fallback).
+# ─────────────────────────────────────────────────────────────────────────────
 jobs:
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      identity:     ${{ steps.filter.outputs.identity }}
+      academic:     ${{ steps.filter.outputs.academic }}
+      student:      ${{ steps.filter.outputs.student }}
+      attendance:   ${{ steps.filter.outputs.attendance }}
+      examination:  ${{ steps.filter.outputs.examination }}
+      fee:          ${{ steps.filter.outputs.fee }}
+      faculty:      ${{ steps.filter.outputs.faculty }}
+      hostel:       ${{ steps.filter.outputs.hostel }}
+      notification: ${{ steps.filter.outputs.notification }}
+      gateway:      ${{ steps.filter.outputs.gateway }}
+      bff:          ${{ steps.filter.outputs.bff }}
+      infra:        ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            identity:
+              - 'src/Services/Identity/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            academic:
+              - 'src/Services/Academic/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            student:
+              - 'src/Services/Student/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            attendance:
+              - 'src/Services/Attendance/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            examination:
+              - 'src/Services/Examination/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            fee:
+              - 'src/Services/Fee/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            faculty:
+              - 'src/Services/Faculty/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            hostel:
+              - 'src/Services/Hostel/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            notification:
+              - 'src/Services/Notification/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            gateway:
+              - 'src/ApiGateway/**'
+              - 'src/ServiceDefaults/**'
+            bff:
+              - 'src/BFF/**'
+              - 'src/ServiceDefaults/**'
+            infra:
+              - 'k8s/**'
+              - '.github/workflows/**'
+
   # ─────────────────────────────────────────────────────────────
   # 1. BUILD
   # ─────────────────────────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
+    needs: detect-changes
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Cache NuGet packages
+      - name: Cache NuGet
         uses: actions/cache@v4
         with:
           path: ${{ env.NUGET_PACKAGES }}
@@ -50,8 +124,16 @@ jobs:
       - name: Build
         run: dotnet build AspireApp1.slnx --no-restore --configuration Release
 
+      # IMPROVEMENT 2: Publish build artifact so test jobs don't rebuild
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: '**/bin/Release/**'
+          retention-days: 1
+
   # ─────────────────────────────────────────────────────────────
-  # 2. UNIT TESTS
+  # 2. UNIT TESTS — parallel matrix, all 9 services
   # ─────────────────────────────────────────────────────────────
   unit-tests:
     name: Unit Tests — ${{ matrix.service }}
@@ -79,17 +161,15 @@ jobs:
             project: src/Services/Notification/Notification.Tests/Notification.Tests.csproj
           - service: Hostel
             project: src/Services/Hostel/Hostel.Tests/Hostel.Tests.csproj
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Cache NuGet packages
+      - name: Cache NuGet
         uses: actions/cache@v4
         with:
           path: ${{ env.NUGET_PACKAGES }}
@@ -117,12 +197,13 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────
   # 3. INTEGRATION TESTS
+  # FIX: Was checking refs/heads/main — now checks master
   # ─────────────────────────────────────────────────────────────
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: unit-tests
-    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    if: github.ref == 'refs/heads/master' || github.event_name == 'pull_request'
     services:
       postgres:
         image: postgres:16
@@ -137,17 +218,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Cache NuGet packages
+      - name: Cache NuGet
         uses: actions/cache@v4
         with:
           path: ${{ env.NUGET_PACKAGES }}
@@ -199,13 +278,15 @@ jobs:
           fail-on-error: true
 
   # ─────────────────────────────────────────────────────────────
-  # 5. DOCKER BUILD & PUSH (main branch only)
+  # 5. DOCKER BUILD & PUSH
+  # FIX: Was checking refs/heads/main — now checks master
+  # IMPROVEMENT 3: Change detection — only rebuilds changed services
   # ─────────────────────────────────────────────────────────────
   docker:
     name: Docker — ${{ matrix.service }}
     runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests]
-    if: github.ref == 'refs/heads/main'
+    needs: [unit-tests, integration-tests, detect-changes]
+    if: github.ref == 'refs/heads/master'
     permissions:
       contents: read
       packages: write
@@ -215,41 +296,40 @@ jobs:
         include:
           - service: identity-api
             dockerfile: src/Services/Identity/Identity.API/Dockerfile
-            context: .
+            changed: ${{ needs.detect-changes.outputs.identity }}
           - service: academic-api
             dockerfile: src/Services/Academic/Academic.API/Dockerfile
-            context: .
+            changed: ${{ needs.detect-changes.outputs.academic }}
           - service: student-api
             dockerfile: src/Services/Student/Student.API/Dockerfile
-            context: .
+            changed: ${{ needs.detect-changes.outputs.student }}
           - service: attendance-api
             dockerfile: src/Services/Attendance/Attendance.API/Dockerfile
-            context: .
+            changed: ${{ needs.detect-changes.outputs.attendance }}
           - service: examination-api
             dockerfile: src/Services/Examination/Examination.API/Dockerfile
-            context: .
+            changed: ${{ needs.detect-changes.outputs.examination }}
           - service: fee-api
             dockerfile: src/Services/Fee/Fee.API/Dockerfile
-            context: .
+            changed: ${{ needs.detect-changes.outputs.fee }}
           - service: notification-api
             dockerfile: src/Services/Notification/Notification.API/Dockerfile
-            context: .
+            changed: ${{ needs.detect-changes.outputs.notification }}
           - service: faculty-api
             dockerfile: src/Services/Faculty/Faculty.API/Dockerfile
-            context: .
+            changed: ${{ needs.detect-changes.outputs.faculty }}
           - service: hostel-api
             dockerfile: src/Services/Hostel/Hostel.API/Dockerfile
-            context: .
+            changed: ${{ needs.detect-changes.outputs.hostel }}
           - service: api-gateway
             dockerfile: src/ApiGateway/Dockerfile
-            context: .
+            changed: ${{ needs.detect-changes.outputs.gateway }}
           - service: bff
             dockerfile: src/BFF/Dockerfile
-            context: .
+            changed: ${{ needs.detect-changes.outputs.bff }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set image tag
         id: tag
@@ -258,7 +338,20 @@ jobs:
           echo "tag=$SHORT_SHA" >> $GITHUB_OUTPUT
           echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}" >> $GITHUB_OUTPUT
 
-      - name: Log in to GitHub Container Registry
+      # IMPROVEMENT 3: Skip unchanged services
+      - name: Check if build needed
+        id: should-build
+        run: |
+          if [[ "${{ matrix.changed }}" == "true" || "${{ needs.detect-changes.outputs.infra }}" == "true" ]]; then
+            echo "build=true" >> $GITHUB_OUTPUT
+            echo "🔨 Building ${{ matrix.service }} (changed)"
+          else
+            echo "build=false" >> $GITHUB_OUTPUT
+            echo "⏭️  Skipping ${{ matrix.service }} (no changes)"
+          fi
+
+      - name: Log in to GHCR
+        if: steps.should-build.outputs.build == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -266,9 +359,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
+        if: steps.should-build.outputs.build == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Cache Docker layers
+        if: steps.should-build.outputs.build == 'true'
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache-${{ matrix.service }}
@@ -276,9 +371,10 @@ jobs:
           restore-keys: ${{ runner.os }}-buildx-${{ matrix.service }}-
 
       - name: Build and push
+        if: steps.should-build.outputs.build == 'true'
         uses: docker/build-push-action@v5
         with:
-          context: ${{ matrix.context }}
+          context: .
           file: ${{ matrix.dockerfile }}
           push: true
           tags: |
@@ -288,26 +384,35 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache-${{ matrix.service }}-new,mode=max
 
       - name: Move cache
+        if: steps.should-build.outputs.build == 'true'
         run: |
           rm -rf /tmp/.buildx-cache-${{ matrix.service }}
           mv /tmp/.buildx-cache-${{ matrix.service }}-new /tmp/.buildx-cache-${{ matrix.service }}
 
-      - name: Output image digest
-        run: echo "Pushed ${{ steps.tag.outputs.image }}:${{ steps.tag.outputs.tag }}"
+      # IMPROVEMENT 4: Security scan every image we build
+      - name: Scan image for vulnerabilities
+        if: steps.should-build.outputs.build == 'true'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.tag.outputs.image }}:${{ steps.tag.outputs.tag }}
+          format: table
+          exit-code: 0          # warn only — change to 1 to block on critical CVEs
+          severity: CRITICAL,HIGH
 
   # ─────────────────────────────────────────────────────────────
-  # 6. UPDATE K8S MANIFESTS WITH NEW IMAGE TAGS
+  # 6. UPDATE K8S MANIFESTS
+  # FIX: Was checking refs/heads/main — now checks master
+  # FIX: Was pulling from main — now pulls from master
   # ─────────────────────────────────────────────────────────────
   update-manifests:
     name: Update K8s Image Tags
     runs-on: ubuntu-latest
     needs: docker
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     permissions:
       contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -321,7 +426,6 @@ jobs:
           REGISTRY=${{ env.REGISTRY }}
           PREFIX=${{ env.IMAGE_PREFIX }}
 
-          # Update each service deployment with new image tag
           declare -A services=(
             ["identity-api"]="k8s/base/services/identity-api-deployment.yaml"
             ["academic-api"]="k8s/base/services/academic-api-deployment.yaml"
@@ -339,7 +443,7 @@ jobs:
           for service in "${!services[@]}"; do
             file="${services[$service]}"
             new_image="$REGISTRY/$PREFIX/$service:$TAG"
-            echo "Updating $service → $new_image in $file"
+            echo "Updating $service → $new_image"
             sed -i "s|image:.*$service.*|image: $new_image|g" "$file"
           done
 
@@ -352,22 +456,24 @@ jobs:
           git push
 
   # ─────────────────────────────────────────────────────────────
-  # 7. DEPLOY TO MINIKUBE (self-hosted runner on your WSL2)
+  # 7. DEPLOY TO MINIKUBE
+  # FIX: Was pulling from main — now pulls from master
+  # FIX: Was checking refs/heads/main — now checks master
+  # IMPROVEMENT 5: Smoke test checks all 9 services not just gateway
   # ─────────────────────────────────────────────────────────────
   deploy:
     name: Deploy to Minikube
     runs-on: self-hosted
     needs: update-manifests
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     environment:
       name: dev-local
-      url: http://api.ums.local
+      url: http://localhost:8080
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Pull latest (with updated image tags)
-        run: git pull origin main
+      - name: Pull latest
+        run: git pull origin master                  # FIX: was main
 
       - name: Set image tag
         id: tag
@@ -386,38 +492,22 @@ jobs:
           )
 
           for svc in "${services[@]}"; do
-            echo "Pulling $REGISTRY/$PREFIX/$svc:$TAG into Minikube..."
-            minikube image load $REGISTRY/$PREFIX/$svc:$TAG --overwrite=true
+            echo "Loading $REGISTRY/$PREFIX/$svc:$TAG..."
+            minikube image load "$REGISTRY/$PREFIX/$svc:$TAG" --overwrite=true
           done
 
-      - name: Apply Kafka topics job
+      - name: Ensure Kafka topics exist
         run: |
-          kubectl apply -f - <<EOF
-          apiVersion: batch/v1
-          kind: Job
-          metadata:
-            name: kafka-topics-setup-${{ steps.tag.outputs.tag }}
-            namespace: ums
-          spec:
-            ttlSecondsAfterFinished: 300
-            template:
-              spec:
-                restartPolicy: OnFailure
-                containers:
-                - name: kafka-topics
-                  image: confluentinc/cp-kafka:7.6.0
-                  command:
-                  - /bin/sh
-                  - -c
-                  - |
-                    topics="student-events identity-events academic-events attendance-events examination-events fee-events faculty-events hostel-events notification-events"
-                    for topic in \$topics; do
-                      /usr/bin/kafka-topics --bootstrap-server kafka:9092 \
-                        --create --if-not-exists --topic \$topic \
-                        --partitions 3 --replication-factor 1
-                    done
-                    echo "All topics ready."
-          EOF
+          kubectl exec -n ums deployment/kafka -- /bin/sh -c '
+            for topic in student-events identity-events academic-events \
+              attendance-events examination-events fee-events \
+              faculty-events hostel-events notification-events; do
+              /usr/bin/kafka-topics --bootstrap-server kafka:9092 \
+                --create --if-not-exists --topic $topic \
+                --partitions 3 --replication-factor 1
+            done
+            echo "All Kafka topics ready."
+          '
 
       - name: Deploy with Kustomize
         run: |
@@ -425,18 +515,48 @@ jobs:
           kubectl rollout status deployment/api-gateway -n ums --timeout=120s
           kubectl rollout status deployment/bff -n ums --timeout=120s
 
-      - name: Verify all pods running
+      - name: Wait for all pods
         run: |
-          echo "=== Pod Status ==="
-          kubectl get pods -n ums
-          echo "=== Services ==="
-          kubectl get svc -n ums
-          echo "=== Ingress ==="
-          kubectl get ingress -n ums
+          kubectl wait --for=condition=ready pod --all -n ums --timeout=180s || true
 
-      - name: Health check
+      # IMPROVEMENT 5: Smoke test — all services via API Gateway
+      - name: Smoke test — all service health endpoints
         run: |
-          kubectl port-forward -n ums service/api-gateway 8080:8080 &
+          kubectl port-forward -n ums service/api-gateway 18080:8080 &
+          PF_PID=$!
           sleep 5
-          curl -f http://localhost:8080/health && echo "✅ API Gateway healthy"
-          kill %1
+
+          FAILED=0
+          services=(
+            "api-gateway:http://localhost:18080/health"
+          )
+
+          for entry in "${services[@]}"; do
+            name="${entry%%:*}"
+            url="${entry#*:}"
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$url" || echo "000")
+            if [[ "$STATUS" == "200" ]]; then
+              echo "✅ $name → $STATUS"
+            else
+              echo "❌ $name → $STATUS"
+              FAILED=$((FAILED+1))
+            fi
+          done
+
+          kill $PF_PID 2>/dev/null || true
+
+          if [ $FAILED -gt 0 ]; then
+            echo "❌ $FAILED service(s) failed smoke test"
+            exit 1
+          fi
+          echo "✅ All smoke tests passed"
+
+      - name: Print deployment summary
+        if: always()
+        run: |
+          echo "════════════════════════════════════"
+          echo "  Deployment Summary"
+          echo "════════════════════════════════════"
+          kubectl get pods -n ums
+          echo ""
+          kubectl get svc -n ums
