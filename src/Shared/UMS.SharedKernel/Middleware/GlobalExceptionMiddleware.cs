@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using UMS.SharedKernel.Exceptions;
 
@@ -36,12 +36,11 @@ public sealed class GlobalExceptionMiddleware(
 
             KeyNotFoundException
                 => (404, "NOT_FOUND", ex.Message),
-            TenantNotFoundHelper
                 => (404, "TENANT_NOT_FOUND", ex.Message),
             UnauthorizedAccessException
                 => (401, "UNAUTHORIZED", ex.Message),
 
-            // ← ADDED: domain guard failures (empty name, email, etc.) → 422
+            // ? ADDED: domain guard failures (empty name, email, etc.) ? 422
             ArgumentException
                 => (422, "VALIDATION_ERROR", ex.Message),
 
@@ -52,7 +51,6 @@ public sealed class GlobalExceptionMiddleware(
             InvalidOperationException
                 => (400, "INVALID_OPERATION", ex.Message),
 
-            Exception when ex.GetType() == typeof(Exception) && ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase)
                 => (404, "NOT_FOUND", ex.Message),
 
             _ => (500, "INTERNAL_ERROR", "An unexpected error occurred.")
@@ -63,5 +61,4 @@ public sealed class GlobalExceptionMiddleware(
         await ctx.Response.WriteAsJsonAsync(new { code, message });
     }
 
-    private sealed class TenantNotFoundHelper : Exception { }
 }
