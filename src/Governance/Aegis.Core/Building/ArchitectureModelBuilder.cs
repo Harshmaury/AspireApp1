@@ -160,6 +160,7 @@ public sealed class ArchitectureModelBuilder
 
     private MSBuildWorkspace CreateWorkspace()
     {
+        if (!MSBuildLocator.IsRegistered) MSBuildLocator.RegisterDefaults();
         var workspace = MSBuildWorkspace.Create();
         workspace.WorkspaceFailed += (_, e) =>
         {
