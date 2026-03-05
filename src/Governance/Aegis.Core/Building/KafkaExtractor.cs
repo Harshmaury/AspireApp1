@@ -18,10 +18,10 @@ internal static class KafkaExtractor
             var methodSym = model.GetSymbolInfo(inv).Symbol as IMethodSymbol;
             if (methodSym == null || !_producerMethods.Contains(methodSym.Name)) continue;
 
-            var firstArg = inv.ArgumentList.Arguments.FirstOrDefault();
-            if (firstArg == null) continue;
-
-            var eventType = model.GetTypeInfo(firstArg.Expression).Type;
+            var eventType = (inv.Expression as MemberAccessExpressionSyntax)
+                is { Name: GenericNameSyntax g } && g.TypeArgumentList.Arguments.Count > 0
+                ? model.GetTypeInfo(g.TypeArgumentList.Arguments[0]).Type
+                : null;
             if (eventType == null) continue;
 
             yield return new KafkaProduction
