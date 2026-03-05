@@ -10,6 +10,7 @@ public sealed class OutboxRelayService : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<OutboxRelayService> _logger;
     private readonly string _bootstrapServers;
+    private IProducer<string, string>? _producer;
 
     public OutboxRelayService(
         IServiceScopeFactory scopeFactory,
@@ -23,7 +24,15 @@ public sealed class OutboxRelayService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
+        var config = new ProducerConfig
+        {
+            BootstrapServers = _bootstrapServers,
+            SecurityProtocol = SecurityProtocol.Plaintext
+        };
+        _producer = new ProducerBuilder<string, string>(config).Build();
+
         _logger.LogInformation("Outbox relay started. Bootstrap: {Servers}", _bootstrapServers);
+
         while (!ct.IsCancellationRequested)
         {
             try { await ProcessPendingMessagesAsync(ct); }
@@ -43,16 +52,20 @@ public sealed class OutboxRelayService : BackgroundService
             .Take(20)
             .ToListAsync(ct);
 
-        if (!messages.Any()) return;
-
-        var config = new ProducerConfig { BootstrapServers = _bootstrapServers, SecurityProtocol = SecurityProtocol.Plaintext };
-        using var producer = new ProducerBuilder<string, string>(config).Build();
+        if (!messages.Any())
+        {
+            var dead = await db.OutboxMessages
+                .CountAsync(m => m.ProcessedAt == null && m.RetryCount >= 5, ct);
+            if (dead > 0)
+                _logger.LogError("OUTBOX DEAD LETTERS: {Count} messages permanently failed", dead);
+            return;
+        }
 
         foreach (var message in messages)
         {
             try
             {
-                await producer.ProduceAsync(
+                await _producer!.ProduceAsync(
                     KafkaTopics.IdentityEvents,
                     new Message<string, string> { Key = message.Id.ToString(), Value = message.Payload }, ct);
                 message.MarkProcessed();
@@ -66,5 +79,11 @@ public sealed class OutboxRelayService : BackgroundService
         }
 
         await db.SaveChangesAsync(ct);
+    }
+
+    public override void Dispose()
+    {
+        _producer?.Dispose();
+        base.Dispose();
     }
 }

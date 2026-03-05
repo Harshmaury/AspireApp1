@@ -1,4 +1,4 @@
-ï»¿using Identity.API.Endpoints;
+using Identity.API.Endpoints;
 using Identity.API.Services;
 using Identity.Application;
 using Identity.Infrastructure;
@@ -32,8 +32,8 @@ if (clientSecret is null)
 // generated new keys, invalidating all active tokens across the fleet.
 // Production now loads persistent RSA keys from config (Kubernetes secret).
 // Store base64-encoded RSA XML in:
-//   OpenIddict:SigningKeyXml      â€” RSA 2048-bit XML private key
-//   OpenIddict:EncryptionKeyXml  â€” RSA 2048-bit XML private key
+//   OpenIddict:SigningKeyXml      — RSA 2048-bit XML private key
+//   OpenIddict:EncryptionKeyXml  — RSA 2048-bit XML private key
 // To generate: var rsa = RSA.Create(2048); Console.WriteLine(Convert.ToBase64String(Encoding.UTF8.GetBytes(rsa.ToXmlString(true))));
 RsaSecurityKey? LoadRsaKey(string configKey)
 {
@@ -66,7 +66,7 @@ builder.Services.AddOpenIddict()
 
         if (isDev)
         {
-            // Ephemeral keys are acceptable in development â€” no shared state between restarts
+            // Ephemeral keys are acceptable in development — no shared state between restarts
             options.AddEphemeralEncryptionKey();
             options.AddEphemeralSigningKey();
         }
@@ -107,28 +107,30 @@ await IdentitySeeder.SeedAsync(app.Services);
 using (var scope = app.Services.CreateScope())
 {
     var manager  = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
+    var descriptor = new OpenIddictApplicationDescriptor
+    {
+        ClientId     = "api-gateway",
+        ClientSecret = clientSecret,
+        DisplayName  = "API Gateway",
+        Permissions  =
+        {
+            Permissions.Endpoints.Token,
+            Permissions.GrantTypes.Password,
+            Permissions.GrantTypes.RefreshToken,
+            Permissions.Scopes.Email,
+            Permissions.Scopes.Profile,
+            Permissions.Scopes.Roles,
+            Permissions.Prefixes.Scope + "offline_access",
+            Permissions.Prefixes.Scope + "openid",
+            Permissions.Prefixes.Scope + "api"
+        }
+    };
+
     var existing = await manager.FindByClientIdAsync("api-gateway");
     if (existing is null)
-    {
-        await manager.CreateAsync(new OpenIddictApplicationDescriptor
-        {
-            ClientId     = "api-gateway",
-            ClientSecret = clientSecret,
-            DisplayName  = "API Gateway",
-            Permissions  =
-            {
-                Permissions.Endpoints.Token,
-                Permissions.GrantTypes.Password,
-                Permissions.GrantTypes.RefreshToken,
-                Permissions.Scopes.Email,
-                Permissions.Scopes.Profile,
-                Permissions.Scopes.Roles,
-                Permissions.Prefixes.Scope + "offline_access",
-                Permissions.Prefixes.Scope + "openid",
-                Permissions.Prefixes.Scope + "api"
-            }
-        });
-    }
+        await manager.CreateAsync(descriptor);
+    else
+        await manager.UpdateAsync(existing, descriptor);
 }
 
 if (app.Environment.IsDevelopment())

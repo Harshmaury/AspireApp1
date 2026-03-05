@@ -30,7 +30,7 @@ internal sealed class RegisterCommandHandler
         var exists = await _users.ExistsAsync(tenant.Id, request.Email, ct);
         if (exists)
             return new RegisterResult(false, null,
-                [$"Email ''{request.Email}'' is already registered."]);
+                [$"Email '{request.Email}' is already registered."]
 
         // 3. Create domain aggregate — raises UserRegisteredEvent internally
         var user = ApplicationUser.Create(
@@ -49,3 +49,5 @@ internal sealed class RegisterCommandHandler
         return new RegisterResult(true, user.Id, []);
     }
 }
+
+
