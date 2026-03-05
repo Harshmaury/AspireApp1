@@ -1,7 +1,5 @@
 namespace Aegis.Core.Rules;
-
 using Aegis.Core.Model;
-
 public sealed class LoggingContractRule : IRule
 {
     public string       RuleId   => "AGS-013";
@@ -14,24 +12,31 @@ public sealed class LoggingContractRule : IRule
         var violations = new List<RuleViolation>();
 
         foreach (var svc in model.Services)
-        foreach (var type in svc.Types.Where(t => t.Kind == NodeKind.Controller))
         {
-            var hasLogger = svc.Edges
-                .Where(e => e.From.FullName == type.FullName &&
-                            e.Kind == EdgeKind.ConstructorInjection)
-                .Any(e => e.ToFullName.Contains("ILogger"));
+            // Match MVC controllers OR minimal-API endpoint classes (API layer with Endpoints populated)
+            var entryPoints = svc.Types.Where(t =>
+                t.Kind == NodeKind.Controller ||
+                (t.Layer == ArchitectureLayer.API && t.Endpoints.Count > 0));
 
-            if (!hasLogger)
+            foreach (var type in entryPoints)
             {
-                violations.Add(new RuleViolation
+                var hasLogger = svc.Edges
+                    .Where(e => e.From.FullName == type.FullName &&
+                                e.Kind == EdgeKind.ConstructorInjection)
+                    .Any(e => e.ToFullName.Contains("ILogger"));
+
+                if (!hasLogger)
                 {
-                    RuleId      = RuleId,
-                    Severity    = RuleSeverity.Warning,
-                    ProjectName = svc.ProjectName,
-                    Message     = $"Controller '{type.ShortName}' does not inject ILogger. " +
-                                  $"All controllers must log structured requests.",
-                    Subject     = type,
-                });
+                    violations.Add(new RuleViolation
+                    {
+                        RuleId      = RuleId,
+                        Severity    = RuleSeverity.Warning,
+                        ProjectName = svc.ProjectName,
+                        Message     = $"Endpoint class '{type.ShortName}' does not inject ILogger. " +
+                                      $"All API entry points must log structured requests.",
+                        Subject     = type,
+                    });
+                }
             }
         }
 
