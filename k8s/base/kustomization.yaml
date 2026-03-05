@@ -40,5 +40,16 @@ resources:
   - gateway/hpa.yaml
   - bff/deployment.yaml
   - bff/service.yaml
+  # ── Monitoring ────────────────────────────────────────────────────────────
+  - infra/monitoring/prometheus-rbac.yaml
+  - infra/monitoring/prometheus-pvc.yaml
+  - infra/monitoring/prometheus-configmap.yaml
+  - infra/monitoring/prometheus-deployment.yaml
+  - infra/monitoring/prometheus-service.yaml
+  - infra/monitoring/grafana-pvc.yaml
+  - infra/monitoring/grafana-provisioning-configmap.yaml
+  - infra/monitoring/grafana-dashboards-configmap.yaml
+  - infra/monitoring/grafana-deployment.yaml
+  - infra/monitoring/grafana-service.yaml
   - configmap-base.yaml
   - secret.yaml

@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: ums
+data:
+  ums-platform.json: |
+    {
+      "title": "UMS Platform Overview",
+      "uid": "ums-platform",
+      "timezone": "browser",
+      "refresh": "30s",
+      "panels": [
+        {
+          "id": 1,
+          "title": "HTTP Request Rate (all services)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "targets": [{
+            "expr": "sum(rate(http_server_request_duration_seconds_count{namespace=\"ums\"}[2m])) by (service)",
+            "legendFormat": "{{service}}"
+          }]
+        },
+        {
+          "id": 2,
+          "title": "HTTP Error Rate (5xx)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "targets": [{
+            "expr": "sum(rate(http_server_request_duration_seconds_count{namespace=\"ums\",http_response_status_code=~\"5..\"}[2m])) by (service)",
+            "legendFormat": "{{service}} errors"
+          }]
+        },
+        {
+          "id": 3,
+          "title": "P99 Request Latency",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "targets": [{
+            "expr": "histogram_quantile(0.99, sum(rate(http_server_request_duration_seconds_bucket{namespace=\"ums\"}[2m])) by (le, service))",
+            "legendFormat": "{{service}} p99"
+          }]
+        },
+        {
+          "id": 4,
+          "title": "Memory Usage (bytes)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "targets": [{
+            "expr": "dotnet_gc_heap_size_bytes{namespace=\"ums\"}",
+            "legendFormat": "{{service}} heap"
+          }]
+        },
+        {
+          "id": 5,
+          "title": "GC Collections / min",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+          "targets": [{
+            "expr": "sum(rate(dotnet_gc_collections_total{namespace=\"ums\"}[1m])) by (service, generation)",
+            "legendFormat": "{{service}} gen{{generation}}"
+          }]
+        },
+        {
+          "id": 6,
+          "title": "Active HTTP Connections",
+          "type": "stat",
+          "gridPos": {"h": 4, "w": 12, "x": 12, "y": 16},
+          "targets": [{
+            "expr": "sum(http_server_active_requests{namespace=\"ums\"}) by (service)",
+            "legendFormat": "{{service}}"
+          }]
+        }
+      ]
+    }
