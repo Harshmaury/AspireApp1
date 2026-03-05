@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Identity.Application.Features.Auth.Commands;
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
@@ -16,12 +16,12 @@ public sealed class RegisterCommandHandlerTests
     private RegisterCommandHandler BuildHandler() =>
         new(_users.Object, _tenants.Object);
 
-    private static readonly Tenant ValidTenant = Tenant.Create("Test Uni", "test-uni");
+    private static Tenant ValidTenant() => Tenant.Create("Test Uni", "test-uni");
 
-    private static RegisterCommand ValidCommand() => new(
-        TenantSlug: "test-uni",
+    private static RegisterCommand ValidCommand(string tenantSlug = "test-uni") => new(
+        TenantSlug: tenantSlug,
         Email: "john@uni.edu",
-        Password: "Pass@123",
+        Password: "Password@123",
         FirstName: "John",
         LastName: "Doe"
     );
@@ -29,59 +29,85 @@ public sealed class RegisterCommandHandlerTests
     [Fact]
     public async Task Handle_ValidCommand_ReturnsSuccess()
     {
-        _tenants.Setup(t => t.FindBySlugAsync("test-uni", It.IsAny<CancellationToken>()))
-                .ReturnsAsync(ValidTenant);
-        _users.Setup(u => u.ExistsAsync(It.IsAny<Guid>(), "john@uni.edu", It.IsAny<CancellationToken>()))
+        var tenant = ValidTenant();
+        _tenants.Setup(r => r.FindBySlugAsync("test-uni", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(tenant);
+        _users.Setup(r => r.ExistsAsync(tenant.Id, "john@uni.edu", It.IsAny<CancellationToken>()))
               .ReturnsAsync(false);
-        _users.Setup(u => u.CreateAsync(It.IsAny<ApplicationUser>(), "Pass@123"))
+        _users.Setup(r => r.CreateAsync(It.IsAny<ApplicationUser>(), "Password@123"))
               .ReturnsAsync(IdentityResult.Success);
 
         var result = await BuildHandler().Handle(ValidCommand(), CancellationToken.None);
 
         result.Succeeded.Should().BeTrue();
-        result.UserId.Should().NotBeNull();
+        result.UserId.Should().NotBeNull().And.NotBe(Guid.Empty);
         result.Errors.Should().BeEmpty();
     }
 
     [Fact]
     public async Task Handle_TenantNotFound_ThrowsTenantNotFoundException()
     {
-        _tenants.Setup(t => t.FindBySlugAsync("test-uni", It.IsAny<CancellationToken>()))
+        _tenants.Setup(r => r.FindBySlugAsync("bad-slug", It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Tenant?)null);
 
-        var act = async () => await BuildHandler().Handle(ValidCommand(), CancellationToken.None);
+        var act = async () => await BuildHandler().Handle(
+            ValidCommand("bad-slug"), CancellationToken.None);
 
         await act.Should().ThrowAsync<TenantNotFoundException>();
     }
 
     [Fact]
-    public async Task Handle_DuplicateEmail_ReturnsFailure()
+    public async Task Handle_DuplicateEmail_ReturnsFailureWithMessage()
     {
-        _tenants.Setup(t => t.FindBySlugAsync("test-uni", It.IsAny<CancellationToken>()))
-                .ReturnsAsync(ValidTenant);
-        _users.Setup(u => u.ExistsAsync(It.IsAny<Guid>(), "john@uni.edu", It.IsAny<CancellationToken>()))
+        var tenant = ValidTenant();
+        _tenants.Setup(r => r.FindBySlugAsync("test-uni", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(tenant);
+        _users.Setup(r => r.ExistsAsync(tenant.Id, "john@uni.edu", It.IsAny<CancellationToken>()))
               .ReturnsAsync(true);
 
         var result = await BuildHandler().Handle(ValidCommand(), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().NotBeEmpty();
+        result.UserId.Should().BeNull();
+        result.Errors.Should().ContainSingle(e => e.Contains("already registered"));
     }
 
     [Fact]
-    public async Task Handle_IdentityFailure_ReturnsFailure()
+    public async Task Handle_IdentityCreateFails_ReturnsFailureWithErrors()
     {
-        _tenants.Setup(t => t.FindBySlugAsync("test-uni", It.IsAny<CancellationToken>()))
-                .ReturnsAsync(ValidTenant);
-        _users.Setup(u => u.ExistsAsync(It.IsAny<Guid>(), "john@uni.edu", It.IsAny<CancellationToken>()))
+        var tenant = ValidTenant();
+        _tenants.Setup(r => r.FindBySlugAsync("test-uni", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(tenant);
+        _users.Setup(r => r.ExistsAsync(tenant.Id, "john@uni.edu", It.IsAny<CancellationToken>()))
               .ReturnsAsync(false);
-        _users.Setup(u => u.CreateAsync(It.IsAny<ApplicationUser>(), "Pass@123"))
-              .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Password too weak." }));
+        _users.Setup(r => r.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()))
+              .ReturnsAsync(IdentityResult.Failed(
+                  new IdentityError { Code = "WeakPassword", Description = "Password too weak." }));
 
         var result = await BuildHandler().Handle(ValidCommand(), CancellationToken.None);
 
         result.Succeeded.Should().BeFalse();
-        result.Errors.Should().Contain("Password too weak.");
+        result.Errors.Should().ContainSingle(e => e.Contains("Password too weak"));
+    }
+
+    [Fact]
+    public async Task Handle_ValidCommand_UserRaisesRegisteredEvent()
+    {
+        var tenant = ValidTenant();
+        ApplicationUser? capturedUser = null;
+
+        _tenants.Setup(r => r.FindBySlugAsync("test-uni", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(tenant);
+        _users.Setup(r => r.ExistsAsync(tenant.Id, "john@uni.edu", It.IsAny<CancellationToken>()))
+              .ReturnsAsync(false);
+        _users.Setup(r => r.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()))
+              .Callback<ApplicationUser, string>((u, _) => capturedUser = u)
+              .ReturnsAsync(IdentityResult.Success);
+
+        await BuildHandler().Handle(ValidCommand(), CancellationToken.None);
+
+        capturedUser.Should().NotBeNull();
+        capturedUser!.DomainEvents.Should().ContainSingle(
+            e => e.GetType().Name == "UserRegisteredEvent");
     }
 }
-

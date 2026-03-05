@@ -22,6 +22,7 @@ public static class IdentitySeeder
         var seedEmail    = cfg["UMS:SeedEmail"]      ?? "superadmin@ums.com";
         var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
         var seedPassword = cfg["UMS:SeedPassword"] ?? (isDev ? "Admin@1234" : throw new InvalidOperationException("UMS:SeedPassword must be set in production."));
+        var seedSlug      = cfg["UMS:SeedTenantSlug"] ?? "ums-platform";
         var devSlug      = cfg["UMS:DevTenantSlug"]  ?? "test-uni";
 
         // 1 — Create roles

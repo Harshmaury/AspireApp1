@@ -36,7 +36,6 @@ public sealed class GlobalExceptionMiddleware(
 
             KeyNotFoundException
                 => (404, "NOT_FOUND", ex.Message),
-                => (404, "TENANT_NOT_FOUND", ex.Message),
             UnauthorizedAccessException
                 => (401, "UNAUTHORIZED", ex.Message),
 
@@ -51,7 +50,6 @@ public sealed class GlobalExceptionMiddleware(
             InvalidOperationException
                 => (400, "INVALID_OPERATION", ex.Message),
 
-                => (404, "NOT_FOUND", ex.Message),
 
             _ => (500, "INTERNAL_ERROR", "An unexpected error occurred.")
         };

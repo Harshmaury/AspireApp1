@@ -67,8 +67,7 @@ public sealed class OutboxRelayService : BackgroundService
             {
                 await _producer!.ProduceAsync(
                     KafkaTopics.IdentityEvents,
-                    new Message<string, string> { Key = message.Id.ToString(), Value = message.Payload }, ct);
-                message.MarkProcessed();
+                    new Message<string, string> { Key = message.Id.ToString(), Value = System.Text.Json.JsonSerializer.Serialize(UMS.SharedKernel.Kafka.KafkaEventEnvelope.Create(message.EventType, Guid.Empty, "default", message.Payload)) }, ct);
                 _logger.LogInformation("Published outbox message {Id} of type {Type}", message.Id, message.EventType);
             }
             catch (Exception ex)
@@ -83,6 +82,7 @@ public sealed class OutboxRelayService : BackgroundService
 
     public override void Dispose()
     {
+        _producer?.Flush(TimeSpan.FromSeconds(5));
         _producer?.Dispose();
         base.Dispose();
     }
