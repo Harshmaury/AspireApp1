@@ -19,7 +19,7 @@ public static class TenantEndpoints
                 new ProvisionTenantCommand(req.Name, req.Slug, req.Tier, req.Region), ct);
             return Results.Created($"/api/tenants/{result.TenantId}", result);
         })
-        ;
+        .RequireAuthorization(p => p.RequireRole("SuperAdmin"));
 
         return app;
     }
@@ -30,3 +30,4 @@ public sealed record ProvisionTenantRequest(
     string Slug,
     string Tier = "Shared",
     string Region = "default");
+

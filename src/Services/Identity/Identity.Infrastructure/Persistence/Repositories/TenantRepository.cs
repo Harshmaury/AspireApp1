@@ -12,10 +12,11 @@ internal sealed class TenantRepository : ITenantRepository
             .FirstOrDefaultAsync(t => t.Slug == slug.ToLowerInvariant() && t.IsActive, ct);
     public async Task<bool> ExistsAsync(string slug, CancellationToken ct = default)
         => await _db.Tenants
-            .AnyAsync(t => t.Slug == slug.ToLowerInvariant(), ct);
+            .AnyAsync(t => t.Slug == slug.ToLowerInvariant() && t.IsActive, ct);
     public async Task AddAsync(Tenant tenant, CancellationToken ct = default)
     {
         await _db.Tenants.AddAsync(tenant, ct);
         await _db.SaveChangesAsync(ct);
     }
 }
+

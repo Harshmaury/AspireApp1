@@ -25,8 +25,7 @@ public sealed class ProvisionTenantCommandHandler
     {
         var existing = await _tenants.FindBySlugAsync(request.Slug, ct);
         if (existing is not null)
-            throw new InvalidOperationException($"Tenant '{request.Slug}' already exists.");
-
+            return new ProvisionTenantResult(existing.Id, existing.Slug, "AlreadyExists");
         var tier = Enum.TryParse<TenantTier>(request.Tier, true, out var t)
             ? t : TenantTier.Shared;
 

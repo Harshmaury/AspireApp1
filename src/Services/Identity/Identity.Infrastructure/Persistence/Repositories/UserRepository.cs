@@ -62,5 +62,9 @@ internal sealed class UserRepository : IUserRepository
         => await _userManager.GetRolesAsync(user);
 
     public async Task UpdateAsync(ApplicationUser user)
-        => await _userManager.UpdateAsync(user);
+    {
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+            throw new InvalidOperationException($"User update failed: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+    }
 }
