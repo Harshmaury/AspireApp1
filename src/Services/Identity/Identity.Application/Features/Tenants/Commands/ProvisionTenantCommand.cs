@@ -24,8 +24,7 @@ public sealed class ProvisionTenantCommandHandler
         ProvisionTenantCommand request, CancellationToken ct)
     {
         var existing = await _tenants.FindBySlugAsync(request.Slug, ct);
-        if (existing is not null)
-            return new ProvisionTenantResult(existing.Id, existing.Slug, "AlreadyExists");
+        if (existing is not null) throw new Identity.Domain.Exceptions.TenantAlreadyExistsException(request.Slug);
         var tier = Enum.TryParse<TenantTier>(request.Tier, true, out var t)
             ? t : TenantTier.Shared;
 
