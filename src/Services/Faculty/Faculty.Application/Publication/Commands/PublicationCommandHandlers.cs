@@ -1,7 +1,7 @@
-using MediatR;
 using Faculty.Application.Interfaces;
 using Faculty.Domain.Enums;
 using Faculty.Domain.Exceptions;
+using MediatR;
 using PublicationEntity = Faculty.Domain.Entities.Publication;
 namespace Faculty.Application.Publication.Commands;
 public sealed class AddPublicationCommandHandler : IRequestHandler<AddPublicationCommand, Guid>

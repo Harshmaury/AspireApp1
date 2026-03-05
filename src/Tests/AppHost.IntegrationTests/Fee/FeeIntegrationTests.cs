@@ -1,10 +1,10 @@
 ﻿extern alias FeeAPI;
 using AppHost.IntegrationTests.Helpers;
+using Fee.Infrastructure.Persistence;
 using FluentAssertions;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Fee.Infrastructure.Persistence;
 using Xunit;
 
 namespace AppHost.IntegrationTests.Fee;
@@ -13,11 +13,13 @@ namespace AppHost.IntegrationTests.Fee;
 public class FeeIntegrationTests : IClassFixture<ServiceFixture<FeeAPI::Program, FeeDbContext>>
 {
     private readonly HttpClient _client;
+    private readonly ServiceFixture<FeeAPI::Program, FeeDbContext> _fixture;
     private readonly Guid _tenantId = TestTenant.Id;
 
     public FeeIntegrationTests(ServiceFixture<FeeAPI::Program, FeeDbContext> fixture)
     {
-        _client = fixture.Client;
+        _fixture = fixture;
+        _client  = fixture.Client;
     }
 
     private async Task<Guid> CreateFeeStructureAsync()
@@ -65,7 +67,15 @@ public class FeeIntegrationTests : IClassFixture<ServiceFixture<FeeAPI::Program,
         });
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        body.GetProperty("id").GetGuid().Should().NotBeEmpty();
+        var id = body.GetProperty("id").GetGuid();
+        id.Should().NotBeEmpty();
+
+        // TST-7 fix: verify fee structure actually persisted to DB
+        var getResponse = await _client.GetAsync($"/api/fee-structures/{id}?tenantId={_tenantId}");
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK,
+            "fee structure must be readable from DB after creation");
+        var fetched = await getResponse.Content.ReadFromJsonAsync<JsonElement>();
+        fetched.GetProperty("id").GetGuid().Should().Be(id);
     }
 
     [Fact]
@@ -78,6 +88,13 @@ public class FeeIntegrationTests : IClassFixture<ServiceFixture<FeeAPI::Program,
             feeStructureId = structureId, amountPaid = 60000.00, paymentMode = "Online"
         });
         response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var id = body.GetProperty("id").GetGuid();
+
+        // TST-7 fix: verify payment persisted to DB
+        var getResponse = await _client.GetAsync($"/api/fee-payments/{id}?tenantId={_tenantId}");
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK,
+            "fee payment must be readable from DB after creation");
     }
 
     [Fact]
@@ -88,6 +105,14 @@ public class FeeIntegrationTests : IClassFixture<ServiceFixture<FeeAPI::Program,
         var response    = await _client.PutAsync(
             $"/api/fee-payments/{paymentId}/success?tenantId={_tenantId}", null);
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // TST-7 fix: assert payment is actually in Success state in DB
+        // Previously this test gave false green — 204 with no state transition saved (FEE-2/FEE-3)
+        var getResponse = await _client.GetAsync($"/api/fee-payments/{paymentId}?tenantId={_tenantId}");
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var fetched = await getResponse.Content.ReadFromJsonAsync<JsonElement>();
+        fetched.GetProperty("status").GetString().Should().Be("Success",
+            "payment must be in Success state in DB after MarkPaymentSuccess — a 204 with no persisted state change is a silent bug");
     }
 
     [Fact]
@@ -98,6 +123,13 @@ public class FeeIntegrationTests : IClassFixture<ServiceFixture<FeeAPI::Program,
         var response    = await _client.PutAsync(
             $"/api/fee-payments/{paymentId}/failed?tenantId={_tenantId}", null);
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // TST-7 fix: assert payment is actually in Failed state in DB
+        var getResponse = await _client.GetAsync($"/api/fee-payments/{paymentId}?tenantId={_tenantId}");
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var fetched = await getResponse.Content.ReadFromJsonAsync<JsonElement>();
+        fetched.GetProperty("status").GetString().Should().Be("Failed",
+            "payment must be in Failed state in DB after MarkPaymentFailed");
     }
 
     [Fact]

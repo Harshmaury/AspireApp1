@@ -1,6 +1,7 @@
+ï»¿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 using Xunit;
-using Microsoft.EntityFrameworkCore;
 
 namespace AppHost.IntegrationTests.Helpers;
 
@@ -25,16 +26,22 @@ public class ServiceFixture<TProgram, TDbContext> : IAsyncLifetime
         await _container.StartAsync();
         var connStr = _container.GetConnectionString();
 
-        // Must set BEFORE factory builds — AddNpgSqlHealthCheck reads from IConfiguration
+        // Must set BEFORE factory builds â€” AddNpgSqlHealthCheck reads from IConfiguration
         Environment.SetEnvironmentVariable($"ConnectionStrings__{_dbKey}", connStr);
 
         _factory = new ServiceWebFactory<TProgram, TDbContext>(connStr);
         Client = _factory.CreateClient();
 
-        // Simulate gateway forwarded headers — services read these instead of JWT
+        // Run migrations so test schema matches production exactly (fixes TST-2)
+        await _factory.EnsureCreatedAsync();
+
+        // Simulate gateway forwarded headers â€” services read these instead of JWT
         Client.DefaultRequestHeaders.Add("X-Tenant-Id", TestTenant.Id.ToString());
         Client.DefaultRequestHeaders.Add("X-User-Id", Guid.NewGuid().ToString());
     }
+
+    // Allows tests to open a DbContext scope and verify DB state directly
+    public IServiceScope CreateScope() => _factory.Services.CreateScope();
 
     public async Task DisposeAsync()
     {

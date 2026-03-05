@@ -1,9 +1,9 @@
+using FluentAssertions;
 using Identity.Application.Features.Auth.Commands;
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Identity.Domain.Exceptions;
 using Microsoft.AspNetCore.Identity;
-using FluentAssertions;
 using Moq;
 
 namespace Identity.Tests.Application;

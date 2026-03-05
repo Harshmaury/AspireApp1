@@ -1,9 +1,9 @@
-using MediatR;
 using Attendance.Application.AttendanceRecord.Commands;
 using Attendance.Application.AttendanceRecord.Queries;
 using Attendance.Application.AttendanceSummary.Queries;
 using Attendance.Application.Condonation.Commands;
 using Attendance.Application.Condonation.Queries;
+using MediatR;
 namespace Attendance.API.Endpoints;
 public static class AttendanceEndpoints
 {

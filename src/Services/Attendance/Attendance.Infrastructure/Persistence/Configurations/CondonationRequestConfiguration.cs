@@ -1,6 +1,6 @@
+using Attendance.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Attendance.Domain.Entities;
 namespace Attendance.Infrastructure.Persistence.Configurations;
 public sealed class CondonationRequestConfiguration : IEntityTypeConfiguration<CondonationRequest>
 {

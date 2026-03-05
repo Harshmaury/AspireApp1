@@ -1,5 +1,5 @@
-using MediatR;
 using Examination.Application.Interfaces;
+using MediatR;
 namespace Examination.Application.MarksEntry.Commands;
 public sealed class SubmitMarksCommandHandler : IRequestHandler<SubmitMarksCommand>
 {

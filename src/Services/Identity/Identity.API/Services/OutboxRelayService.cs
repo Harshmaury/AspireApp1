@@ -1,6 +1,7 @@
 using Confluent.Kafka;
 using Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using UMS.SharedKernel.Kafka;
 
 namespace Identity.API.Services;
 
@@ -15,26 +16,18 @@ public sealed class OutboxRelayService : BackgroundService
         ILogger<OutboxRelayService> logger,
         IConfiguration configuration)
     {
-        _scopeFactory = scopeFactory;
-        _logger = logger;
+        _scopeFactory     = scopeFactory;
+        _logger           = logger;
         _bootstrapServers = configuration.GetConnectionString("kafka") ?? "localhost:9092";
     }
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         _logger.LogInformation("Outbox relay started. Bootstrap: {Servers}", _bootstrapServers);
-
         while (!ct.IsCancellationRequested)
         {
-            try
-            {
-                await ProcessPendingMessagesAsync(ct);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Outbox relay cycle failed. Retrying in 10s.");
-            }
-
+            try { await ProcessPendingMessagesAsync(ct); }
+            catch (Exception ex) { _logger.LogWarning(ex, "Outbox relay cycle failed. Retrying in 5s."); }
             await Task.Delay(TimeSpan.FromSeconds(5), ct);
         }
     }
@@ -60,16 +53,10 @@ public sealed class OutboxRelayService : BackgroundService
             try
             {
                 await producer.ProduceAsync(
-                    "identity-events",
-                    new Message<string, string>
-                    {
-                        Key = message.Id.ToString(),
-                        Value = message.Payload
-                    }, ct);
-
+                    KafkaTopics.IdentityEvents,
+                    new Message<string, string> { Key = message.Id.ToString(), Value = message.Payload }, ct);
                 message.MarkProcessed();
-                _logger.LogInformation("Published outbox message {Id} of type {Type}",
-                    message.Id, message.EventType);
+                _logger.LogInformation("Published outbox message {Id} of type {Type}", message.Id, message.EventType);
             }
             catch (Exception ex)
             {

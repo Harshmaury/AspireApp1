@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using FacultyEntity = Faculty.Domain.Entities.Faculty;
+
 namespace Faculty.Infrastructure.Persistence.Configurations;
+
 public sealed class FacultyConfiguration : IEntityTypeConfiguration<FacultyEntity>
 {
     public void Configure(EntityTypeBuilder<FacultyEntity> builder)
@@ -18,5 +20,14 @@ public sealed class FacultyConfiguration : IEntityTypeConfiguration<FacultyEntit
         builder.Property(e => e.HighestQualification).HasMaxLength(100).IsRequired();
         builder.Property(e => e.Designation).HasConversion<string>();
         builder.Property(e => e.Status).HasConversion<string>();
+
+        // PostgreSQL xmin system column - zero migration cost.
+        // Prevents last-write-wins when two commands race on the same faculty record.
+        // EF appends: WHERE Id = @id AND xmin = @original_xmin
+        builder.Property<uint>("xmin")
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .ValueGeneratedOnAddOrUpdate()
+            .IsConcurrencyToken();
     }
 }

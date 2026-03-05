@@ -1,6 +1,6 @@
+using Microsoft.Build.Locator;
 using System.CommandLine;
 using Ums.Cli.Adapters;
-using Microsoft.Build.Locator;
 
 MSBuildLocator.RegisterDefaults();
 

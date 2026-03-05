@@ -28,6 +28,11 @@
     <ProjectReference Include="..\..\Services\Student\Student.API\Student.API.csproj" Aliases="StudentAPI" />
     <ProjectReference Include="..\..\Services\Examination\Examination.API\Examination.API.csproj" Aliases="ExaminationAPI" />
     <ProjectReference Include="..\..\Services\Fee\Fee.API\Fee.API.csproj" Aliases="FeeAPI" />
+    <ProjectReference Include="..\..\Services\Attendance\Attendance.API\Attendance.API.csproj" Aliases="AttendanceAPI" />
+    <ProjectReference Include="..\..\Services\Academic\Academic.API\Academic.API.csproj" Aliases="AcademicAPI" />
+    <ProjectReference Include="..\..\Services\Faculty\Faculty.API\Faculty.API.csproj" Aliases="FacultyAPI" />
+    <ProjectReference Include="..\..\Services\Hostel\Hostel.API\Hostel.API.csproj" Aliases="HostelAPI" />
+    <ProjectReference Include="..\..\Services\Notification\Notification.API\Notification.API.csproj" Aliases="NotificationAPI" />
   </ItemGroup>
 
 </Project>

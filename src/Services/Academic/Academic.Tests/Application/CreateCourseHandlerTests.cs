@@ -1,9 +1,9 @@
-using Xunit;
 using Academic.Application.Course.Commands;
 using Academic.Application.Interfaces;
 using Academic.Domain.Entities;
-using Moq;
 using FluentAssertions;
+using Moq;
+using Xunit;
 namespace Academic.Tests.Application;
 public sealed class CreateCourseHandlerTests
 {

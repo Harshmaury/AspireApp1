@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using Faculty.Application.Interfaces;
 using Faculty.Domain.Entities;
 using Faculty.Domain.Enums;
 using Faculty.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 namespace Faculty.Infrastructure.Persistence.Repositories;
 public sealed class PublicationRepository : IPublicationRepository
 {

@@ -15,11 +15,39 @@ internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         builder.HasIndex(t => t.Slug).IsUnique();
         builder.Property(t => t.LogoUrl).HasMaxLength(500);
         builder.Property(t => t.CreatedAt).IsRequired();
+        builder.Property(t => t.UpdatedAt).IsRequired();
         builder.Property(t => t.IsActive).IsRequired().HasDefaultValue(true);
         builder.Property(t => t.Tier).IsRequired().HasConversion<string>().HasMaxLength(50);
         builder.Property(t => t.SubscriptionStatus).IsRequired().HasConversion<string>().HasMaxLength(50);
         builder.Property(t => t.MaxUsers).IsRequired().HasDefaultValue(100);
         builder.Property(t => t.Region).IsRequired().HasMaxLength(100).HasDefaultValue("default");
+        builder.Property(t => t.RowVersion).IsRowVersion();
+
+        // Legacy — retained for expand/contract. Will be dropped in a future migration.
         builder.Property(t => t.FeaturesJson).IsRequired().HasDefaultValue("{}");
+
+        // Structured feature flags stored as owned entity (inline columns)
+        builder.OwnsOne(t => t.Features, f =>
+        {
+            f.Property(x => x.AllowSelfRegistration)
+                .HasColumnName("Features_AllowSelfRegistration")
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            f.Property(x => x.AllowGuestAccess)
+                .HasColumnName("Features_AllowGuestAccess")
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            f.Property(x => x.EnableMfa)
+                .HasColumnName("Features_EnableMfa")
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            f.Property(x => x.EnableAuditLog)
+                .HasColumnName("Features_EnableAuditLog")
+                .IsRequired()
+                .HasDefaultValue(false);
+        });
     }
 }

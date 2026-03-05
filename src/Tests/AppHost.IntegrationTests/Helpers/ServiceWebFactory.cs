@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -30,7 +30,7 @@ public class ServiceWebFactory<TProgram, TDbContext>(string connectionString)
             services.AddDbContext<TDbContext>(opts =>
                 opts.UseNpgsql(connectionString));
 
-            // Remove ALL hosted services � Outbox relay tries to connect to Kafka
+            // Remove ALL hosted services — Outbox relay tries to connect to Kafka
             // (localhost:9092 doesn't exist in tests) and crashes on state transitions
             services.RemoveAll<IHostedService>();
 
@@ -51,7 +51,7 @@ public class ServiceWebFactory<TProgram, TDbContext>(string connectionString)
     {
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TDbContext>();
-        await db.Database.EnsureCreatedAsync();
+        await db.Database.MigrateAsync();
     }
 }
 
@@ -75,3 +75,4 @@ public class TestAuthHandler(
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }
 }
+

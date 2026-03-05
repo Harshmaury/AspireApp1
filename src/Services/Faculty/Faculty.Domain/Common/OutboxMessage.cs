@@ -1,4 +1,5 @@
 namespace Faculty.Domain.Common;
+
 public sealed class OutboxMessage
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -7,6 +8,15 @@ public sealed class OutboxMessage
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ProcessedAt { get; set; }
     public int RetryCount { get; set; }
+    public string? Error { get; set; }
     public const int MaxRetries = 5;
     public bool IsProcessed => ProcessedAt.HasValue;
+
+    public void MarkProcessed() => ProcessedAt = DateTime.UtcNow;
+
+    public void MarkFailed(string error)
+    {
+        RetryCount++;
+        Error = error;
+    }
 }

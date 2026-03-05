@@ -1,6 +1,6 @@
 ﻿using Examination.Application.ExamSchedule.Commands;
-using Examination.Application.MarksEntry.Commands;
 using Examination.Application.Interfaces;
+using Examination.Application.MarksEntry.Commands;
 using Examination.Domain.Entities;
 using Examination.Domain.Enums;
 using Examination.Domain.Exceptions;

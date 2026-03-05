@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using Fee.Application.Interfaces;
 using Fee.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using ScholarshipEntity = Fee.Domain.Entities.Scholarship;
 namespace Fee.Infrastructure.Persistence.Repositories;
 public sealed class ScholarshipRepository : IScholarshipRepository

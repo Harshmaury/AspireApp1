@@ -1,6 +1,7 @@
-using Confluent.Kafka;
+﻿using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
 using Student.Infrastructure.Persistence;
+using UMS.SharedKernel.Kafka;
 
 namespace Student.API.Services;
 
@@ -8,7 +9,7 @@ public sealed class StudentOutboxRelayService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<StudentOutboxRelayService> _logger;
-    private readonly string _bootstrapServers;
+    private readonly IProducer<string, string> _producer;
 
     public StudentOutboxRelayService(
         IServiceScopeFactory scopeFactory,
@@ -16,14 +17,20 @@ public sealed class StudentOutboxRelayService : BackgroundService
         IConfiguration configuration)
     {
         _scopeFactory = scopeFactory;
-        _logger = logger;
-        _bootstrapServers = configuration.GetConnectionString("kafka") ?? "localhost:9092";
+        _logger       = logger;
+
+        var bootstrapServers = configuration.GetConnectionString("kafka") ?? "localhost:9092";
+        _producer = new ProducerBuilder<string, string>(new ProducerConfig
+        {
+            BootstrapServers = bootstrapServers,
+            SecurityProtocol = SecurityProtocol.Plaintext
+        }).Build();
+
+        _logger.LogInformation("Student outbox relay started. Bootstrap: {Servers}", bootstrapServers);
     }
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
-        _logger.LogInformation("Student outbox relay started. Bootstrap: {Servers}", _bootstrapServers);
-
         while (!ct.IsCancellationRequested)
         {
             try
@@ -52,18 +59,15 @@ public sealed class StudentOutboxRelayService : BackgroundService
 
         if (!messages.Any()) return;
 
-        var config = new ProducerConfig { BootstrapServers = _bootstrapServers, SecurityProtocol = SecurityProtocol.Plaintext };
-        using var producer = new ProducerBuilder<string, string>(config).Build();
-
         foreach (var message in messages)
         {
             try
             {
-                await producer.ProduceAsync(
-                    "student-events",
+                await _producer.ProduceAsync(
+                    KafkaTopics.StudentEvents,
                     new Message<string, string>
                     {
-                        Key = message.Id.ToString(),
+                        Key   = message.Id.ToString(),
                         Value = message.Payload
                     }, ct);
 
@@ -79,5 +83,12 @@ public sealed class StudentOutboxRelayService : BackgroundService
         }
 
         await db.SaveChangesAsync(ct);
+    }
+
+    public override void Dispose()
+    {
+        _producer.Flush(TimeSpan.FromSeconds(5));
+        _producer.Dispose();
+        base.Dispose();
     }
 }

@@ -1,5 +1,5 @@
-using MediatR;
 using Faculty.Application.DTOs;
+using MediatR;
 namespace Faculty.Application.Faculty.Queries;
 public sealed record GetFacultyByIdQuery(Guid FacultyId, Guid TenantId) : IRequest<FacultyDto?>;
 public sealed record GetFacultyByDepartmentQuery(Guid DepartmentId, Guid TenantId) : IRequest<List<FacultyDto>>;

@@ -1,5 +1,5 @@
-using MediatR;
 using Fee.Application.Interfaces;
+using MediatR;
 using FeeStructureEntity = Fee.Domain.Entities.FeeStructure;
 namespace Fee.Application.FeeStructure.Commands;
 public sealed class CreateFeeStructureCommandHandler : IRequestHandler<CreateFeeStructureCommand, Guid>

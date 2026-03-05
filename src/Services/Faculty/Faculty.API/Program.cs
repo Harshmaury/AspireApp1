@@ -1,25 +1,25 @@
-using Microsoft.EntityFrameworkCore;
-using Faculty.Infrastructure.Persistence;
-using UMS.SharedKernel.Extensions;
-using Faculty.Application;
-using Faculty.Infrastructure;
 using Faculty.API.Endpoints;
 using Faculty.API.Middleware;
+using Faculty.API.Services;
+using Faculty.Application;
+using Faculty.Infrastructure;
+using Faculty.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using UMS.SharedKernel.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
-
 builder.AddServiceDefaults();
 builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("FacultyDb");
 builder.Services.AddOpenApi();
 builder.Services.AddFacultyApplication();
 builder.Services.AddFacultyInfrastructure(builder.Configuration);
+builder.Services.AddHostedService<FacultyOutboxRelayService>();
 
 var app = builder.Build();
 app.UseSerilogDefaults();
 app.UseGlobalExceptionHandler();
 await MigrateWithRetryAsync<FacultyDbContext>(app.Services);
-
 
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
@@ -30,12 +30,6 @@ app.UseHttpsRedirection();
 app.MapFacultyEndpoints();
 app.MapRegionHealthEndpoints();
 app.Run();
-
-
-
-
-
-
 
 static async Task MigrateWithRetryAsync<TDb>(IServiceProvider services,
     int maxRetries = 5, int delaySeconds = 3) where TDb : Microsoft.EntityFrameworkCore.DbContext

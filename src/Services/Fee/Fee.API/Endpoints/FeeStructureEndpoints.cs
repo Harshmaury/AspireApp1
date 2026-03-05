@@ -1,5 +1,5 @@
-using MediatR;
 using Fee.Application.FeeStructure.Commands;
+using MediatR;
 namespace Fee.API.Endpoints;
 public static class FeeStructureEndpoints
 {

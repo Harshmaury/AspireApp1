@@ -1,5 +1,5 @@
-using MediatR;
 using Examination.Application.Interfaces;
+using MediatR;
 using MarksEntryEntity = Examination.Domain.Entities.MarksEntry;
 namespace Examination.Application.MarksEntry.Commands;
 public sealed class EnterMarksCommandHandler : IRequestHandler<EnterMarksCommand, Guid>

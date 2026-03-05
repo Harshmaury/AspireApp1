@@ -1,6 +1,6 @@
-using MediatR;
 using Faculty.Application.DTOs;
 using Faculty.Application.Interfaces;
+using MediatR;
 using FacultyEntity = Faculty.Domain.Entities.Faculty;
 namespace Faculty.Application.Faculty.Queries;
 internal static class FacultyMapper

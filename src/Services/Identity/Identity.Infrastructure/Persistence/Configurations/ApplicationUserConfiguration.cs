@@ -10,7 +10,6 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
     {
         builder.ToTable("Users");
 
-        // Tell EF to ignore domain event collection — not a DB column
         builder.Ignore(u => u.DomainEvents);
 
         builder.Property(u => u.FirstName).IsRequired().HasMaxLength(100);
@@ -18,6 +17,7 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
         builder.Property(u => u.IsActive).IsRequired().HasDefaultValue(true);
         builder.Property(u => u.CreatedAt).IsRequired();
         builder.Property(u => u.TenantId).IsRequired();
+        builder.Property(u => u.RowVersion).IsRowVersion();
 
         builder.HasIndex(u => u.TenantId);
         builder.HasIndex(u => new { u.TenantId, u.NormalizedEmail }).IsUnique();

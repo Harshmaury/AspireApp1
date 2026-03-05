@@ -9,5 +9,7 @@ public interface IUserRepository
     Task<bool> ExistsAsync(Guid tenantId, string email, CancellationToken ct = default);
     Task<IdentityResult> CreateAsync(ApplicationUser user, string password);
     Task<bool> CheckPasswordAsync(ApplicationUser user, string password);
+    Task<PasswordCheckResult> CheckPasswordWithLockoutAsync(ApplicationUser user, string password, CancellationToken ct = default);
+    Task<IList<string>> GetRolesAsync(ApplicationUser user, CancellationToken ct = default);
     Task UpdateAsync(ApplicationUser user);
 }

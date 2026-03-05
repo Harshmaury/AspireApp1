@@ -1,7 +1,7 @@
 ﻿using Fee.Application.FeePayment.Commands;
 using Fee.Application.FeeStructure.Commands;
-using Fee.Application.Scholarship.Commands;
 using Fee.Application.Interfaces;
+using Fee.Application.Scholarship.Commands;
 using Fee.Domain.Entities;
 using Fee.Domain.Enums;
 using Fee.Domain.Exceptions;

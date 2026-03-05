@@ -1,6 +1,7 @@
-using MediatR;
 using Examination.Application.ExamSchedule.Commands;
+using MediatR;
 namespace Examination.API.Endpoints;
+
 public static class ExamScheduleEndpoints
 {
     public static void MapExamScheduleEndpoints(this WebApplication app)

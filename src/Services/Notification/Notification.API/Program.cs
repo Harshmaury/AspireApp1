@@ -1,9 +1,9 @@
+using Microsoft.EntityFrameworkCore;
 using Notification.API.Endpoints;
-using UMS.SharedKernel.Extensions;
 using Notification.Application;
 using Notification.Infrastructure;
 using Notification.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+using UMS.SharedKernel.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.AddSerilogDefaults();

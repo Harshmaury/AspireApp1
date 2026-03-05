@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
-using Attendance.Domain.Entities;
 using Attendance.Domain.Common;
+using Attendance.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 namespace Attendance.Infrastructure.Persistence;
 public sealed class AttendanceDbContext : DbContext
 {

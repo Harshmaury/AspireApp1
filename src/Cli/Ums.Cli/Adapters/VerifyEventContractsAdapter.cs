@@ -1,9 +1,9 @@
 namespace Ums.Cli.Adapters;
 
-using System.CommandLine;
 using Aegis.Core.Building;
 using Aegis.Core.Config;
 using Aegis.Core.Rules;
+using System.CommandLine;
 using Ums.Cli.Rendering;
 
 public static class VerifyEventContractsAdapter

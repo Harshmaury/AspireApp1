@@ -2,9 +2,9 @@ using Faculty.Application.Faculty.Commands;
 using Faculty.Application.Interfaces;
 using Faculty.Domain.Enums;
 using Faculty.Domain.Exceptions;
-using FacultyEntity = Faculty.Domain.Entities.Faculty;
 using FluentAssertions;
 using Moq;
+using FacultyEntity = Faculty.Domain.Entities.Faculty;
 
 namespace Faculty.Tests.Application;
 

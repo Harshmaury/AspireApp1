@@ -1,4 +1,4 @@
-using Academic.Domain.Common;
+ï»¿using Academic.Domain.Common;
 using Academic.Infrastructure.Kafka;
 using Academic.Infrastructure.Persistence;
 using FluentAssertions;
@@ -36,19 +36,17 @@ public sealed class AcademicOutboxRelayTests(KafkaPostgresFixture fx)
             NullLogger<AcademicOutboxRelayService>.Instance,
             fx.Configuration);
 
-        // Act — run one relay cycle
+        // Act â€” run one relay cycle
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        await relay.StartAsync(cts.Token);
-        await Task.Delay(TimeSpan.FromSeconds(8), cts.Token);
-        await relay.StopAsync(cts.Token);
+        await relay.StartAsync(cts.Token);        await relay.StopAsync(cts.Token);
 
-        // Assert — message arrived on Kafka
+        // Assert â€” message arrived on Kafka
         var consumed = await fx.ConsumeOneAsync("academic-events", "test-academic", TimeSpan.FromSeconds(10));
         consumed.Should().NotBeNull();
         consumed!.Message.Key.Should().Be(msg.Id.ToString());
         consumed!.Message.Value.Should().Contain("courseId");
 
-        // Assert — DB marked processed
+        // Assert â€” DB marked processed
         await using var verifyDb = BuildDb();
         var stored = await verifyDb.OutboxMessages.FindAsync(msg.Id);
         stored!.ProcessedAt.Should().NotBeNull();
@@ -61,4 +59,5 @@ public sealed class AcademicOutboxRelayTests(KafkaPostgresFixture fx)
         return svc.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
     }
 }
+
 

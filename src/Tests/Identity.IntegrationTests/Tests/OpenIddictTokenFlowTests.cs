@@ -1,9 +1,7 @@
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Http;
-using System.Text.Json;
-using FluentAssertions;
+﻿using FluentAssertions;
 using Identity.IntegrationTests.Fixtures;
+using System.Net;
+using System.Text.Json;
 using Xunit;
 
 namespace Identity.IntegrationTests.Tests;
@@ -13,10 +11,17 @@ public sealed class OpenIddictTokenFlowTests
 {
     private readonly HttpClient _client;
 
-    private const string ValidUsername = "ums|superadmin@ums.com";
-    private const string ValidPassword = "Admin@1234";
-    private const string ClientId      = "api-gateway";
-    private const string ClientSecret  = "api-gateway-secret";
+    // TST-6 fix: read from environment variables so rotating seed data does not
+    // cause silent failures. Set these vars in CI secrets or launchSettings.json.
+    // Fallback values match the dev seed only — never commit real secrets here.
+    private static readonly string ValidUsername =
+        Environment.GetEnvironmentVariable("UMS_TEST_ADMIN_USERNAME") ?? "ums|superadmin@ums.com";
+    private static readonly string ValidPassword =
+        Environment.GetEnvironmentVariable("UMS_TEST_ADMIN_PASSWORD") ?? "Admin@1234";
+    private static readonly string ClientId =
+        Environment.GetEnvironmentVariable("UMS_TEST_CLIENT_ID") ?? "api-gateway";
+    private static readonly string ClientSecret =
+        Environment.GetEnvironmentVariable("UMS_TEST_CLIENT_SECRET") ?? "api-gateway-secret";
 
     public OpenIddictTokenFlowTests(IdentityIntegrationFixture fixture)
     {

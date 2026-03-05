@@ -1,5 +1,4 @@
 ﻿using FluentAssertions;
-using Moq;
 using Hostel.Application.Allotments.Commands;
 using Hostel.Application.Complaints.Commands;
 using Hostel.Application.Hostels.Commands;
@@ -8,6 +7,7 @@ using Hostel.Application.Rooms.Commands;
 using Hostel.Domain.Entities;
 using Hostel.Domain.Enums;
 using Hostel.Domain.Exceptions;
+using Moq;
 using Xunit;
 using HostelEntity = Hostel.Domain.Entities.Hostel;
 

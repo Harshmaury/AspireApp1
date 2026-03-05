@@ -1,12 +1,10 @@
-using Microsoft.AspNetCore.RateLimiting;
-using UMS.SharedKernel.Extensions;
+﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
-using Asp.Versioning;
+using UMS.SharedKernel.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
-
-
 
 // Reverse Proxy
 builder.Services.AddReverseProxy()
@@ -27,25 +25,43 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("authenticated", policy => policy.RequireAuthenticatedUser());
 });
 
-// CORS
+// FIX G2: AllowAnyOrigin() was used in all environments — allows any browser origin
+// including attacker-controlled sites to make credentialed cross-origin requests.
+// Now reads Cors:AllowedOrigins from config (set per-environment in appsettings).
+// Development falls back to localhost only if config is absent.
 builder.Services.AddCors(options =>
 {
+    var allowedOrigins = builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>();
+
+    if (allowedOrigins is null || allowedOrigins.Length == 0)
+    {
+        // Safe fallback: localhost only — never allow any origin in production
+        allowedOrigins = builder.Environment.IsDevelopment()
+            ? new[] { "http://localhost:3000", "https://localhost:3000", "http://localhost:5173", "https://localhost:5173" }
+            : Array.Empty<string>();
+    }
+
     options.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials());
 });
 
 // Rate Limiting
 builder.Services.AddRateLimiter(options =>
 {
-    // Strict policy for auth endpoint � per IP, 10 req/min
+    // Strict policy for auth endpoint — per IP, 10 req/min
     options.AddFixedWindowLimiter("token-endpoint", o =>
     {
-        o.PermitLimit   = 10;
-        o.Window        = TimeSpan.FromMinutes(1);
-        o.QueueLimit    = 0;
+        o.PermitLimit = 10;
+        o.Window      = TimeSpan.FromMinutes(1);
+        o.QueueLimit  = 0;
     });
 
-    // Default policy � per tenant (100 req/min), fallback to IP if no tenant header
+    // Default policy — per tenant (100 req/min), fallback to IP if no tenant header
     options.AddPolicy("tenant-fixed", httpContext =>
     {
         var tenantId = httpContext.Request.Headers["X-Tenant-Id"].FirstOrDefault();
@@ -85,7 +101,6 @@ builder.Services.AddApiVersioning(options =>
 
 var app = builder.Build();
 
-
 app.UseGlobalExceptionHandler();
 app.UseCors();
 app.UseRateLimiter();
@@ -93,12 +108,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<ApiGateway.Middleware.ClaimsForwardingMiddleware>();
 
-// Map versioned YARP proxy
 app.MapReverseProxy();
-
-// Simple health endpoint (minimal, production safe)
 app.MapGet("/health", () => Results.Ok("Healthy"));
 
 app.Run();
-
-

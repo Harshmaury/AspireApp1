@@ -1,6 +1,6 @@
-using MediatR;
 using Attendance.Application.DTOs;
 using Attendance.Application.Interfaces;
+using MediatR;
 namespace Attendance.Application.AttendanceRecord.Queries;
 public sealed class GetStudentAttendanceQueryHandler : IRequestHandler<GetStudentAttendanceQuery, List<AttendanceRecordDto>>
 {

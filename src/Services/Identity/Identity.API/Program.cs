@@ -1,20 +1,12 @@
-using UMS.SharedKernel.Extensions;
+﻿using Identity.API.Endpoints;
 using Identity.API.Services;
 using Identity.Application;
-using Identity.Application.Interfaces;
 using Identity.Infrastructure;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Identity.Infrastructure.Persistence;
-using Identity.API.Endpoints;
-using Identity.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
-using OpenIddict.Server.AspNetCore;
+using System.Security.Cryptography;
+using UMS.SharedKernel.Extensions;
 using static OpenIddict.Abstractions.OpenIddictConstants;
-using Identity.Application.Features.Auth.Commands;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
@@ -22,19 +14,69 @@ builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("IdentityDb");
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddAuthorization();
 builder.Services.AddOpenApi();
 builder.Services.AddHttpClient();
-builder.Services.AddHostedService<Identity.API.Services.OutboxRelayService>();
+builder.Services.AddHostedService<OutboxRelayService>();
+
+var isDev = builder.Environment.IsDevelopment();
+
+var clientSecret = builder.Configuration["OpenIddict:ClientSecret"]
+    ?? (isDev ? "api-gateway-secret-dev" : null);
+
+if (clientSecret is null)
+    throw new InvalidOperationException(
+        "OpenIddict:ClientSecret is not configured. Set it via Kubernetes secret.");
+
+// FIX I1: Ephemeral keys were used in all environments. Every pod restart
+// generated new keys, invalidating all active tokens across the fleet.
+// Production now loads persistent RSA keys from config (Kubernetes secret).
+// Store base64-encoded RSA XML in:
+//   OpenIddict:SigningKeyXml      — RSA 2048-bit XML private key
+//   OpenIddict:EncryptionKeyXml  — RSA 2048-bit XML private key
+// To generate: var rsa = RSA.Create(2048); Console.WriteLine(Convert.ToBase64String(Encoding.UTF8.GetBytes(rsa.ToXmlString(true))));
+RsaSecurityKey? LoadRsaKey(string configKey)
+{
+    var b64 = builder.Configuration[configKey];
+    if (string.IsNullOrWhiteSpace(b64)) return null;
+    var xml = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(b64));
+    var rsa = RSA.Create();
+    rsa.FromXmlString(xml);
+    return new RsaSecurityKey(rsa);
+}
+
+var signingKey    = isDev ? null : LoadRsaKey("OpenIddict:SigningKeyXml");
+var encryptionKey = isDev ? null : LoadRsaKey("OpenIddict:EncryptionKeyXml");
+
+if (!isDev && signingKey is null)
+    throw new InvalidOperationException(
+        "OpenIddict:SigningKeyXml is not configured. Set it via Kubernetes secret. " +
+        "Generate with: var rsa = RSA.Create(2048); Convert.ToBase64String(Encoding.UTF8.GetBytes(rsa.ToXmlString(true)))");
+
+if (!isDev && encryptionKey is null)
+    throw new InvalidOperationException(
+        "OpenIddict:EncryptionKeyXml is not configured. Set it via Kubernetes secret.");
+
 builder.Services.AddOpenIddict()
     .AddServer(options =>
     {
         options.SetTokenEndpointUris("/connect/token");
         options.AllowPasswordFlow()
                .AllowRefreshTokenFlow();
-        options.AddEphemeralEncryptionKey()
-               .AddEphemeralSigningKey();
+
+        if (isDev)
+        {
+            // Ephemeral keys are acceptable in development — no shared state between restarts
+            options.AddEphemeralEncryptionKey();
+            options.AddEphemeralSigningKey();
+        }
+        else
+        {
+            // Production: persistent RSA keys loaded from Kubernetes secrets
+            options.AddSigningKey(signingKey!);
+            options.AddEncryptionKey(encryptionKey!);
+        }
+
         options.DisableAccessTokenEncryption();
         options.RegisterScopes(
             Scopes.Email,
@@ -43,9 +85,12 @@ builder.Services.AddOpenIddict()
             Scopes.OfflineAccess,
             Scopes.OpenId,
             "api");
-        options.UseAspNetCore()
-               .EnableTokenEndpointPassthrough()
-               .DisableTransportSecurityRequirement();
+
+        options.AddEventHandler(PasswordGrantHandler.Descriptor);
+
+        var aspNetCoreBuilder = options.UseAspNetCore();
+        if (isDev)
+            aspNetCoreBuilder.DisableTransportSecurityRequirement();
     })
     .AddValidation(options =>
     {
@@ -56,28 +101,19 @@ builder.Services.AddOpenIddict()
 var app = builder.Build();
 app.UseSerilogDefaults();
 app.UseGlobalExceptionHandler();
-await Identity.API.Services.IdentitySeeder.SeedAsync(app.Services);
+
+await IdentitySeeder.SeedAsync(app.Services);
 
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync();
-    if (!await db.Tenants.AnyAsync(t => t.Slug == "test-uni"))
-    {
-        db.Tenants.Add(Tenant.Create("Test University", "test-uni"));
-        await db.SaveChangesAsync();
-        await db.Database.ExecuteSqlRawAsync(
-            "UPDATE \"Tenants\" SET \"Id\" = {0} WHERE \"Slug\" = 'test-uni'",
-            Guid.Parse("00000000-0000-0000-0000-000000000001"));
-    }
-    var manager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
+    var manager  = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
     var existing = await manager.FindByClientIdAsync("api-gateway");
     if (existing is null)
     {
         await manager.CreateAsync(new OpenIddictApplicationDescriptor
         {
             ClientId     = "api-gateway",
-            ClientSecret = "api-gateway-secret",
+            ClientSecret = clientSecret,
             DisplayName  = "API Gateway",
             Permissions  =
             {
@@ -102,136 +138,8 @@ app.UseAuthentication();
 app.UseMiddleware<Identity.API.Middleware.TenantMiddleware>();
 app.UseAuthorization();
 
-// -- OpenIddict passthrough token endpoint -------------------------------------
-app.MapPost("/connect/token", async (
-    HttpContext httpContext,
-    IUserRepository users,
-    ITenantRepository tenants) =>
-{
-    var request = httpContext.Features.Get<OpenIddictServerAspNetCoreFeature>()?.Transaction?.Request
-        ?? throw new InvalidOperationException("OpenIddict server request cannot be retrieved.");
-
-    ClaimsPrincipal principal;
-
-    if (request.IsPasswordGrantType())
-    {
-        var username = request.Username ?? string.Empty;
-        string tenantSlug, email;
-
-        if (username.Contains('|'))
-        {
-            var parts = username.Split('|', 2);
-            tenantSlug = parts[0];
-            email      = parts[1];
-        }
-        else
-        {
-            tenantSlug = request["tenant_slug"]?.ToString() ?? "test-uni";
-            email      = username;
-        }
-
-        var tenant = await tenants.FindBySlugAsync(tenantSlug);
-        if (tenant is null)
-            return Results.Forbid(
-                new AuthenticationProperties(new Dictionary<string, string?>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error]            = Errors.InvalidGrant,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Tenant not found."
-                }),
-                new[] { OpenIddictServerAspNetCoreDefaults.AuthenticationScheme });
-
-        var user = await users.FindByEmailAsync(tenant.Id, email);
-        if (user is null || !user.IsActive)
-            return Results.Forbid(
-                new AuthenticationProperties(new Dictionary<string, string?>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error]            = Errors.InvalidGrant,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Invalid credentials."
-                }),
-                new[] { OpenIddictServerAspNetCoreDefaults.AuthenticationScheme });
-
-        var valid = await users.CheckPasswordAsync(user, request.Password ?? string.Empty);
-        if (!valid)
-            return Results.Forbid(
-                new AuthenticationProperties(new Dictionary<string, string?>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error]            = Errors.InvalidGrant,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Invalid credentials."
-                }),
-                new[] { OpenIddictServerAspNetCoreDefaults.AuthenticationScheme });
-
-        var identity = new ClaimsIdentity(
-            authenticationType: "OpenIddict",
-            nameType: Claims.Name,
-            roleType: Claims.Role);
-
-        identity.AddClaim(Claims.Subject,    user.Id.ToString());
-        identity.AddClaim(Claims.Name,       user.Email!);
-        identity.AddClaim(Claims.Email,      user.Email!);
-        identity.AddClaim(Claims.GivenName,  user.FirstName);
-        identity.AddClaim(Claims.FamilyName, user.LastName);
-        identity.AddClaim("tenant_id",       user.TenantId.ToString());
-        identity.AddClaim("tenant_slug",     tenant.Slug);
-
-        foreach (var claim in identity.Claims)
-            claim.SetDestinations(Destinations.AccessToken, Destinations.IdentityToken);
-
-        principal = new ClaimsPrincipal(identity);
-        principal.SetScopes(request.GetScopes());
-    }
-    else if (request.IsRefreshTokenGrantType())
-    {
-        var result = await httpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-        if (result.Principal is null)
-            return Results.Forbid(
-                new AuthenticationProperties(new Dictionary<string, string?>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error]            = Errors.InvalidGrant,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The refresh token is invalid."
-                }),
-                new[] { OpenIddictServerAspNetCoreDefaults.AuthenticationScheme });
-        principal = result.Principal;
-    }
-    else
-    {
-        return Results.Forbid(
-            new AuthenticationProperties(new Dictionary<string, string?>
-            {
-                [OpenIddictServerAspNetCoreConstants.Properties.Error]            = Errors.UnsupportedGrantType,
-                [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The grant type is not supported."
-            }),
-            new[] { OpenIddictServerAspNetCoreDefaults.AuthenticationScheme });
-    }
-
-    return Results.SignIn(principal, new AuthenticationProperties(), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-}).AllowAnonymous();
-
 app.MapDefaultEndpoints();
 app.MapAuthEndpoints();
 app.MapTenantEndpoints();
 app.MapRegionHealthEndpoints();
 app.Run();
-
-static async Task MigrateWithRetryAsync<TDb>(IServiceProvider services,
-    int maxRetries = 5, int delaySeconds = 3) where TDb : DbContext
-{
-    using var scope = services.CreateScope();
-    var db     = scope.ServiceProvider.GetRequiredService<TDb>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<TDb>>();
-    for (int i = 1; i <= maxRetries; i++)
-    {
-        try
-        {
-            await db.Database.MigrateAsync();
-            logger.LogInformation("[Migration] {Db} succeeded on attempt {Attempt}", typeof(TDb).Name, i);
-            return;
-        }
-        catch (Exception ex) when (i < maxRetries)
-        {
-            logger.LogWarning("[Migration] {Db} attempt {Attempt}/{Max} failed: {Msg}. Retrying in {Delay}s...",
-                typeof(TDb).Name, i, maxRetries, ex.Message, delaySeconds);
-            await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
-        }
-    }
-    await db.Database.MigrateAsync();
-}

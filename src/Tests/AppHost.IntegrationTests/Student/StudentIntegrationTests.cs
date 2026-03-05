@@ -1,10 +1,10 @@
 ﻿extern alias StudentAPI;
 using AppHost.IntegrationTests.Helpers;
 using FluentAssertions;
+using Student.Infrastructure.Persistence;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Student.Infrastructure.Persistence;
 using Xunit;
 
 namespace AppHost.IntegrationTests.Student;
@@ -52,7 +52,7 @@ public class StudentIntegrationTests : IClassFixture<ServiceFixture<StudentAPI::
     }
 
     [Fact]
-    public async Task CreateStudent_DuplicateUserId_Returns500()
+    public async Task CreateStudent_DuplicateUserId_Returns409()        // ← was Returns500
     {
         var userId = Guid.NewGuid();
         await CreateStudentAsync($"first-{Guid.NewGuid()}@university.edu", userId);
@@ -64,7 +64,7 @@ public class StudentIntegrationTests : IClassFixture<ServiceFixture<StudentAPI::
             lastName  = "User",
             email     = $"second-{Guid.NewGuid()}@university.edu"
         });
-        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);       // ← was InternalServerError
     }
 
     [Fact]
@@ -100,10 +100,9 @@ public class StudentIntegrationTests : IClassFixture<ServiceFixture<StudentAPI::
     }
 
     [Fact]
-    public async Task AdmitStudent_NotFound_Returns500()
+    public async Task AdmitStudent_NotFound_Returns404()               // ← was Returns500
     {
         var response = await _client.PutAsync($"/api/students/{Guid.NewGuid()}/admit", null);
-        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);      // ← was InternalServerError
     }
 }
-

@@ -8,10 +8,11 @@ using Xunit;
 
 namespace TenantIsolation.Tests.Fee;
 
-public sealed class FeeIsolationTests
+[Collection("TenantIsolation")]
+public sealed class FeeIsolationTests(PostgresTenantFixture pg)
 {
-    private static FeeDbContext MakeDb(string name) =>
-        DbFactory.Create<FeeDbContext>(o => new FeeDbContext(o), name);
+    private FeeDbContext MakeDb(string name) =>
+        DbFactory.Create<FeeDbContext>(o => new FeeDbContext(o), pg.ConnectionString, name);
 
     private static FeeStructure MakeStructure(Guid tenantId) =>
         FeeStructure.Create(tenantId, Guid.NewGuid(), "2024-25", 1,
@@ -24,108 +25,79 @@ public sealed class FeeIsolationTests
     private static Scholarship MakeScholarship(Guid tenantId, Guid studentId) =>
         Scholarship.Create(tenantId, studentId, "Merit Scholarship", 10000m, "2024-25");
 
-    // ── FeeStructure ──────────────────────────────────────────
-
     [Fact]
     public async Task FeeStructure_GetById_OwnTenant_Returns()
     {
-        var db   = Guid.NewGuid().ToString();
-        var tidA = Guid.NewGuid();
-        var fs   = MakeStructure(tidA);
+        var db = Guid.NewGuid().ToString(); var tidA = Guid.NewGuid();
+        var fs = MakeStructure(tidA);
         using (var ctx = MakeDb(db)) { ctx.FeeStructures.Add(fs); ctx.SaveChanges(); }
-
         using var qCtx = MakeDb(db);
-        var result = await new FeeStructureRepository(qCtx).GetByIdAsync(fs.Id, tidA);
-        result.Should().NotBeNull();
+        (await new FeeStructureRepository(qCtx).GetByIdAsync(fs.Id, tidA)).Should().NotBeNull();
     }
 
     [Fact]
     public async Task FeeStructure_GetById_CrossTenant_ReturnsNull()
     {
-        var db   = Guid.NewGuid().ToString();
-        var tidA = Guid.NewGuid();
-        var tidB = Guid.NewGuid();
-        var fsA  = MakeStructure(tidA);
+        var db = Guid.NewGuid().ToString();
+        var tidA = Guid.NewGuid(); var tidB = Guid.NewGuid();
+        var fsA = MakeStructure(tidA);
         using (var ctx = MakeDb(db)) { ctx.FeeStructures.Add(fsA); ctx.SaveChanges(); }
-
         using var qCtx = MakeDb(db);
-        var result = await new FeeStructureRepository(qCtx).GetByIdAsync(fsA.Id, tidB);
-        result.Should().BeNull();
+        (await new FeeStructureRepository(qCtx).GetByIdAsync(fsA.Id, tidB)).Should().BeNull();
     }
-
-    // ── FeePayment ────────────────────────────────────────────
 
     [Fact]
     public async Task FeePayment_GetByStudent_OwnTenant_Returns()
     {
-        var db   = Guid.NewGuid().ToString();
-        var tidA = Guid.NewGuid();
-        var sid  = Guid.NewGuid();
-        var p    = MakePayment(tidA, sid);
+        var db = Guid.NewGuid().ToString();
+        var tidA = Guid.NewGuid(); var sid = Guid.NewGuid();
+        var p = MakePayment(tidA, sid);
         using (var ctx = MakeDb(db)) { ctx.FeePayments.Add(p); ctx.SaveChanges(); }
-
         using var qCtx = MakeDb(db);
-        var result = await new FeePaymentRepository(qCtx).GetByStudentAsync(sid, tidA);
-        result.Should().HaveCount(1);
+        (await new FeePaymentRepository(qCtx).GetByStudentAsync(sid, tidA)).Should().HaveCount(1);
     }
 
     [Fact]
     public async Task FeePayment_GetByStudent_CrossTenant_ReturnsEmpty()
     {
-        var db   = Guid.NewGuid().ToString();
-        var tidA = Guid.NewGuid();
-        var tidB = Guid.NewGuid();
-        var sid  = Guid.NewGuid();
-        var pA   = MakePayment(tidA, sid);
+        var db = Guid.NewGuid().ToString();
+        var tidA = Guid.NewGuid(); var tidB = Guid.NewGuid(); var sid = Guid.NewGuid();
+        var pA = MakePayment(tidA, sid);
         using (var ctx = MakeDb(db)) { ctx.FeePayments.Add(pA); ctx.SaveChanges(); }
-
         using var qCtx = MakeDb(db);
-        var result = await new FeePaymentRepository(qCtx).GetByStudentAsync(sid, tidB);
-        result.Should().BeEmpty();
+        (await new FeePaymentRepository(qCtx).GetByStudentAsync(sid, tidB)).Should().BeEmpty();
     }
 
     [Fact]
     public async Task FeePayment_GetById_CrossTenant_ReturnsNull()
     {
-        var db   = Guid.NewGuid().ToString();
-        var tidA = Guid.NewGuid();
-        var sid  = Guid.NewGuid();
-        var p    = MakePayment(tidA, sid);
+        var db = Guid.NewGuid().ToString();
+        var tidA = Guid.NewGuid(); var sid = Guid.NewGuid();
+        var p = MakePayment(tidA, sid);
         using (var ctx = MakeDb(db)) { ctx.FeePayments.Add(p); ctx.SaveChanges(); }
-
         using var qCtx = MakeDb(db);
-        var result = await new FeePaymentRepository(qCtx).GetByIdAsync(p.Id, Guid.NewGuid());
-        result.Should().BeNull();
+        (await new FeePaymentRepository(qCtx).GetByIdAsync(p.Id, Guid.NewGuid())).Should().BeNull();
     }
-
-    // ── Scholarship ───────────────────────────────────────────
 
     [Fact]
     public async Task Scholarship_GetByStudent_CrossTenant_ReturnsEmpty()
     {
-        var db   = Guid.NewGuid().ToString();
-        var tidA = Guid.NewGuid();
-        var tidB = Guid.NewGuid();
-        var sid  = Guid.NewGuid();
-        var sc   = MakeScholarship(tidA, sid);
+        var db = Guid.NewGuid().ToString();
+        var tidA = Guid.NewGuid(); var tidB = Guid.NewGuid(); var sid = Guid.NewGuid();
+        var sc = MakeScholarship(tidA, sid);
         using (var ctx = MakeDb(db)) { ctx.Scholarships.Add(sc); ctx.SaveChanges(); }
-
         using var qCtx = MakeDb(db);
-        var result = await new ScholarshipRepository(qCtx).GetByStudentAsync(sid, tidB);
-        result.Should().BeEmpty();
+        (await new ScholarshipRepository(qCtx).GetByStudentAsync(sid, tidB)).Should().BeEmpty();
     }
 
     [Fact]
     public async Task Scholarship_GetById_CrossTenant_ReturnsNull()
     {
-        var db   = Guid.NewGuid().ToString();
-        var tidA = Guid.NewGuid();
-        var sid  = Guid.NewGuid();
-        var sc   = MakeScholarship(tidA, sid);
+        var db = Guid.NewGuid().ToString();
+        var tidA = Guid.NewGuid(); var sid = Guid.NewGuid();
+        var sc = MakeScholarship(tidA, sid);
         using (var ctx = MakeDb(db)) { ctx.Scholarships.Add(sc); ctx.SaveChanges(); }
-
         using var qCtx = MakeDb(db);
-        var result = await new ScholarshipRepository(qCtx).GetByIdAsync(sc.Id, Guid.NewGuid());
-        result.Should().BeNull();
+        (await new ScholarshipRepository(qCtx).GetByIdAsync(sc.Id, Guid.NewGuid())).Should().BeNull();
     }
 }

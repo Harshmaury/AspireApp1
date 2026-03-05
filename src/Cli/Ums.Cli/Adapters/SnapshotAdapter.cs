@@ -1,8 +1,8 @@
 namespace Ums.Cli.Adapters;
 
-using System.CommandLine;
 using Aegis.Core.Building;
 using Aegis.Core.Snapshot;
+using System.CommandLine;
 
 public static class SnapshotAdapter
 {

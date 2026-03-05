@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using Examination.Application.Interfaces;
 using Examination.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using MarksEntryEntity = Examination.Domain.Entities.MarksEntry;
 namespace Examination.Infrastructure.Persistence.Repositories;
 public sealed class MarksEntryRepository : IMarksEntryRepository

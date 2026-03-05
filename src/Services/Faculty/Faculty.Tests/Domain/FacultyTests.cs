@@ -1,7 +1,7 @@
 using Faculty.Domain.Enums;
 using Faculty.Domain.Exceptions;
-using FacultyEntity = Faculty.Domain.Entities.Faculty;
 using FluentAssertions;
+using FacultyEntity = Faculty.Domain.Entities.Faculty;
 
 namespace Faculty.Tests.Domain;
 

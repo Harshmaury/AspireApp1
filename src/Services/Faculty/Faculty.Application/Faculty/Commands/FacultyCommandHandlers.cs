@@ -1,7 +1,7 @@
-using MediatR;
 using Faculty.Application.Interfaces;
 using Faculty.Domain.Enums;
 using Faculty.Domain.Exceptions;
+using MediatR;
 using FacultyEntity = Faculty.Domain.Entities.Faculty;
 namespace Faculty.Application.Faculty.Commands;
 public sealed class CreateFacultyCommandHandler : IRequestHandler<CreateFacultyCommand, Guid>

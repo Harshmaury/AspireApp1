@@ -1,5 +1,5 @@
-using MediatR;
 using Fee.Application.Interfaces;
+using MediatR;
 using ScholarshipEntity = Fee.Domain.Entities.Scholarship;
 namespace Fee.Application.Scholarship.Commands;
 public sealed class CreateScholarshipCommandHandler : IRequestHandler<CreateScholarshipCommand, Guid>

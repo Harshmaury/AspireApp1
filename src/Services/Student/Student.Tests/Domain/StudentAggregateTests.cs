@@ -1,6 +1,6 @@
+using FluentAssertions;
 using Student.Domain.Entities;
 using Student.Domain.Enums;
-using FluentAssertions;
 
 namespace Student.Tests.Domain;
 

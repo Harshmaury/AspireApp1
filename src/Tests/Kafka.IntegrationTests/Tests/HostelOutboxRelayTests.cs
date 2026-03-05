@@ -1,4 +1,4 @@
-using Confluent.Kafka;
+﻿using Confluent.Kafka;
 using FluentAssertions;
 using Hostel.Domain.Common;
 using Hostel.Infrastructure.Kafka;
@@ -50,9 +50,7 @@ public sealed class HostelOutboxRelayTests(KafkaPostgresFixture fx)
             NullLogger<HostelOutboxRelayService>.Instance);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        await relay.StartAsync(cts.Token);
-        await Task.Delay(TimeSpan.FromSeconds(8), cts.Token);
-        await relay.StopAsync(cts.Token);
+        await relay.StartAsync(cts.Token);        await relay.StopAsync(cts.Token);
         producer.Dispose();
 
         var consumed = await fx.ConsumeOneAsync("hostel-events", "test-hostel", TimeSpan.FromSeconds(10));
@@ -64,3 +62,4 @@ public sealed class HostelOutboxRelayTests(KafkaPostgresFixture fx)
         stored!.ProcessedAt.Should().NotBeNull();
     }
 }
+

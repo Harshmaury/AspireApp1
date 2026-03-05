@@ -1,6 +1,6 @@
+using Attendance.Domain.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Attendance.Domain.Common;
 namespace Attendance.Infrastructure.Persistence;
 public sealed class DomainEventDispatcherInterceptor : SaveChangesInterceptor
 {

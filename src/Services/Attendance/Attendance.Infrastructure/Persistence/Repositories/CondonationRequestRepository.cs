@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using Attendance.Application.Interfaces;
 using Attendance.Domain.Entities;
 using Attendance.Domain.Exceptions;
 using Attendance.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 namespace Attendance.Infrastructure.Persistence.Repositories;
 public sealed class CondonationRequestRepository : ICondonationRequestRepository
 {

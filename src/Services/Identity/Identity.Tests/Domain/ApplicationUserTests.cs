@@ -1,5 +1,5 @@
-using Identity.Domain.Entities;
 using FluentAssertions;
+using Identity.Domain.Entities;
 
 namespace Identity.Tests.Domain;
 

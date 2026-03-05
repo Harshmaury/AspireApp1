@@ -1,10 +1,10 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Kafka.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using Student.Domain.Common;
 using Student.API.Services;
+using Student.Domain.Common;
 using Student.Infrastructure.Persistence;
 
 namespace Kafka.IntegrationTests.Tests;
@@ -39,9 +39,7 @@ public sealed class StudentOutboxRelayTests(KafkaPostgresFixture fx)
             fx.Configuration);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        await relay.StartAsync(cts.Token);
-        await Task.Delay(TimeSpan.FromSeconds(8), cts.Token);
-        await relay.StopAsync(cts.Token);
+        await relay.StartAsync(cts.Token);        await relay.StopAsync(cts.Token);
 
         var consumed = await fx.ConsumeOneAsync("student-events", "test-student", TimeSpan.FromSeconds(10));
         consumed.Should().NotBeNull();
@@ -52,4 +50,5 @@ public sealed class StudentOutboxRelayTests(KafkaPostgresFixture fx)
         stored!.ProcessedAt.Should().NotBeNull();
     }
 }
+
 

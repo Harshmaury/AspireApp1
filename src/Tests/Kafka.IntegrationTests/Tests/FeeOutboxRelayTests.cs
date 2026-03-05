@@ -1,4 +1,4 @@
-using Fee.Domain.Common;
+﻿using Fee.Domain.Common;
 using Fee.Infrastructure.Kafka;
 using Fee.Infrastructure.Persistence;
 using FluentAssertions;
@@ -39,9 +39,7 @@ public sealed class FeeOutboxRelayTests(KafkaPostgresFixture fx)
             fx.Configuration);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        await relay.StartAsync(cts.Token);
-        await Task.Delay(TimeSpan.FromSeconds(8), cts.Token);
-        await relay.StopAsync(cts.Token);
+        await relay.StartAsync(cts.Token);        await relay.StopAsync(cts.Token);
 
         var consumed = await fx.ConsumeOneAsync("fee-events", "test-fee", TimeSpan.FromSeconds(10));
         consumed.Should().NotBeNull();
@@ -52,4 +50,5 @@ public sealed class FeeOutboxRelayTests(KafkaPostgresFixture fx)
         stored!.ProcessedAt.Should().NotBeNull();
     }
 }
+
 

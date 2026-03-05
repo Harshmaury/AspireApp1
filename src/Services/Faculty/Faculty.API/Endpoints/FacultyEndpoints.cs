@@ -1,10 +1,10 @@
-using MediatR;
-using Faculty.Application.Faculty.Commands;
-using Faculty.Application.Faculty.Queries;
 using Faculty.Application.CourseAssignment.Commands;
 using Faculty.Application.CourseAssignment.Queries;
+using Faculty.Application.Faculty.Commands;
+using Faculty.Application.Faculty.Queries;
 using Faculty.Application.Publication.Commands;
 using Faculty.Application.Publication.Queries;
+using MediatR;
 namespace Faculty.API.Endpoints;
 public static class FacultyEndpoints
 {

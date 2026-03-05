@@ -6,17 +6,6 @@ namespace Student.Application.Features.Students.Queries;
 public sealed record GetStudentByIdQuery(Guid StudentId, Guid TenantId)
     : IRequest<StudentDto?>;
 
-public sealed record StudentDto(
-    Guid Id,
-    Guid TenantId,
-    Guid UserId,
-    string FirstName,
-    string LastName,
-    string Email,
-    string StudentNumber,
-    string Status,
-    DateTime CreatedAt);
-
 public sealed class GetStudentByIdQueryHandler
     : IRequestHandler<GetStudentByIdQuery, StudentDto?>
 {
@@ -27,18 +16,18 @@ public sealed class GetStudentByIdQueryHandler
 
     public async Task<StudentDto?> Handle(GetStudentByIdQuery request, CancellationToken ct)
     {
-        var student = await _repository.GetByIdAsync(request.StudentId, request.TenantId, ct);
-        if (student is null) return null;
+        // GetByIdReadOnlyAsync: AsNoTracking - query handlers never mutate.
+        // Do NOT use GetByIdAsync here - that is the tracked write path
+        // reserved for command handlers only.
+        var s = await _repository.GetByIdReadOnlyAsync(request.StudentId, request.TenantId, ct);
+        if (s is null) return null;
 
         return new StudentDto(
-            student.Id,
-            student.TenantId,
-            student.UserId,
-            student.FirstName,
-            student.LastName,
-            student.Email,
-            student.StudentNumber,
-            student.Status.ToString(),
-            student.CreatedAt);
+            s.Id, s.TenantId, s.UserId,
+            s.FirstName, s.LastName, s.Email,
+            s.StudentNumber, s.Status.ToString(),
+            s.CreatedAt, s.UpdatedAt,
+            s.AdmittedAt, s.EnrolledAt,
+            s.GraduatedAt, s.SuspensionReason);
     }
 }

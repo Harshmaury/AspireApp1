@@ -1,6 +1,6 @@
-using MediatR;
 using Faculty.Application.DTOs;
 using Faculty.Application.Interfaces;
+using MediatR;
 using CourseAssignmentEntity = Faculty.Domain.Entities.CourseAssignment;
 namespace Faculty.Application.CourseAssignment.Queries;
 internal static class AssignmentMapper

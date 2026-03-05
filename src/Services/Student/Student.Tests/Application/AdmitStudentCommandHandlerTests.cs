@@ -1,8 +1,8 @@
+﻿using FluentAssertions;
+using Moq;
 using Student.Application.Features.Students.Commands;
 using Student.Application.Interfaces;
 using Student.Domain.Entities;
-using FluentAssertions;
-using Moq;
 
 namespace Student.Tests.Application;
 
@@ -13,7 +13,7 @@ public sealed class AdmitStudentCommandHandlerTests
     private AdmitStudentCommandHandler BuildHandler() => new(_repo.Object);
 
     [Fact]
-    public async Task Handle_ValidStudent_ReturnsTrue()
+    public async Task Handle_ValidStudent_CompletesSuccessfully()
     {
         var student = StudentAggregate.Create(Guid.NewGuid(), Guid.NewGuid(), "John", "Doe", "j@uni.edu");
         _repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -21,9 +21,10 @@ public sealed class AdmitStudentCommandHandlerTests
         _repo.Setup(r => r.UpdateAsync(It.IsAny<StudentAggregate>(), It.IsAny<CancellationToken>()))
              .Returns(Task.CompletedTask);
 
-        var result = await BuildHandler().Handle(new AdmitStudentCommand(student.Id, student.TenantId), CancellationToken.None);
+        var act = async () => await BuildHandler().Handle(
+            new AdmitStudentCommand(student.Id, student.TenantId), CancellationToken.None);
 
-        result.Should().BeTrue();
+        await act.Should().NotThrowAsync();
     }
 
     [Fact]

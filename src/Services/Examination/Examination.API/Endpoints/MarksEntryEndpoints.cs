@@ -1,6 +1,7 @@
-using MediatR;
 using Examination.Application.MarksEntry.Commands;
+using MediatR;
 namespace Examination.API.Endpoints;
+
 public static class MarksEntryEndpoints
 {
     public static void MapMarksEntryEndpoints(this WebApplication app)

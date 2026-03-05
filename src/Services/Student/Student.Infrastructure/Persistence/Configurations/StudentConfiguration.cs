@@ -24,5 +24,16 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<StudentAgg
         builder.HasIndex(s => s.StudentNumber).IsUnique();
         builder.HasIndex(s => new { s.TenantId, s.Status });
         builder.Ignore(s => s.DomainEvents);
+
+        // xmin is PostgreSQL's built-in row version system column.
+        // Zero migration cost - the column already exists on every row.
+        // EF appends: WHERE Id = @id AND xmin = @original_xmin
+        // If a concurrent command updated the row first, xmin changed,
+        // 0 rows are affected, and EF throws DbUpdateConcurrencyException.
+        builder.Property<uint>("xmin")
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .ValueGeneratedOnAddOrUpdate()
+            .IsConcurrencyToken();
     }
 }

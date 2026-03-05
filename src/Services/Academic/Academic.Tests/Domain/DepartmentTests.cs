@@ -1,8 +1,8 @@
-using Xunit;
 using Academic.Domain.Entities;
 using Academic.Domain.Enums;
 using Academic.Domain.Exceptions;
 using FluentAssertions;
+using Xunit;
 namespace Academic.Tests.Domain;
 public sealed class DepartmentTests
 {

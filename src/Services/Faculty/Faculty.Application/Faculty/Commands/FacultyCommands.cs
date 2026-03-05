@@ -1,5 +1,5 @@
-using MediatR;
 using Faculty.Domain.Enums;
+using MediatR;
 namespace Faculty.Application.Faculty.Commands;
 public sealed record CreateFacultyCommand(Guid TenantId, Guid UserId, Guid DepartmentId, string EmployeeId, string FirstName, string LastName, string Email, string Designation, string Specialization, string HighestQualification, int ExperienceYears, bool IsPhD, DateOnly JoiningDate) : IRequest<Guid>;
 public sealed record UpdateFacultyDesignationCommand(Guid TenantId, Guid FacultyId, string Designation) : IRequest;

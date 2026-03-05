@@ -1,8 +1,8 @@
+using FluentAssertions;
+using Moq;
 using Student.Application.Features.Students.Commands;
 using Student.Application.Interfaces;
 using Student.Domain.Entities;
-using FluentAssertions;
-using Moq;
 
 namespace Student.Tests.Application;
 

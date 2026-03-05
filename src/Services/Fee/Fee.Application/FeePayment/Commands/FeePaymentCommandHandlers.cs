@@ -1,6 +1,6 @@
-using MediatR;
 using Fee.Application.Interfaces;
 using Fee.Domain.Enums;
+using MediatR;
 using FeePaymentEntity = Fee.Domain.Entities.FeePayment;
 namespace Fee.Application.FeePayment.Commands;
 public sealed class CreateFeePaymentCommandHandler : IRequestHandler<CreateFeePaymentCommand, Guid>

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using UMS.SharedKernel.Exceptions;
 
@@ -25,7 +25,6 @@ public sealed class GlobalExceptionMiddleware(
     {
         var (status, code, message) = ex switch
         {
-            // Per-service domain exceptions via interface
             IDomainException de when DomainExceptionCodes.NotFound.Contains(de.Code)
                 => (404, de.Code, ex.Message),
             IDomainException de when DomainExceptionCodes.Conflict.Contains(de.Code)
@@ -35,13 +34,17 @@ public sealed class GlobalExceptionMiddleware(
             IDomainException de
                 => (400, de.Code, ex.Message),
 
-            // Identity DomainException (no Code property)
             KeyNotFoundException
                 => (404, "NOT_FOUND", ex.Message),
             TenantNotFoundHelper
                 => (404, "TENANT_NOT_FOUND", ex.Message),
             UnauthorizedAccessException
                 => (401, "UNAUTHORIZED", ex.Message),
+
+            // ← ADDED: domain guard failures (empty name, email, etc.) → 422
+            ArgumentException
+                => (422, "VALIDATION_ERROR", ex.Message),
+
             InvalidOperationException when ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase)
                 => (404, "NOT_FOUND", ex.Message),
             InvalidOperationException when ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase)
@@ -49,11 +52,10 @@ public sealed class GlobalExceptionMiddleware(
             InvalidOperationException
                 => (400, "INVALID_OPERATION", ex.Message),
 
-            // Bare Exception "not found" (Fee/Exam legacy throws)
             Exception when ex.GetType() == typeof(Exception) && ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase)
                 => (404, "NOT_FOUND", ex.Message),
 
-            _   => (500, "INTERNAL_ERROR", "An unexpected error occurred.")
+            _ => (500, "INTERNAL_ERROR", "An unexpected error occurred.")
         };
 
         ctx.Response.StatusCode = status;
@@ -61,6 +63,5 @@ public sealed class GlobalExceptionMiddleware(
         await ctx.Response.WriteAsJsonAsync(new { code, message });
     }
 
-    // Helper to avoid referencing Identity.Domain directly
     private sealed class TenantNotFoundHelper : Exception { }
 }

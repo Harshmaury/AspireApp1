@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // StudentAggregate.cs
 // Author: Harsh Maurya | Shambhunath Institute of Engineering and Technology
 // Note: Written by someone with 10 backlogs in CS who somehow understands
@@ -13,26 +13,23 @@ namespace Student.Domain.Entities;
 
 public sealed class StudentAggregate : BaseEntity, IAggregateRoot
 {
-    public Guid TenantId { get; private set; }
-    public Guid UserId { get; private set; }
-    public string FirstName { get; private set; } = string.Empty;
-    public string LastName { get; private set; } = string.Empty;
-    public string Email { get; private set; } = string.Empty;
-    public string StudentNumber { get; private set; } = string.Empty;
-    public StudentStatus Status { get; private set; } = StudentStatus.Applicant;
-    public DateTime? AdmittedAt { get; private set; }
-    public DateTime? EnrolledAt { get; private set; }
-    public DateTime? GraduatedAt { get; private set; }
-    public string? SuspensionReason { get; private set; }
+    public Guid          TenantId          { get; private set; }
+    public Guid          UserId            { get; private set; }
+    public string        FirstName         { get; private set; } = string.Empty;
+    public string        LastName          { get; private set; } = string.Empty;
+    public string        Email             { get; private set; } = string.Empty;
+    public string        StudentNumber     { get; private set; } = string.Empty;
+    public StudentStatus Status            { get; private set; } = StudentStatus.Applicant;
+    public DateTime?     AdmittedAt        { get; private set; }
+    public DateTime?     EnrolledAt        { get; private set; }
+    public DateTime?     GraduatedAt       { get; private set; }
+    public string?       SuspensionReason  { get; private set; }
 
     private StudentAggregate() { }
 
     public static StudentAggregate Create(
-        Guid tenantId,
-        Guid userId,
-        string firstName,
-        string lastName,
-        string email)
+        Guid tenantId, Guid userId,
+        string firstName, string lastName, string email)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
         ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
@@ -40,18 +37,18 @@ public sealed class StudentAggregate : BaseEntity, IAggregateRoot
 
         var student = new StudentAggregate
         {
-            TenantId = tenantId,
-            UserId = userId,
-            FirstName = firstName,
-            LastName = lastName,
-            Email = email.ToLowerInvariant(),
+            TenantId      = tenantId,
+            UserId        = userId,
+            FirstName     = firstName,
+            LastName      = lastName,
+            Email         = email.ToLowerInvariant(),
             StudentNumber = GenerateStudentNumber(),
-            Status = StudentStatus.Applicant
+            Status        = StudentStatus.Applicant
         };
 
         student.RaiseDomainEvent(new StudentCreatedEvent(
             student.Id, tenantId, userId,
-            string.Concat(firstName, " ", lastName)));
+            firstName, lastName, student.Email));
 
         return student;
     }
@@ -60,51 +57,52 @@ public sealed class StudentAggregate : BaseEntity, IAggregateRoot
     {
         EnsureStatus(StudentStatus.Applicant, "Only applicants can be admitted.");
         var old = Status;
-        Status = StudentStatus.Admitted;
+        Status     = StudentStatus.Admitted;
         AdmittedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
-        RaiseDomainEvent(new StudentStatusChangedEvent(Id, TenantId, old, Status));
+        UpdatedAt  = DateTime.UtcNow;
+        RaiseDomainEvent(new StudentStatusChangedEvent(Id, TenantId, old, Status, Email, FirstName));
     }
 
     public void Enroll()
     {
         EnsureStatus(StudentStatus.Admitted, "Only admitted students can be enrolled.");
         var old = Status;
-        Status = StudentStatus.Enrolled;
+        Status     = StudentStatus.Enrolled;
         EnrolledAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
-        RaiseDomainEvent(new StudentStatusChangedEvent(Id, TenantId, old, Status));
+        UpdatedAt  = DateTime.UtcNow;
+        RaiseDomainEvent(new StudentStatusChangedEvent(Id, TenantId, old, Status, Email, FirstName));
     }
 
     public void Suspend(string reason)
     {
         if (Status != StudentStatus.Enrolled)
             throw new InvalidOperationException("Only enrolled students can be suspended.");
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
         var old = Status;
-        Status = StudentStatus.Suspended;
+        Status           = StudentStatus.Suspended;
         SuspensionReason = reason;
-        UpdatedAt = DateTime.UtcNow;
-        RaiseDomainEvent(new StudentStatusChangedEvent(Id, TenantId, old, Status));
+        UpdatedAt        = DateTime.UtcNow;
+        RaiseDomainEvent(new StudentStatusChangedEvent(Id, TenantId, old, Status, Email, FirstName));
     }
 
     public void Reinstate()
     {
         EnsureStatus(StudentStatus.Suspended, "Only suspended students can be reinstated.");
         var old = Status;
-        Status = StudentStatus.Enrolled;
+        Status           = StudentStatus.Enrolled;
         SuspensionReason = null;
-        UpdatedAt = DateTime.UtcNow;
-        RaiseDomainEvent(new StudentStatusChangedEvent(Id, TenantId, old, Status));
+        UpdatedAt        = DateTime.UtcNow;
+        RaiseDomainEvent(new StudentStatusChangedEvent(Id, TenantId, old, Status, Email, FirstName));
     }
 
     public void Graduate()
     {
         EnsureStatus(StudentStatus.Enrolled, "Only enrolled students can graduate.");
         var old = Status;
-        Status = StudentStatus.Alumni;
+        Status      = StudentStatus.Alumni;
         GraduatedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
-        RaiseDomainEvent(new StudentStatusChangedEvent(Id, TenantId, old, Status));
+        UpdatedAt   = DateTime.UtcNow;
+        RaiseDomainEvent(new StudentStatusChangedEvent(Id, TenantId, old, Status, Email, FirstName));
     }
 
     public void Archive()
@@ -112,9 +110,22 @@ public sealed class StudentAggregate : BaseEntity, IAggregateRoot
         if (Status == StudentStatus.Archived)
             throw new InvalidOperationException("Student is already archived.");
         var old = Status;
-        Status = StudentStatus.Archived;
+        Status    = StudentStatus.Archived;
         UpdatedAt = DateTime.UtcNow;
-        RaiseDomainEvent(new StudentStatusChangedEvent(Id, TenantId, old, Status));
+        RaiseDomainEvent(new StudentStatusChangedEvent(Id, TenantId, old, Status, Email, FirstName));
+    }
+
+    public void UpdateDetails(string firstName, string lastName, string email)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+        FirstName = firstName.Trim();
+        LastName  = lastName.Trim();
+        Email     = email.Trim().ToLowerInvariant();
+        UpdatedAt = DateTime.UtcNow;
+        RaiseDomainEvent(new StudentDetailsUpdatedEvent(    // ← ADDED
+            Id, TenantId, FirstName, LastName, Email));
     }
 
     private void EnsureStatus(StudentStatus required, string message)
@@ -124,8 +135,6 @@ public sealed class StudentAggregate : BaseEntity, IAggregateRoot
     }
 
     private static string GenerateStudentNumber()
-        => string.Concat("STU-", DateTime.UtcNow.Year, "-", Guid.NewGuid().ToString("N")[..8].ToUpper());
+        => string.Concat("STU-", DateTime.UtcNow.Year, "-",
+               Guid.NewGuid().ToString("N")[..8].ToUpper());
 }
-
-
-

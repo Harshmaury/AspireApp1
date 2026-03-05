@@ -1,6 +1,6 @@
+using Fee.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Fee.Domain.Entities;
 namespace Fee.Infrastructure.Persistence.Configurations;
 public sealed class ScholarshipConfiguration : IEntityTypeConfiguration<Scholarship>
 {

@@ -8,23 +8,20 @@ using Xunit;
 
 namespace TenantIsolation.Tests.Attendance;
 
-public sealed class AttendanceIsolationTests
+[Collection("TenantIsolation")]
+public sealed class AttendanceIsolationTests(PostgresTenantFixture pg)
 {
-    private static AttendanceDbContext MakeDb(string name) =>
-        DbFactory.Create<AttendanceDbContext>(o => new AttendanceDbContext(o), name);
+    private AttendanceDbContext MakeDb(string name) =>
+        DbFactory.Create<AttendanceDbContext>(o => new AttendanceDbContext(o), pg.ConnectionString, name);
 
-    // Use today — passes both future and backdating guards
     private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.UtcNow);
 
     private static AttendanceRecord MakeRecord(Guid tid, Guid sid, Guid cid) =>
         AttendanceRecord.Create(tid, sid, cid,
-            "2024-25", 1, Today,
-            ClassType.Lecture, true, Guid.NewGuid());
+            "2024-25", 1, Today, ClassType.Lecture, true, Guid.NewGuid());
 
     private static CondonationRequest MakeCondonation(Guid tid, Guid sid) =>
         CondonationRequest.Create(tid, sid, Guid.NewGuid(), "Medical emergency.");
-
-    // ── AttendanceRecord ──────────────────────────────────────
 
     [Fact]
     public async Task AttendanceRecord_GetById_OwnTenant_Returns()
@@ -69,8 +66,6 @@ public sealed class AttendanceIsolationTests
         using var q = MakeDb(db);
         (await new AttendanceRecordRepository(q).GetByStudentCourseAsync(sid, cid, tid)).Should().HaveCount(1);
     }
-
-    // ── CondonationRequest ────────────────────────────────────
 
     [Fact]
     public async Task Condonation_GetById_CrossTenant_ReturnsNull()

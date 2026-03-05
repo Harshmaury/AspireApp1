@@ -1,7 +1,7 @@
+using Faculty.Domain.Common;
+using Faculty.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using FacultyEntity = Faculty.Domain.Entities.Faculty;
-using Faculty.Domain.Entities;
-using Faculty.Domain.Common;
 namespace Faculty.Infrastructure.Persistence;
 public sealed class FacultyDbContext : DbContext
 {

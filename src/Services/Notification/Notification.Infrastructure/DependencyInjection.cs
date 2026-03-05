@@ -1,13 +1,15 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+ï»¿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Notification.Application.Interfaces;
 using Notification.Infrastructure.Channels;
 using Notification.Infrastructure.Kafka;
 using Notification.Infrastructure.Kafka.Consumers;
 using Notification.Infrastructure.Persistence;
 using Notification.Infrastructure.Persistence.Repositories;
+
 namespace Notification.Infrastructure;
+
 public static class DependencyInjection
 {
     public static IServiceCollection AddNotificationInfrastructure(this IServiceCollection services, IConfiguration configuration)
@@ -19,10 +21,12 @@ public static class DependencyInjection
         services.AddScoped<INotificationLogRepository, NotificationLogRepository>();
         services.AddScoped<INotificationPreferenceRepository, NotificationPreferenceRepository>();
 
-        // Channel registrations — Email primary, SMS stub
+        // FIX NOT-1: SmsChannel was implemented and correct but never registered in DI.
+        // DispatchAsync calls with channel = NotificationChannel.SMS were silently dropped.
         services.AddScoped<INotificationChannel, EmailChannel>();
+        services.AddScoped<INotificationChannel, SmsChannel>();
 
-        // Kafka consumers — one per topic
+        // Kafka consumers â€” one per topic
         services.AddHostedService<IdentityEventsConsumer>();
         services.AddHostedService<StudentEventsConsumer>();
         services.AddHostedService<ExaminationEventsConsumer>();

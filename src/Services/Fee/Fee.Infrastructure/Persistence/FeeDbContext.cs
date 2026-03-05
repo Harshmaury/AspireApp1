@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
-using Fee.Domain.Entities;
 using Fee.Domain.Common;
+using Fee.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 namespace Fee.Infrastructure.Persistence;
 public sealed class FeeDbContext : DbContext
 {

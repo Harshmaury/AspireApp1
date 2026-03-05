@@ -1,4 +1,4 @@
-using Examination.Domain.Common;
+﻿using Examination.Domain.Common;
 using Examination.Infrastructure.Kafka;
 using Examination.Infrastructure.Persistence;
 using FluentAssertions;
@@ -39,9 +39,7 @@ public sealed class ExaminationOutboxRelayTests(KafkaPostgresFixture fx)
             fx.Configuration);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        await relay.StartAsync(cts.Token);
-        await Task.Delay(TimeSpan.FromSeconds(8), cts.Token);
-        await relay.StopAsync(cts.Token);
+        await relay.StartAsync(cts.Token);        await relay.StopAsync(cts.Token);
 
         var consumed = await fx.ConsumeOneAsync("examination-events", "test-examination", TimeSpan.FromSeconds(10));
         consumed.Should().NotBeNull();
@@ -52,4 +50,5 @@ public sealed class ExaminationOutboxRelayTests(KafkaPostgresFixture fx)
         stored!.ProcessedAt.Should().NotBeNull();
     }
 }
+
 

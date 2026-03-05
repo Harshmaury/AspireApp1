@@ -1,6 +1,6 @@
+using Examination.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Examination.Domain.Entities;
 namespace Examination.Infrastructure.Persistence.Configurations;
 public sealed class ExamScheduleConfiguration : IEntityTypeConfiguration<ExamSchedule>
 {

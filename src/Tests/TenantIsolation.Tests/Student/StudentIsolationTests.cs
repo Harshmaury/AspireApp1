@@ -7,10 +7,11 @@ using Xunit;
 
 namespace TenantIsolation.Tests.Student;
 
-public sealed class StudentIsolationTests
+[Collection("TenantIsolation")]
+public sealed class StudentIsolationTests(PostgresTenantFixture pg)
 {
-    private static StudentDbContext MakeDb(string name) =>
-        DbFactory.Create<StudentDbContext>(o => new StudentDbContext(o), name);
+    private StudentDbContext MakeDb(string name) =>
+        DbFactory.Create<StudentDbContext>(o => new StudentDbContext(o), pg.ConnectionString, name);
 
     private static StudentAggregate MakeStudent(Guid tenantId) =>
         StudentAggregate.Create(tenantId, Guid.NewGuid(),

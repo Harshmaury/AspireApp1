@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Notification.Application.Interfaces;
@@ -19,6 +19,10 @@ public sealed class NotificationDispatcherTests
 
     private NotificationDispatcher CreateDispatcher(bool registerChannel = true)
     {
+        // ChannelType must be set up so the dispatcher can match by channel type.
+        // Without this the dispatcher finds no matching channel and logs stay Pending.
+        _channel.Setup(c => c.ChannelType).Returns(NotificationChannel.Email);
+
         var channels = registerChannel
             ? new[] { _channel.Object }
             : Array.Empty<INotificationChannel>();

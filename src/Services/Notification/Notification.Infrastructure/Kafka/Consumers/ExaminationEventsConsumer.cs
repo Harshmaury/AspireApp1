@@ -4,27 +4,25 @@ using Microsoft.Extensions.Logging;
 using Notification.Application.Events;
 using Notification.Application.Services;
 using Notification.Domain.Enums;
+using UMS.SharedKernel.Kafka;
 
 namespace Notification.Infrastructure.Kafka.Consumers;
 
 public sealed class ExaminationEventsConsumer : KafkaConsumerBase<ResultDeclaredEvent>
 {
-    public ExaminationEventsConsumer(IServiceScopeFactory scopeFactory, ILogger<ExaminationEventsConsumer> logger, IConfiguration configuration)
-        : base(scopeFactory, logger, "examination-events", "notification-api", "examination-events", configuration) { }
+    public ExaminationEventsConsumer(
+        IServiceScopeFactory scopeFactory,
+        ILogger<ExaminationEventsConsumer> logger,
+        IConfiguration configuration)
+        : base(scopeFactory, logger, KafkaTopics.ExaminationEvents, "notification-api", "examination-events", configuration) { }
 
-    protected override async Task ProcessAsync(ResultDeclaredEvent e, IServiceProvider services, CancellationToken ct)
+    protected override async Task ProcessAsync(
+        ResultDeclaredEvent e, IServiceProvider services, CancellationToken ct)
     {
-        var dispatcher = services.GetRequiredService<NotificationDispatcher>();
-        await dispatcher.DispatchAsync(
-            e.TenantId, e.StudentId, $"student-{e.StudentId}@ums.edu",
-            "ResultDeclaredEvent",
-            new Dictionary<string, string>
-            {
-                { "AcademicYear", e.AcademicYear },
-                { "Semester", e.Semester.ToString() },
-                { "SGPA", e.SGPA.ToString("F2") },
-                { "CGPA", e.CGPA.ToString("F2") }
-            },
-            NotificationChannel.Email, ct);
+        var log = services.GetRequiredService<ILogger<ExaminationEventsConsumer>>();
+        log.LogWarning(
+            "ResultDeclaredEvent has no Email field - notification skipped for StudentId={StudentId}. " +
+            "Add email enrichment in Phase 2.", e.StudentId);
+        await Task.CompletedTask;
     }
 }

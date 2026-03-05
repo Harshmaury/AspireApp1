@@ -11,11 +11,20 @@ public sealed class Tenant
     public string? LogoUrl { get; private set; }
     public bool IsActive { get; private set; }
     public DateTime CreatedAt { get; private set; }
+    public DateTime UpdatedAt { get; private set; }
     public TenantTier Tier { get; private set; } = TenantTier.Shared;
     public SubscriptionStatus SubscriptionStatus { get; private set; } = SubscriptionStatus.Trial;
     public int MaxUsers { get; private set; } = 100;
     public string Region { get; private set; } = "default";
+
+    // Legacy — retained for DB expand/contract. Do not use in new code.
     public string FeaturesJson { get; private set; } = "{}";
+
+    // Structured feature flags — use this going forward
+    public TenantFeatures Features { get; private set; } = TenantFeatures.Default();
+
+    // Optimistic concurrency token — managed by EF, never set manually
+    public byte[]? RowVersion { get; private set; }
 
     private Tenant() { }
 
@@ -32,25 +41,95 @@ public sealed class Tenant
             Slug = slug.ToLowerInvariant(),
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
             Tier = tier,
             Region = region,
             SubscriptionStatus = SubscriptionStatus.Trial,
             MaxUsers = tier == TenantTier.Enterprise ? 10000 :
-                       tier == TenantTier.Dedicated ? 1000 : 100
+                       tier == TenantTier.Dedicated ? 1000 : 100,
+            Features = TenantFeatures.Default()
         };
     }
 
-    public void Deactivate() => IsActive = false;
-    public void Activate() => IsActive = true;
-    public void Suspend() => SubscriptionStatus = SubscriptionStatus.Suspended;
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+    public void Activate()
+    {
+        if (SubscriptionStatus == SubscriptionStatus.Cancelled)
+            throw new InvalidOperationException(
+                "A cancelled tenant cannot be activated. Provision a new tenant instead.");
+
+        IsActive = true;
+        SubscriptionStatus = SubscriptionStatus.Active;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Suspend()
+    {
+        if (SubscriptionStatus == SubscriptionStatus.Cancelled)
+            throw new InvalidOperationException("A cancelled tenant cannot be suspended.");
+
+        if (SubscriptionStatus == SubscriptionStatus.Suspended)
+            return; // idempotent
+
+        IsActive = false;
+        SubscriptionStatus = SubscriptionStatus.Suspended;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Reinstate()
+    {
+        if (SubscriptionStatus != SubscriptionStatus.Suspended)
+            throw new InvalidOperationException(
+                $"Only a suspended tenant can be reinstated. Current status: {SubscriptionStatus}.");
+
+        IsActive = true;
+        SubscriptionStatus = SubscriptionStatus.Active;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Cancel()
+    {
+        if (SubscriptionStatus == SubscriptionStatus.Cancelled)
+            return; // idempotent
+
+        IsActive = false;
+        SubscriptionStatus = SubscriptionStatus.Cancelled;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Deactivate()
+    {
+        if (SubscriptionStatus == SubscriptionStatus.Cancelled)
+            throw new InvalidOperationException("A cancelled tenant cannot be deactivated.");
+
+        IsActive = false;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void Upgrade(TenantTier tier)
     {
+        if (SubscriptionStatus == SubscriptionStatus.Cancelled)
+            throw new InvalidOperationException("A cancelled tenant cannot be upgraded.");
+
         Tier = tier;
         MaxUsers = tier == TenantTier.Enterprise ? 10000 :
                    tier == TenantTier.Dedicated ? 1000 : 100;
+        UpdatedAt = DateTime.UtcNow;
     }
-    public bool CanAddUsers(int currentCount) => currentCount < MaxUsers;
-    public bool HasFeature(string feature) =>
-        FeaturesJson.Contains(string.Concat("\"", feature, "\":true"));
-}
 
+    public void UpdateFeatures(TenantFeatures features)
+    {
+        ArgumentNullException.ThrowIfNull(features);
+        Features = features;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public bool CanAddUsers(int currentCount) => currentCount < MaxUsers;
+
+    /// <summary>
+    /// Checks a feature flag by name. Delegates to structured Features model.
+    /// FeaturesJson is no longer consulted.
+    /// </summary>
+    public bool HasFeature(string feature) => Features.IsEnabled(feature);
+}

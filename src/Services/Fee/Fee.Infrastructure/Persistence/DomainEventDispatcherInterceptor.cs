@@ -1,6 +1,6 @@
+using Fee.Domain.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Fee.Domain.Common;
 namespace Fee.Infrastructure.Persistence;
 public sealed class DomainEventDispatcherInterceptor : SaveChangesInterceptor
 {

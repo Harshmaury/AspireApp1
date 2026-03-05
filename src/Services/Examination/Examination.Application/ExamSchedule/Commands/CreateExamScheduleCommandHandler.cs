@@ -1,7 +1,7 @@
-using MediatR;
 using Examination.Application.Interfaces;
-using ExamScheduleEntity = Examination.Domain.Entities.ExamSchedule;
 using Examination.Domain.Enums;
+using MediatR;
+using ExamScheduleEntity = Examination.Domain.Entities.ExamSchedule;
 namespace Examination.Application.ExamSchedule.Commands;
 public sealed class CreateExamScheduleCommandHandler : IRequestHandler<CreateExamScheduleCommand, Guid>
 {

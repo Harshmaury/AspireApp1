@@ -1,6 +1,6 @@
-using MediatR;
 using Faculty.Application.Interfaces;
 using Faculty.Domain.Exceptions;
+using MediatR;
 using CourseAssignmentEntity = Faculty.Domain.Entities.CourseAssignment;
 namespace Faculty.Application.CourseAssignment.Commands;
 public sealed class AssignCourseCommandHandler : IRequestHandler<AssignCourseCommand, Guid>

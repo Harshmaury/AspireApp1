@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
-using Examination.Domain.Entities;
 using Examination.Domain.Common;
+using Examination.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 namespace Examination.Infrastructure.Persistence;
 public sealed class ExaminationDbContext : DbContext
 {

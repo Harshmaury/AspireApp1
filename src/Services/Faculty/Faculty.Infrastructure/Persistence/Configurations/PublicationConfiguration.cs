@@ -1,6 +1,6 @@
+using Faculty.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Faculty.Domain.Entities;
 namespace Faculty.Infrastructure.Persistence.Configurations;
 public sealed class PublicationConfiguration : IEntityTypeConfiguration<Publication>
 {

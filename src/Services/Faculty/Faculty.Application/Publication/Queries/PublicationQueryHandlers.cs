@@ -1,6 +1,6 @@
-using MediatR;
 using Faculty.Application.DTOs;
 using Faculty.Application.Interfaces;
+using MediatR;
 using PublicationEntity = Faculty.Domain.Entities.Publication;
 namespace Faculty.Application.Publication.Queries;
 internal static class PublicationMapper

@@ -1,7 +1,7 @@
-using UMS.SharedKernel.Extensions;
+using BFF.Endpoints;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
-using BFF.Endpoints;
+using UMS.SharedKernel.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();

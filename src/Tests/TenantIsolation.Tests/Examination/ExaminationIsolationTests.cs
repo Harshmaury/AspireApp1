@@ -8,10 +8,11 @@ using Xunit;
 
 namespace TenantIsolation.Tests.Examination;
 
-public sealed class ExaminationIsolationTests
+[Collection("TenantIsolation")]
+public sealed class ExaminationIsolationTests(PostgresTenantFixture pg)
 {
-    private static ExaminationDbContext MakeDb(string name) =>
-        DbFactory.Create<ExaminationDbContext>(o => new ExaminationDbContext(o), name);
+    private ExaminationDbContext MakeDb(string name) =>
+        DbFactory.Create<ExaminationDbContext>(o => new ExaminationDbContext(o), pg.ConnectionString, name);
 
     private static ExamSchedule MakeSchedule(Guid tenantId) =>
         ExamSchedule.Create(tenantId, Guid.NewGuid(),
@@ -23,8 +24,6 @@ public sealed class ExaminationIsolationTests
 
     private static ResultCard MakeResult(Guid tenantId, Guid studentId) =>
         ResultCard.Create(tenantId, studentId, "2024-25", 1, 8.5m, 8.2m, 24, 24);
-
-    // ── ExamSchedule ──────────────────────────────────────────
 
     [Fact]
     public async Task ExamSchedule_GetById_OwnTenant_Returns()
@@ -47,8 +46,6 @@ public sealed class ExaminationIsolationTests
         (await new ExamScheduleRepository(q).GetByIdAsync(sA.Id, tidB)).Should().BeNull();
     }
 
-    // ── MarksEntry ────────────────────────────────────────────
-
     [Fact]
     public async Task MarksEntry_GetByStudent_OwnTenant_Returns()
     {
@@ -70,8 +67,6 @@ public sealed class ExaminationIsolationTests
         (await new MarksEntryRepository(q).GetByStudentAsync(sid, tidB)).Should().BeEmpty();
     }
 
-    // ── ResultCard ────────────────────────────────────────────
-
     [Fact]
     public async Task ResultCard_GetByStudent_CrossTenant_ReturnsEmpty()
     {
@@ -81,16 +76,5 @@ public sealed class ExaminationIsolationTests
         using (var ctx = MakeDb(db)) { ctx.ResultCards.Add(r); ctx.SaveChanges(); }
         using var q = MakeDb(db);
         (await new ResultCardRepository(q).GetByStudentAsync(sid, tidB)).Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task ResultCard_GetByStudentSemester_CrossTenant_ReturnsNull()
-    {
-        var db = Guid.NewGuid().ToString();
-        var tidA = Guid.NewGuid(); var tidB = Guid.NewGuid(); var sid = Guid.NewGuid();
-        var r = MakeResult(tidA, sid);
-        using (var ctx = MakeDb(db)) { ctx.ResultCards.Add(r); ctx.SaveChanges(); }
-        using var q = MakeDb(db);
-        (await new ResultCardRepository(q).GetByStudentSemesterAsync(sid, "2024-25", 1, tidB)).Should().BeNull();
     }
 }

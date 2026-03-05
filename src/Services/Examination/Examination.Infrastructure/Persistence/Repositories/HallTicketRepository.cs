@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Examination.Application.Interfaces;
-using Examination.Infrastructure.Persistence;
 using Examination.Domain.Entities;
+using Examination.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 namespace Examination.Infrastructure.Persistence.Repositories;
 public sealed class HallTicketRepository : IHallTicketRepository
 {

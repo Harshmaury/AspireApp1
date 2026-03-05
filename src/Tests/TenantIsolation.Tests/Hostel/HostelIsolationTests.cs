@@ -9,17 +9,16 @@ using HostelEntity = Hostel.Domain.Entities.Hostel;
 
 namespace TenantIsolation.Tests.Hostel;
 
-public sealed class HostelIsolationTests
+[Collection("TenantIsolation")]
+public sealed class HostelIsolationTests(PostgresTenantFixture pg)
 {
-    private static HostelDbContext MakeDb(string name) =>
-        DbFactory.Create<HostelDbContext>(o => new HostelDbContext(o), name);
+    private HostelDbContext MakeDb(string name) =>
+        DbFactory.Create<HostelDbContext>(o => new HostelDbContext(o), pg.ConnectionString, name);
 
-    private static HostelEntity   MakeHostel(Guid tid)     => HostelEntity.Create(tid, "Block A", HostelType.Boys, 20, "Warden", "9999999999");
-    private static Room           MakeRoom(Guid tid)        => Room.Create(tid, Guid.NewGuid(), "101", 1, RoomType.Double, 2);
-    private static RoomAllotment  MakeAllotment(Guid tid)   => RoomAllotment.Create(tid, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "2024-25", 1);
+    private static HostelEntity    MakeHostel(Guid tid)    => HostelEntity.Create(tid, "Block A", HostelType.Boys, 20, "Warden", "9999999999");
+    private static Room            MakeRoom(Guid tid)       => Room.Create(tid, Guid.NewGuid(), "101", 1, RoomType.Double, 2);
+    private static RoomAllotment   MakeAllotment(Guid tid)  => RoomAllotment.Create(tid, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "2024-25", 1);
     private static HostelComplaint MakeComplaint(Guid tid)  => HostelComplaint.Create(tid, Guid.NewGuid(), Guid.NewGuid(), ComplaintCategory.Maintenance, "Issue.");
-
-    // ── Hostel ────────────────────────────────────────────────
 
     [Fact]
     public async Task Hostel_GetById_OwnTenant_Returns()
@@ -41,8 +40,6 @@ public sealed class HostelIsolationTests
         (await new HostelRepository(q).GetByIdAsync(hA.Id, hB.TenantId)).Should().BeNull();
     }
 
-    // ── Room ──────────────────────────────────────────────────
-
     [Fact]
     public async Task Room_GetById_CrossTenant_ReturnsNull()
     {
@@ -63,8 +60,6 @@ public sealed class HostelIsolationTests
         (await new RoomRepository(q).GetByIdAsync(r.Id, tid)).Should().NotBeNull();
     }
 
-    // ── Allotment ─────────────────────────────────────────────
-
     [Fact]
     public async Task Allotment_GetById_CrossTenant_ReturnsNull()
     {
@@ -78,16 +73,13 @@ public sealed class HostelIsolationTests
     [Fact]
     public async Task Allotment_GetActiveByStudent_CrossTenant_ReturnsNull()
     {
-        var db   = Guid.NewGuid().ToString();
-        var tidA = Guid.NewGuid(); var tidB = Guid.NewGuid();
-        var sid  = Guid.NewGuid();
-        var a    = RoomAllotment.Create(tidA, sid, Guid.NewGuid(), Guid.NewGuid(), "2024-25", 1);
+        var db = Guid.NewGuid().ToString();
+        var tidA = Guid.NewGuid(); var tidB = Guid.NewGuid(); var sid = Guid.NewGuid();
+        var a = RoomAllotment.Create(tidA, sid, Guid.NewGuid(), Guid.NewGuid(), "2024-25", 1);
         using (var ctx = MakeDb(db)) { ctx.RoomAllotments.Add(a); ctx.SaveChanges(); }
         using var q = MakeDb(db);
         (await new AllotmentRepository(q).GetActiveByStudentAsync(sid, "2024-25", tidB)).Should().BeNull();
     }
-
-    // ── Complaint ─────────────────────────────────────────────
 
     [Fact]
     public async Task Complaint_GetById_CrossTenant_ReturnsNull()
@@ -102,10 +94,9 @@ public sealed class HostelIsolationTests
     [Fact]
     public async Task Complaint_GetByStudent_CrossTenant_ReturnsEmpty()
     {
-        var db   = Guid.NewGuid().ToString();
-        var tidA = Guid.NewGuid(); var tidB = Guid.NewGuid();
-        var sid  = Guid.NewGuid();
-        var c    = HostelComplaint.Create(tidA, sid, Guid.NewGuid(), ComplaintCategory.Security, "Gate open.");
+        var db = Guid.NewGuid().ToString();
+        var tidA = Guid.NewGuid(); var tidB = Guid.NewGuid(); var sid = Guid.NewGuid();
+        var c = HostelComplaint.Create(tidA, sid, Guid.NewGuid(), ComplaintCategory.Security, "Gate open.");
         using (var ctx = MakeDb(db)) { ctx.HostelComplaints.Add(c); ctx.SaveChanges(); }
         using var q = MakeDb(db);
         (await new ComplaintRepository(q).GetByStudentAsync(sid, tidB)).Should().BeEmpty();

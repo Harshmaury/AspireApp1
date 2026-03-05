@@ -11,48 +11,50 @@ namespace Identity.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    extension(IServiceCollection services)
     {
-        services.AddScoped<DomainEventDispatcherInterceptor>();
-
-        services.AddDbContext<ApplicationDbContext>((sp, options) =>
+        public IServiceCollection AddInfrastructure(
+        IConfiguration configuration)
         {
-            options.UseNpgsql(
-                configuration.GetConnectionString("IdentityDb"),
-                npgsql => npgsql.MigrationsAssembly(
-                    typeof(ApplicationDbContext).Assembly.FullName));
-            options.UseOpenIddict();
-            options.AddInterceptors(sp.GetRequiredService<DomainEventDispatcherInterceptor>());
-        });
+            services.AddScoped<DomainEventDispatcherInterceptor>();
 
-        services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
-        {
-            options.Password.RequiredLength = 8;
-            options.Password.RequireDigit = true;
-            options.Password.RequireLowercase = true;
-            options.Password.RequireUppercase = true;
-            options.Password.RequireNonAlphanumeric = false;
-            options.Lockout.MaxFailedAccessAttempts = 5;
-            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
-            options.User.RequireUniqueEmail = false;
-        })
-        .AddEntityFrameworkStores<ApplicationDbContext>()
-        .AddDefaultTokenProviders();
-
-        // OpenIddict Core only � server config lives in API layer
-        services.AddOpenIddict()
-            .AddCore(options =>
+            services.AddDbContext<ApplicationDbContext>((sp, options) =>
             {
-                options.UseEntityFrameworkCore()
-                    .UseDbContext<ApplicationDbContext>();
+                options.UseNpgsql(
+                    configuration.GetConnectionString("IdentityDb"),
+                    npgsql => npgsql.MigrationsAssembly(
+                        typeof(ApplicationDbContext).Assembly.FullName));
+                options.UseOpenIddict();
+                options.AddInterceptors(sp.GetRequiredService<DomainEventDispatcherInterceptor>());
             });
 
-        services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<ITenantRepository, TenantRepository>();
+            services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
+            {
+                options.Password.RequiredLength = 8;
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.User.RequireUniqueEmail = false;
+            })
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
 
-        return services;
+            // OpenIddict Core only â€” server config lives in API layer
+            services.AddOpenIddict()
+                .AddCore(options =>
+                {
+                    options.UseEntityFrameworkCore()
+                        .UseDbContext<ApplicationDbContext>();
+                });
+
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<ITenantRepository, TenantRepository>();
+
+            return services;
+        }
     }
 }
 

@@ -13,6 +13,9 @@ public sealed class ApplicationUser : IdentityUser<Guid>, IAggregateRoot
     public DateTime CreatedAt { get; private set; }
     public DateTime? LastLoginAt { get; private set; }
 
+    // Optimistic concurrency token — managed by EF, never set manually
+    public byte[]? RowVersion { get; private set; }
+
     public Tenant? Tenant { get; private set; }
 
     private readonly List<DomainEvent> _domainEvents = [];

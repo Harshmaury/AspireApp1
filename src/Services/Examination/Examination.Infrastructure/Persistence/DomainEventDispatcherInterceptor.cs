@@ -1,6 +1,6 @@
+using Examination.Domain.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Examination.Domain.Common;
 namespace Examination.Infrastructure.Persistence;
 public sealed class DomainEventDispatcherInterceptor : SaveChangesInterceptor
 {
