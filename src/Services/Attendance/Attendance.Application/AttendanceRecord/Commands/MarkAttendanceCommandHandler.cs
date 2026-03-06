@@ -34,7 +34,12 @@ public sealed class MarkAttendanceCommandHandler : IRequestHandler<MarkAttendanc
             summary = AttendanceSummaryEntity.Create(
                 cmd.TenantId, cmd.StudentId, cmd.CourseId,
                 cmd.AcademicYear, cmd.Semester);
+
             await _uow.Summaries.AddAsync(summary, ct);
+        }
+        else
+        {
+            await _uow.Summaries.UpdateAsync(summary, ct);
         }
 
         summary.Refresh(total, attended);
