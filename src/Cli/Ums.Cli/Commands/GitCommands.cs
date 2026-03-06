@@ -1,0 +1,34 @@
+namespace Ums.Cli.Commands;
+
+using System.CommandLine;
+using Ums.Cli.Infrastructure;
+
+public static class GitCommands
+{
+    public static Command Build()
+    {
+        var git = new Command("git", "Git helpers (add, commit, push)");
+        git.AddCommand(BuildPush());
+        git.AddCommand(BuildStatus());
+        return git;
+    }
+
+    private static Command BuildPush()
+    {
+        var cmd = new Command("push", "git add . && commit && push to origin");
+        var msg = new Argument<string>("message",
+            () => $"chore: auto update {DateTime.Now:yyyy-MM-dd HH:mm}",
+            "Commit message");
+        cmd.AddArgument(msg);
+        cmd.SetHandler((m) => BashBridge.Run("ums-engine.sh", $"git {m}"), msg);
+        return cmd;
+    }
+
+    private static Command BuildStatus()
+    {
+        var cmd = new Command("status", "Show git status of the repo");
+        cmd.SetHandler(() =>
+            BashBridge.RunRaw("git -C /mnt/c/Users/harsh/source/repos/AspireApp1 status"));
+        return cmd;
+    }
+}

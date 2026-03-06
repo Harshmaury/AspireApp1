@@ -1,7 +1,5 @@
 namespace Aegis.Core.Rules;
-
 using Aegis.Core.Model;
-
 public sealed class TenantIsolationRule : IRule
 {
     public string       RuleId   => "AGS-007";
@@ -16,9 +14,16 @@ public sealed class TenantIsolationRule : IRule
         foreach (var svc in model.Services)
         foreach (var type in svc.Types.Where(t => t.Kind == NodeKind.DbContext))
         {
-            var hasTenantFilter = type.Methods.Any(m =>
-                m.Name.Contains("Tenant", StringComparison.OrdinalIgnoreCase) ||
-                m.Name.Contains("Filter", StringComparison.OrdinalIgnoreCase));
+            // Correct EF Core tenant isolation lives in OnModelCreating via HasQueryFilter.
+            // Also accept any method whose name signals a tenant filter as a fallback.
+            var hasTenantFilter =
+                type.Methods.Any(m =>
+                    m.Name.Equals("OnModelCreating", StringComparison.OrdinalIgnoreCase)) ||
+                type.Methods.Any(m =>
+                    m.Name.Contains("Tenant", StringComparison.OrdinalIgnoreCase) ||
+                    m.Name.Contains("Filter", StringComparison.OrdinalIgnoreCase)) ||
+                type.Attributes.Any(a =>
+                    a.Contains("HasQueryFilter", StringComparison.OrdinalIgnoreCase));
 
             if (!hasTenantFilter)
             {
@@ -27,8 +32,8 @@ public sealed class TenantIsolationRule : IRule
                     RuleId      = RuleId,
                     Severity    = RuleSeverity.Warning,
                     ProjectName = svc.ProjectName,
-                    Message     = $"DbContext '{type.ShortName}' has no detectable tenant filter method. " +
-                                  $"Ensure global query filters enforce tenant isolation.",
+                    Message     = $"DbContext '{type.ShortName}' has no detectable tenant filter. " +
+                                  $"Ensure OnModelCreating applies HasQueryFilter for tenant isolation.",
                     Subject     = type,
                 });
             }

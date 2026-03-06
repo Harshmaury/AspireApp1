@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Identity.Application.Features.Auth.Commands;
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
@@ -16,7 +16,11 @@ public sealed class RegisterCommandHandlerTests
     private RegisterCommandHandler BuildHandler() =>
         new(_users.Object, _tenants.Object);
 
-    private static Tenant ValidTenant() => Tenant.Create("Test Uni", "test-uni");
+    private static Tenant ValidTenant()
+    {
+        var t = Tenant.Create("Test Uni", "test-uni");
+        return t;
+    }
 
     private static RegisterCommand ValidCommand(string tenantSlug = "test-uni") => new(
         TenantSlug: tenantSlug,
@@ -25,6 +29,8 @@ public sealed class RegisterCommandHandlerTests
         FirstName: "John",
         LastName: "Doe"
     );
+
+    // ── Happy path ────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Handle_ValidCommand_ReturnsSuccess()
@@ -44,6 +50,8 @@ public sealed class RegisterCommandHandlerTests
         result.Errors.Should().BeEmpty();
     }
 
+    // ── Tenant not found ──────────────────────────────────────────────────────
+
     [Fact]
     public async Task Handle_TenantNotFound_ThrowsTenantNotFoundException()
     {
@@ -55,6 +63,8 @@ public sealed class RegisterCommandHandlerTests
 
         await act.Should().ThrowAsync<TenantNotFoundException>();
     }
+
+    // ── Duplicate email ───────────────────────────────────────────────────────
 
     [Fact]
     public async Task Handle_DuplicateEmail_ReturnsFailureWithMessage()
@@ -71,6 +81,8 @@ public sealed class RegisterCommandHandlerTests
         result.UserId.Should().BeNull();
         result.Errors.Should().ContainSingle(e => e.Contains("already registered"));
     }
+
+    // ── Identity failure ──────────────────────────────────────────────────────
 
     [Fact]
     public async Task Handle_IdentityCreateFails_ReturnsFailureWithErrors()
@@ -89,6 +101,8 @@ public sealed class RegisterCommandHandlerTests
         result.Succeeded.Should().BeFalse();
         result.Errors.Should().ContainSingle(e => e.Contains("Password too weak"));
     }
+
+    // ── Domain event raised ───────────────────────────────────────────────────
 
     [Fact]
     public async Task Handle_ValidCommand_UserRaisesRegisteredEvent()

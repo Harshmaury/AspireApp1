@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Identity.Domain.Entities;
 using Identity.Domain.Events;
 
@@ -9,14 +9,17 @@ public sealed class ApplicationUserTests
     private static ApplicationUser ValidUser() => ApplicationUser.Create(
         Guid.NewGuid(), "john@uni.edu", "John", "Doe");
 
+    // ── Create ────────────────────────────────────────────────────────────────
+
     [Fact]
     public void Create_ValidInput_SetsProperties()
     {
         var tenantId = Guid.NewGuid();
         var user = ApplicationUser.Create(tenantId, "John@UNI.edu", "John", "Doe");
+
         user.TenantId.Should().Be(tenantId);
-        user.Email.Should().Be("john@uni.edu");
-        user.NormalizedEmail.Should().Be("JOHN@UNI.EDU");
+        user.Email.Should().Be("john@uni.edu");           // normalized lower
+        user.NormalizedEmail.Should().Be("JOHN@UNI.EDU"); // normalized upper
         user.FirstName.Should().Be("John");
         user.LastName.Should().Be("Doe");
         user.IsActive.Should().BeTrue();
@@ -60,12 +63,16 @@ public sealed class ApplicationUserTests
         evt.TenantId.Should().Be(tenantId);
     }
 
+    // ── FullName ──────────────────────────────────────────────────────────────
+
     [Fact]
     public void FullName_ReturnsFirstAndLastCombined()
     {
         var user = ValidUser();
         user.FullName.Should().Be("John Doe");
     }
+
+    // ── RecordLogin ───────────────────────────────────────────────────────────
 
     [Fact]
     public void RecordLogin_SetsLastLoginAt()
@@ -77,6 +84,8 @@ public sealed class ApplicationUserTests
         user.LastLoginAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(2));
     }
 
+    // ── Deactivate ────────────────────────────────────────────────────────────
+
     [Fact]
     public void Deactivate_SetsIsActiveFalse()
     {
@@ -85,6 +94,8 @@ public sealed class ApplicationUserTests
         user.Deactivate();
         user.IsActive.Should().BeFalse();
     }
+
+    // ── ClearDomainEvents ─────────────────────────────────────────────────────
 
     [Fact]
     public void ClearDomainEvents_EmptiesCollection()

@@ -1,4 +1,4 @@
-﻿using Confluent.Kafka;
+using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
 using Student.Infrastructure.Persistence;
 using UMS.SharedKernel.Kafka;
@@ -68,7 +68,7 @@ public sealed class StudentOutboxRelayService : BackgroundService
                     new Message<string, string>
                     {
                         Key   = message.Id.ToString(),
-                        Value = message.Payload
+                        Value = System.Text.Json.JsonSerializer.Serialize(new UMS.SharedKernel.Kafka.KafkaEventEnvelope { EventType = message.EventType, Payload = message.Payload })
                     }, ct);
 
                 message.MarkProcessed();
