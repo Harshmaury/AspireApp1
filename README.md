@@ -399,7 +399,7 @@ dev recovery                        # auto-fix everything
 | Script | Purpose |
 |---|---|
 | `~/dev` | CLI entry point |
-| `~/ums/engine/ums-engine.sh` | Master orchestrator |
+| `~/ums/engine/ums-engine.sh` | main orchestrator |
 | `~/ums/engine/ums-deploy.sh` | Per-service build + deploy |
 | `~/ums/engine/ums-watch.sh` | File watcher + auto-deploy |
 | `~/ums/engine/ums-status.sh` | Status dashboard |
