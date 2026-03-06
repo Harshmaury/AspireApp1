@@ -1,5 +1,4 @@
-namespace Ums.Cli.Infrastructure;
-
+﻿namespace Ums.Cli.Infrastructure;
 using System.Diagnostics;
 
 public static class BashBridge
@@ -21,12 +20,8 @@ public static class BashBridge
             : $"\"{scriptPath}\" {args}";
         var psi = new ProcessStartInfo
         {
-            FileName               = "/bin/bash",
-            Arguments              = $"-c {bashArgs}",
-            UseShellExecute        = false,
-            RedirectStandardOutput = false,
-            RedirectStandardError  = false,
-            RedirectStandardInput  = false,
+            FileName = "/bin/bash", Arguments = $"-c {bashArgs}",
+            UseShellExecute = false,
         };
         using var proc = Process.Start(psi)!;
         proc.WaitForExit();
@@ -37,11 +32,9 @@ public static class BashBridge
     {
         var psi = new ProcessStartInfo
         {
-            FileName               = "/bin/bash",
-            Arguments              = $"-c \"{command.Replace("\"", "\\\"")}\"",
-            UseShellExecute        = false,
-            RedirectStandardOutput = false,
-            RedirectStandardError  = false,
+            FileName = "/bin/bash",
+            Arguments = $"-c \"{command.Replace("\"", "\\\"")}\"",
+            UseShellExecute = false,
         };
         using var proc = Process.Start(psi)!;
         proc.WaitForExit();
@@ -50,6 +43,15 @@ public static class BashBridge
 
     public static async Task<string> CaptureAsync(string command, int timeoutMs = 10_000)
     {
+        using var cts = new CancellationTokenSource(timeoutMs);
+        return await CaptureAsync(command, cts.Token);
+    }
+
+    // FIX: properly propagates CancellationToken to both process kill and stream read
+    public static async Task<string> CaptureAsync(string command, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
         var psi = new ProcessStartInfo
         {
             FileName               = "/bin/bash",
@@ -58,17 +60,21 @@ public static class BashBridge
             RedirectStandardOutput = true,
             RedirectStandardError  = true,
         };
-        using var proc = Process.Start(psi)!;
-        var stdout = await proc.StandardOutput.ReadToEndAsync();
-        var stderr = await proc.StandardError.ReadToEndAsync();
-        await proc.WaitForExitAsync();
-        return proc.ExitCode == 0 ? stdout.Trim() : $"ERROR({proc.ExitCode}): {stderr.Trim()}";
-    }
 
-    public static Task<string> CaptureAsync(string command, CancellationToken ct)
-    {
-        ct.ThrowIfCancellationRequested();
-        return CaptureAsync(command, timeoutMs: 10_000);
+        using var proc = Process.Start(psi)!;
+
+        // Register cancellation to kill the process
+        await using var reg = ct.Register(() =>
+        {
+            try { if (!proc.HasExited) proc.Kill(entireProcessTree: true); }
+            catch { /* ignore race */ }
+        });
+
+        var stdout = await proc.StandardOutput.ReadToEndAsync(ct);
+        var stderr = await proc.StandardError.ReadToEndAsync(ct);
+        await proc.WaitForExitAsync(ct);
+
+        return proc.ExitCode == 0 ? stdout.Trim() : $"ERROR({proc.ExitCode}): {stderr.Trim()}";
     }
 
     public static async Task RunAsync(string command, CancellationToken ct = default)
@@ -78,10 +84,16 @@ public static class BashBridge
             FileName               = "/bin/bash",
             Arguments              = $"-c \"{command.Replace("\"", "\\\"")}\"",
             UseShellExecute        = false,
-            RedirectStandardOutput = false,
-            RedirectStandardError  = false,
         };
         using var proc = Process.Start(psi)!;
+        await using var reg = ct.Register(() =>
+        {
+            try { if (!proc.HasExited) proc.Kill(entireProcessTree: true); }
+            catch { /* ignore race */ }
+        });
         await proc.WaitForExitAsync(ct);
     }
 }
+
+
+

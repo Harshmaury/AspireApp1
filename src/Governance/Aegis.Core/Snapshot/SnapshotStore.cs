@@ -1,5 +1,4 @@
-namespace Aegis.Core.Snapshot;
-
+﻿namespace Aegis.Core.Snapshot;
 using Aegis.Core.Model;
 using System.Text.Json;
 
@@ -36,33 +35,35 @@ public static class SnapshotStore
             .ForEach(f => { File.Delete(f); Console.WriteLine($"[UMS] Pruned: {Path.GetFileName(f)}"); });
     }
 
-    internal static string ComputeServiceHash(ServiceSnapshot svc)
-    {
-        var lines = svc.Types
-            .Select(t => $"{t.FullName}|{t.Layer}|{t.Kind}|{string.Join(",", t.Methods.OrderBy(x => x))}|{string.Join(",", t.Interfaces.OrderBy(x => x))}|{string.Join(",", t.BaseTypes.OrderBy(x => x))}|{string.Join(",", t.Attributes.OrderBy(x => x))}|{string.Join(",", t.Endpoints.OrderBy(x => x))}")
-            .Concat(svc.KafkaProducers.Select(k => $"KP:{svc.Name}:{k}"))
-            .Concat(svc.KafkaConsumers.Select(k => $"KC:{svc.Name}:{k}"))
-            .Concat(svc.DiRegistrations.Select(d => $"DI:{svc.Name}:{d}"))
-            .OrderBy(x => x);
+    internal static string ComputeServiceHash(ServiceSnapshot svc) =>
+        ComputeHashFromLines(BuildHashLines(svc));
 
-        using var sha  = System.Security.Cryptography.SHA256.Create();
-        var bytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(string.Join("\n", lines)));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
-    }
-
-    internal static string ComputeHash(List<ServiceSnapshot> services)
-    {
-        var lines = services
+    internal static string ComputeHash(List<ServiceSnapshot> services) =>
+        ComputeHashFromLines(services
             .OrderBy(s => s.Name)
-            .SelectMany(s =>
-                s.Types.Select(t => $"{t.FullName}|{t.Layer}|{t.Kind}|{string.Join(",", t.Methods.OrderBy(x => x))}|{string.Join(",", t.Interfaces.OrderBy(x => x))}|{string.Join(",", t.BaseTypes.OrderBy(x => x))}|{string.Join(",", t.Attributes.OrderBy(x => x))}|{string.Join(",", t.Endpoints.OrderBy(x => x))}")
-                .Concat(s.KafkaProducers.Select(k => $"KP:{s.Name}:{k}"))
-                .Concat(s.KafkaConsumers.Select(k => $"KC:{s.Name}:{k}"))
-                .Concat(s.DiRegistrations.Select(d => $"DI:{s.Name}:{d}")))
-            .OrderBy(x => x);
+            .SelectMany(BuildHashLines));
 
-        using var sha  = System.Security.Cryptography.SHA256.Create();
-        var bytes = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(string.Join("\n", lines)));
+    // â”€â”€ single source of truth for hash lines â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    private static IEnumerable<string> BuildHashLines(ServiceSnapshot s) =>
+        s.Types.Select(t =>
+            $"{t.FullName}|{t.Layer}|{t.Kind}" +
+            $"|{string.Join(",", t.Methods.OrderBy(x => x))}" +
+            $"|{string.Join(",", t.Interfaces.OrderBy(x => x))}" +
+            $"|{string.Join(",", t.BaseTypes.OrderBy(x => x))}" +
+            $"|{string.Join(",", t.Attributes.OrderBy(x => x))}" +
+            $"|{string.Join(",", t.Endpoints.OrderBy(x => x))}")
+        .Concat(s.KafkaProducers.Select(k  => $"KP:{s.Name}:{k}"))
+        .Concat(s.KafkaConsumers.Select(k  => $"KC:{s.Name}:{k}"))
+        .Concat(s.DiRegistrations.Select(d => $"DI:{s.Name}:{d}"));
+
+    private static string ComputeHashFromLines(IEnumerable<string> lines)
+    {
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        var bytes = sha.ComputeHash(
+            System.Text.Encoding.UTF8.GetBytes(string.Join("\n", lines.OrderBy(x => x))));
         return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 }
+
+
+

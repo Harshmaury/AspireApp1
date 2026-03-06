@@ -21,7 +21,6 @@ root.AddCommand(AiCommands.Build());
 // ── legacy top-level aliases (CI backward-compat) ────────────────────────
 root.AddCommand(VerifyDependenciesAdapter.Build());
 root.AddCommand(VerifyBoundariesAdapter.Build());
-root.AddCommand(VerifyTenantAdapter.Build());
 root.AddCommand(SnapshotAdapter.Build());
 root.AddCommand(VerifyEventContractsAdapter.Build());
 root.AddCommand(VerifyResilienceAdapter.Build());

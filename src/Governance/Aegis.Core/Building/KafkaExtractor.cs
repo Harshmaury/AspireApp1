@@ -1,5 +1,4 @@
-namespace Aegis.Core.Building;
-
+﻿namespace Aegis.Core.Building;
 using Aegis.Core.Model;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -38,23 +37,50 @@ internal static class KafkaExtractor
         ClassDeclarationSyntax cls, INamedTypeSymbol sym,
         SemanticModel model, string project)
     {
-        var isConsumer = sym.BaseType?.Name == "BackgroundService"
+        // Pattern A: BackgroundService / IHostedService subclass
+        var isBackgroundService = sym.BaseType?.Name == "BackgroundService"
             || sym.AllInterfaces.Any(i => i.Name is "IHostedService");
 
-        if (!isConsumer) return null;
+        // Pattern B: class directly injecting IConsumer<TKey, TValue> in constructor
+        var injectedConsumerTypes = sym.Constructors
+            .SelectMany(c => c.Parameters)
+            .Where(p =>
+            {
+                var typeName = p.Type.Name;
+                return typeName == "IConsumer" ||
+                       (p.Type is INamedTypeSymbol nt &&
+                        nt.IsGenericType &&
+                        nt.OriginalDefinition.Name == "IConsumer");
+            })
+            .Select(p => p.Type)
+            .OfType<INamedTypeSymbol>()
+            .ToList();
 
-        var eventTypes = cls.DescendantNodes()
+        if (!isBackgroundService && injectedConsumerTypes.Count == 0) return null;
+
+        // Event types from ConsumeResult<T> usage (Pattern A)
+        var eventTypesFromResult = cls.DescendantNodes()
             .OfType<GenericNameSyntax>()
             .Where(g => g.Identifier.Text == "ConsumeResult")
             .SelectMany(g => g.TypeArgumentList.Arguments)
             .Select(t => model.GetTypeInfo(t).Type?.Name ?? t.ToString())
+            .ToList();
+
+        // Event types from IConsumer<Ignore, T> or IConsumer<string, T> type args (Pattern B)
+        var eventTypesFromInjection = injectedConsumerTypes
+            .SelectMany(t => t.TypeArguments.Skip(1)) // skip key type (Ignore/string)
+            .Select(t => t.Name)
+            .ToList();
+
+        var allEventTypes = eventTypesFromResult
+            .Concat(eventTypesFromInjection)
             .Distinct()
             .ToList();
 
         return new KafkaConsumption
         {
             ConsumerClass   = sym.Name,
-            EventTypes      = eventTypes,
+            EventTypes      = allEventTypes,
             ProjectName     = project,
             ConsumerGroupId = ExtractConsumerGroupId(cls, model),
         };
@@ -62,13 +88,10 @@ internal static class KafkaExtractor
 
     private static string? ExtractConsumerGroupId(ClassDeclarationSyntax cls, SemanticModel model)
     {
-        // Pattern 1: object initializer — new ConsumerConfig { GroupId = "value" }
         var objInit = cls.DescendantNodes()
             .OfType<InitializerExpressionSyntax>()
             .SelectMany(i => i.Expressions.OfType<AssignmentExpressionSyntax>())
-            .FirstOrDefault(a =>
-                a.Left is IdentifierNameSyntax id &&
-                id.Identifier.Text == "GroupId");
+            .FirstOrDefault(a => a.Left is IdentifierNameSyntax id && id.Identifier.Text == "GroupId");
 
         if (objInit != null)
         {
@@ -76,19 +99,19 @@ internal static class KafkaExtractor
             if (val.HasValue && val.Value is string s) return s;
         }
 
-        // Pattern 2: standalone assignment — config.GroupId = "value"
         var assignExpr = cls.DescendantNodes()
             .OfType<AssignmentExpressionSyntax>()
             .FirstOrDefault(a =>
-                a.Left is MemberAccessExpressionSyntax m &&
-                m.Name.Identifier.Text == "GroupId");
+                a.Left is MemberAccessExpressionSyntax m && m.Name.Identifier.Text == "GroupId");
 
         if (assignExpr != null)
         {
             var val = model.GetConstantValue(assignExpr.Right);
             if (val.HasValue && val.Value is string s) return s;
         }
-
         return null;
     }
 }
+
+
+

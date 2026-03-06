@@ -1,11 +1,12 @@
-namespace Aegis.Core.Rules;
+﻿namespace Aegis.Core.Rules;
 using Aegis.Core.Model;
+
 public sealed class CircularDependencyRule : IRule
 {
     public string       RuleId   => "AGS-005";
     public string       RuleName => "Circular Dependency Detection";
     public RuleCategory Category => RuleCategory.Dependency;
-    public string       Version  => "1.0";
+    public string       Version  => "1.1";
 
     public RuleResult Evaluate(ArchitectureModel model)
     {
@@ -17,59 +18,67 @@ public sealed class CircularDependencyRule : IRule
                 .GroupBy(e => e.From.FullName)
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ToFullName).ToHashSet());
 
-            var visited    = new HashSet<string>();
-            var reported   = new HashSet<string>();   // dedup: canonical cycle key
+            // WHITE=unvisited, GRAY=in-stack, BLACK=done
+            var color    = new Dictionary<string, int>(StringComparer.Ordinal); // 0=W,1=G,2=B
+            var reported = new HashSet<string>();
 
             foreach (var type in svc.Types)
-            {
-                var stack = new List<string>();
-                FindCycle(type.FullName, graph, visited, stack, reported, violations, svc, RuleId);
-            }
+                if (!color.TryGetValue(type.FullName, out var c) || c == 0)
+                    Dfs(type.FullName, graph, color, new List<string>(),
+                        reported, violations, svc, RuleId);
         }
 
         return new RuleResult { RuleId = RuleId, RuleName = RuleName, Category = Category, Version = Version, Violations = violations };
     }
 
-    private static void FindCycle(
+    private static void Dfs(
         string node,
         Dictionary<string, HashSet<string>> graph,
-        HashSet<string> visited,
+        Dictionary<string, int> color,
         List<string> stack,
         HashSet<string> reported,
         List<RuleViolation> violations,
-        ServiceModel svc,
-        string ruleId)
+        ServiceModel svc, string ruleId)
     {
-        if (visited.Contains(node)) return;
+        color[node] = 1; // GRAY â€” in current DFS path
+        stack.Add(node);
 
-        int loopStart = stack.IndexOf(node);
-        if (loopStart >= 0)
+        if (graph.TryGetValue(node, out var neighbors))
         {
-            // Extract the cycle segment and canonicalise so A->B->A and B->A->B are the same
-            var cycle     = stack.Skip(loopStart).ToList();
-            var cycleKey  = string.Join("->", cycle.OrderBy(x => x));
-            if (reported.Add(cycleKey))
+            foreach (var n in neighbors)
             {
-                var path    = string.Join(" -> ", cycle) + " -> " + node;
-                var subject = svc.Types.FirstOrDefault(t => t.FullName == cycle[loopStart]);
-                violations.Add(new RuleViolation
+                color.TryGetValue(n, out var nc);
+                if (nc == 2) continue; // BLACK â€” fully processed, safe
+
+                if (nc == 1) // GRAY â€” back-edge = cycle found
                 {
-                    RuleId      = ruleId,
-                    Severity    = RuleSeverity.Error,
-                    ProjectName = svc.ProjectName,
-                    Message     = $"Circular dependency: {path}",
-                    Subject     = subject,
-                });
+                    var loopStart = stack.IndexOf(n);
+                    var cycle     = stack.Skip(loopStart).ToList();
+                    var key       = string.Join("->", cycle.OrderBy(x => x));
+                    if (reported.Add(key))
+                    {
+                        var path    = string.Join(" -> ", cycle) + " -> " + n;
+                        var subject = svc.Types.FirstOrDefault(t => t.FullName == cycle[loopStart]);
+                        violations.Add(new RuleViolation
+                        {
+                            RuleId      = ruleId,
+                            Severity    = RuleSeverity.Error,
+                            ProjectName = svc.ProjectName,
+                            Message     = $"Circular dependency: {path}",
+                            Subject     = subject,
+                        });
+                    }
+                    continue;
+                }
+
+                Dfs(n, graph, color, stack, reported, violations, svc, ruleId);
             }
-            return;
         }
 
-        stack.Add(node);
-        if (graph.TryGetValue(node, out var neighbors))
-            foreach (var n in neighbors)
-                FindCycle(n, graph, visited, stack, reported, violations, svc, ruleId);
-
         stack.RemoveAt(stack.Count - 1);
-        visited.Add(node);
+        color[node] = 2; // BLACK â€” done
     }
 }
+
+
+
