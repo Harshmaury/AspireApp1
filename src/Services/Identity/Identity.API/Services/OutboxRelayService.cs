@@ -1,3 +1,4 @@
+// src/Services/Identity/Identity.API/Services/OutboxRelayService.cs
 using Confluent.Kafka;
 using Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -27,16 +28,25 @@ public sealed class OutboxRelayService : BackgroundService
         var config = new ProducerConfig
         {
             BootstrapServers = _bootstrapServers,
-            SecurityProtocol = SecurityProtocol.Plaintext
+            SecurityProtocol = SecurityProtocol.Plaintext,
+            // Guarantee ordering within a partition (by tenantId key)
+            EnableIdempotence = true,
+            Acks = Acks.All,
+            MessageSendMaxRetries = 3
         };
         _producer = new ProducerBuilder<string, string>(config).Build();
 
-        _logger.LogInformation("Outbox relay started. Bootstrap: {Servers}", _bootstrapServers);
+        _logger.LogInformation(
+            "Outbox relay started. Bootstrap: {Servers}", _bootstrapServers);
 
         while (!ct.IsCancellationRequested)
         {
             try { await ProcessPendingMessagesAsync(ct); }
-            catch (Exception ex) { _logger.LogWarning(ex, "Outbox relay cycle failed. Retrying in 5s."); }
+            catch (OperationCanceledException) { break; }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Outbox relay cycle failed. Retrying in 5s.");
+            }
             await Task.Delay(TimeSpan.FromSeconds(5), ct);
         }
     }
@@ -57,27 +67,51 @@ public sealed class OutboxRelayService : BackgroundService
             var dead = await db.OutboxMessages
                 .CountAsync(m => m.ProcessedAt == null && m.RetryCount >= 5, ct);
             if (dead > 0)
-                _logger.LogError("OUTBOX DEAD LETTERS: {Count} messages permanently failed", dead);
+                _logger.LogError(
+                    "OUTBOX DEAD LETTERS: {Count} messages permanently failed. " +
+                    "Manual intervention required.", dead);
             return;
         }
 
+        var publishedCount = 0;
         foreach (var message in messages)
         {
             try
             {
+                // BUG-002 FIX: Use message.TenantId from outbox row (was always Guid.Empty)
+                var envelope = KafkaEventEnvelope.Create(
+                    message.EventType,
+                    message.TenantId,   // ← fixed
+                    "default",
+                    message.Payload);
+
                 await _producer!.ProduceAsync(
                     KafkaTopics.IdentityEvents,
-                    new Message<string, string> { Key = message.Id.ToString(), Value = System.Text.Json.JsonSerializer.Serialize(UMS.SharedKernel.Kafka.KafkaEventEnvelope.Create(message.EventType, Guid.Empty, "default", message.Payload)) }, ct);
-                _logger.LogInformation("Published outbox message {Id} of type {Type}", message.Id, message.EventType);
+                    new Message<string, string>
+                    {
+                        // Key by TenantId for partition ordering
+                        Key   = message.TenantId.ToString(),
+                        Value = System.Text.Json.JsonSerializer.Serialize(envelope)
+                    }, ct);
+
+                message.MarkProcessed();
+                publishedCount++;
+
+                _logger.LogInformation(
+                    "Published outbox {Id} type={Type} tenant={TenantId}",
+                    message.Id, message.EventType, message.TenantId);
             }
-            catch (Exception ex)
+            catch (ProduceException<string, string> ex)
             {
-                message.MarkFailed(ex.Message);
-                _logger.LogWarning(ex, "Failed to publish outbox message {Id}", message.Id);
+                message.MarkFailed(ex.Error.Reason);
+                _logger.LogWarning(ex,
+                    "Failed to publish outbox {Id} (retry {Retry})",
+                    message.Id, message.RetryCount);
             }
         }
 
-        await db.SaveChangesAsync(ct);
+        if (publishedCount > 0)
+            await db.SaveChangesAsync(ct);
     }
 
     public override void Dispose()

@@ -1,4 +1,6 @@
+﻿// src/Services/Identity/Identity.Infrastructure/Persistence/DomainEventDispatcherInterceptor.cs
 using Identity.Domain.Common;
+using UMS.SharedKernel.Kafka;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -42,9 +44,11 @@ public sealed class DomainEventDispatcherInterceptor : SaveChangesInterceptor
             .SelectMany(e => e.Entity.DomainEvents)
             .ToList();
 
+        // BUG-001 FIX: Extract TenantId from ITenantedEvent â€” was always Guid.Empty before
         var outboxMessages = events.Select(e => OutboxMessage.Create(
             eventType: e.GetType().FullName!,
-            payload: JsonSerializer.Serialize(e, e.GetType())
+            payload: JsonSerializer.Serialize(e, e.GetType()),
+            tenantId: e is ITenantedEvent te ? te.TenantId : Guid.Empty
         )).ToList();
 
         context.OutboxMessages.AddRange(outboxMessages);
