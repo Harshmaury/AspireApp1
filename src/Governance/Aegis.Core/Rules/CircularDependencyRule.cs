@@ -1,4 +1,4 @@
-﻿namespace Aegis.Core.Rules;
+namespace Aegis.Core.Rules;
 using Aegis.Core.Model;
 
 public sealed class CircularDependencyRule : IRule
