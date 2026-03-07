@@ -1,3 +1,4 @@
+ï»¿// src/Services/Identity/Identity.Application/Features/Auth/Commands/RegisterCommandHandler.cs
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Identity.Domain.Exceptions;
@@ -15,7 +16,7 @@ internal sealed class RegisterCommandHandler
         IUserRepository users,
         ITenantRepository tenants)
     {
-        _users = users;
+        _users   = users;
         _tenants = tenants;
     }
 
@@ -26,22 +27,29 @@ internal sealed class RegisterCommandHandler
         var tenant = await _tenants.FindBySlugAsync(request.TenantSlug, ct)
             ?? throw new TenantNotFoundException(Guid.Empty);
 
-        // 2. Check duplicate email within this tenant
+        // 2. Enforce self-registration feature flag
+        if (!tenant.Features.AllowSelfRegistration)
+            throw new SelfRegistrationDisabledException(tenant.Slug);
+
+        // 3. Enforce per-tenant user cap
+        var currentCount = await _users.CountByTenantAsync(tenant.Id, ct);
+        if (!tenant.CanAddUsers(currentCount))
+            throw new TenantUserLimitExceededException(tenant.Id, tenant.MaxUsers);
+
+        // 4. Check duplicate email within this tenant
         var exists = await _users.ExistsAsync(tenant.Id, request.Email, ct);
         if (exists)
-            return new RegisterResult(false, null,
-                [$"Email '{request.Email}' is already registered."]);
+            throw new UserAlreadyExistsException(request.Email);
 
-        // 3. Create domain aggregate — raises UserRegisteredEvent internally
+        // 5. Create domain aggregate - raises UserRegisteredEvent internally
         var user = ApplicationUser.Create(
             tenant.Id,
             request.Email,
             request.FirstName,
             request.LastName);
 
-        // 4. Persist via Identity (handles password hashing)
+        // 6. Persist via Identity (handles password hashing)
         var result = await _users.CreateAsync(user, request.Password);
-
         if (!result.Succeeded)
             return new RegisterResult(false, null,
                 result.Errors.Select(e => e.Description));
@@ -49,5 +57,3 @@ internal sealed class RegisterCommandHandler
         return new RegisterResult(true, user.Id, []);
     }
 }
-
-

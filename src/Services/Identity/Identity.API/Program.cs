@@ -14,25 +14,26 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// â”€â”€ Aspire + defaults â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Aspire + defaults -------------------------------------------------------
 builder.AddServiceDefaults();
 builder.AddSerilogDefaults();
 builder.AddNpgsqlHealthCheck("IdentityDb");
 
-// â”€â”€ Application layers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Application layers ------------------------------------------------------
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// â”€â”€ Auth + API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Auth + API --------------------------------------------------------------
 builder.Services.AddAuthorization();
 builder.Services.AddOpenApi();
 builder.Services.AddHttpClient();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddHostedService<OutboxRelayService>();
 
-// â”€â”€ Rate Limiting (GAP-001) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Rate Limiting (GAP-001) -------------------------------------------------
 builder.Services.AddRateLimiter(opts =>
 {
-    // /connect/token â€” 10 attempts per minute per IP (brute force protection)
+    // /connect/token - 10 attempts per minute per IP (brute force protection)
     opts.AddSlidingWindowLimiter("token_endpoint", o =>
     {
         o.PermitLimit          = 10;
@@ -42,7 +43,7 @@ builder.Services.AddRateLimiter(opts =>
         o.QueueLimit           = 0;
     });
 
-    // /api/auth/register â€” 5 registrations per 10 minutes per IP
+    // /api/auth/register - 5 registrations per 10 minutes per IP
     opts.AddFixedWindowLimiter("register_endpoint", o =>
     {
         o.PermitLimit = 5;
@@ -63,7 +64,7 @@ builder.Services.AddRateLimiter(opts =>
     };
 });
 
-// â”€â”€ OpenIddict â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- OpenIddict --------------------------------------------------------------
 var isDev = builder.Environment.IsDevelopment();
 
 var clientSecret = builder.Configuration["OpenIddict:ClientSecret"]
@@ -99,17 +100,17 @@ builder.Services.AddOpenIddict()
     .AddServer(options =>
     {
         options.SetTokenEndpointUris("/connect/token");
-        options.SetRevocationEndpointUris("/connect/revoke");  // GAP-003
+        options.SetRevocationEndpointUris("/connect/revoke");
 
         options.AllowPasswordFlow()
                .AllowRefreshTokenFlow();
 
-        // Token lifetimes â€” short access token, sliding refresh
+        // Token lifetimes - short access token, sliding refresh
         options.SetAccessTokenLifetime(isDev
             ? TimeSpan.FromHours(1)
             : TimeSpan.FromMinutes(15));
         options.SetRefreshTokenLifetime(TimeSpan.FromDays(14));
-        options.SetRefreshTokenReuseLeeway(TimeSpan.FromSeconds(30)); // GAP-002
+        options.SetRefreshTokenReuseLeeway(TimeSpan.FromSeconds(30));
 
         if (isDev)
         {
@@ -118,7 +119,7 @@ builder.Services.AddOpenIddict()
         }
         else
         {
-            // GAP-002 FIX: Reference tokens stored in DB â†’ revocable
+            // Reference tokens stored in DB - revocable
             options.UseReferenceRefreshTokens();
             options.UseReferenceAccessTokens();
 
@@ -136,7 +137,6 @@ builder.Services.AddOpenIddict()
         var aspNet = options.UseAspNetCore();
         if (isDev) aspNet.DisableTransportSecurityRequirement();
 
-        // Rate limit the token endpoint
         aspNet.EnableTokenEndpointPassthrough();
     })
     .AddValidation(options =>
@@ -145,12 +145,12 @@ builder.Services.AddOpenIddict()
         options.UseAspNetCore();
     });
 
-// â”€â”€ Build app â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Build app ---------------------------------------------------------------
 var app = builder.Build();
 
-// â”€â”€ Middleware order matters â€” do NOT rearrange â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Middleware order matters - do NOT rearrange -----------------------------
 
-// 1. Global exception handler â€” must be first to catch everything
+// 1. Global exception handler - must be first to catch everything
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // 2. Serilog request logging
@@ -188,7 +188,7 @@ app.UseMiddleware<Identity.API.Middleware.TenantMiddleware>();
 // 8. Authorization
 app.UseAuthorization();
 
-// â”€â”€ Seed + OpenIddict client registration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Seed + OpenIddict client registration -----------------------------------
 await IdentitySeeder.SeedAsync(app.Services);
 
 using (var scope = app.Services.CreateScope())
@@ -221,13 +221,12 @@ using (var scope = app.Services.CreateScope())
     else await manager.UpdateAsync(existing, descriptor);
 }
 
-// â”€â”€ Endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Endpoints ---------------------------------------------------------------
 if (isDev) app.MapOpenApi();
 
 app.MapDefaultEndpoints();
 
-// Apply rate limiting to specific endpoints
-app.MapAuthEndpoints();        // register endpoint adds RequireRateLimiting internally
+app.MapAuthEndpoints();
 app.MapTenantEndpoints();
 app.MapRegionHealthEndpoints();
 

@@ -1,6 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════════
-// FILE 1 (NEW): src/Services/Identity/Identity.API/Middleware/GlobalExceptionMiddleware.cs
-// ═══════════════════════════════════════════════════════════════════════
+﻿// src/Services/Identity/Identity.API/Middleware/GlobalExceptionMiddleware.cs
 namespace Identity.API.Middleware;
 
 using Identity.Domain.Exceptions;
@@ -40,15 +38,31 @@ public sealed class GlobalExceptionMiddleware
     {
         var (status, code, message) = ex switch
         {
-            TenantNotFoundException       e => (404, e.Code, e.Message),
-            TenantAlreadyExistsException  e => (409, e.Code, e.Message),
-            UserAlreadyExistsException    e => (409, e.Code, e.Message),
-            DbUpdateConcurrencyException    => (409, "CONCURRENCY_CONFLICT",
+            // 404
+            TenantNotFoundException           e => (404, e.Code, e.Message),
+
+            // 409
+            TenantAlreadyExistsException      e => (409, e.Code, e.Message),
+            UserAlreadyExistsException        e => (409, e.Code, e.Message),
+            DbUpdateConcurrencyException        => (409, "CONCURRENCY_CONFLICT",
                 "The resource was modified by another request. Please retry."),
+
+            // 403
+            SelfRegistrationDisabledException e => (403, e.Code, e.Message),
+            TenantUserLimitExceededException  e => (403, e.Code, e.Message),
+
+            // 400
+            InvalidVerificationTokenException e => (400, e.Code, e.Message),
+            ExpiredVerificationTokenException e => (400, e.Code, e.Message),
             FluentValidation.ValidationException e => (400, "VALIDATION_FAILED",
                 string.Join("; ", e.Errors.Select(f => f.ErrorMessage))),
-            UnauthorizedAccessException     => (401, "UNAUTHORIZED", "Authentication required."),
-            _                               => (500, "INTERNAL_ERROR",
+
+            // 401
+            UnauthorizedAccessException         => (401, "UNAUTHORIZED",
+                "Authentication required."),
+
+            // 500
+            _                                   => (500, "INTERNAL_ERROR",
                 "An unexpected error occurred.")
         };
 
@@ -63,4 +77,3 @@ public sealed class GlobalExceptionMiddleware
         });
     }
 }
-

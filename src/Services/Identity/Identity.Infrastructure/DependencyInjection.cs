@@ -17,10 +17,10 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // AGS-009: Scoped â€” NOT singleton, no static mutable state
-        services.AddScoped<TenantContext>();
+        // AGS-009: Scoped - NOT singleton, no static mutable state
+        services.AddScoped<UMS.SharedKernel.Tenancy.TenantContext>();
         services.AddScoped<UMS.SharedKernel.Tenancy.ITenantContext>(
-            sp => sp.GetRequiredService<TenantContext>());
+            sp => sp.GetRequiredService<UMS.SharedKernel.Tenancy.TenantContext>());
 
         services.AddScoped<DomainEventDispatcherInterceptor>();
 
@@ -45,13 +45,13 @@ public static class DependencyInjection
             options.Lockout.MaxFailedAccessAttempts = 5;
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             options.Lockout.AllowedForNewUsers = true;
-            // RequireUniqueEmail = false â€” uniqueness enforced per-tenant by composite index
+            // RequireUniqueEmail = false - uniqueness enforced per-tenant by composite index
             options.User.RequireUniqueEmail = false;
         })
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
 
-        // OpenIddict Core â€” server config lives in API layer (Program.cs)
+        // OpenIddict Core - server config lives in API layer (Program.cs)
         services.AddOpenIddict()
             .AddCore(options =>
             {
@@ -59,8 +59,11 @@ public static class DependencyInjection
                     .UseDbContext<ApplicationDbContext>();
             });
 
-        services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<ITenantRepository, TenantRepository>();
+        // Repositories
+        services.AddScoped<IUserRepository,              UserRepository>();
+        services.AddScoped<ITenantRepository,            TenantRepository>();
+        services.AddScoped<IAuditLogger,                 AuditLogRepository>();
+        services.AddScoped<IVerificationTokenRepository, VerificationTokenRepository>();
 
         return services;
     }

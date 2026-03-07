@@ -1,3 +1,4 @@
+﻿// src/Services/Identity/Identity.Infrastructure/Persistence/Repositories/UserRepository.cs
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -21,16 +22,18 @@ internal sealed class UserRepository : IUserRepository
         => await _userManager.Users
             .AnyAsync(u => u.TenantId == tenantId && u.NormalizedEmail == email.ToUpperInvariant(), ct);
 
+    public async Task<int> CountByTenantAsync(Guid tenantId, CancellationToken ct = default)
+        => await _userManager.Users
+            .CountAsync(u => u.TenantId == tenantId, ct);
+
     public async Task<IdentityResult> CreateAsync(ApplicationUser user, string password)
         => await _userManager.CreateAsync(user, password);
 
-    // Legacy — used by existing callers that do not need lockout tracking
+    // Legacy - used by existing callers that do not need lockout tracking
     public async Task<bool> CheckPasswordAsync(ApplicationUser user, string password)
         => await _userManager.CheckPasswordAsync(user, password);
 
-    // Lockout-aware password check — use this for all login flows
-    // Mirrors the logic inside SignInManager.PasswordSignInAsync without
-    // touching cookies or authentication schemes
+    // Lockout-aware password check - use this for all login flows
     public async Task<PasswordCheckResult> CheckPasswordWithLockoutAsync(
         ApplicationUser user, string password, CancellationToken ct = default)
     {
@@ -40,7 +43,6 @@ internal sealed class UserRepository : IUserRepository
 
         // 2. Verify password
         var correct = await _userManager.CheckPasswordAsync(user, password);
-
         if (correct)
         {
             // 3. Reset fail counter on success
@@ -48,7 +50,7 @@ internal sealed class UserRepository : IUserRepository
             return PasswordCheckResult.Success;
         }
 
-        // 4. Increment fail counter — may trigger lockout
+        // 4. Increment fail counter - may trigger lockout
         await _userManager.AccessFailedAsync(user);
 
         // 5. Check if this failure triggered lockout
@@ -65,6 +67,7 @@ internal sealed class UserRepository : IUserRepository
     {
         var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
-            throw new InvalidOperationException($"User update failed: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            throw new InvalidOperationException(
+                $"User update failed: {string.Join(", ", result.Errors.Select(e => e.Description))}");
     }
 }

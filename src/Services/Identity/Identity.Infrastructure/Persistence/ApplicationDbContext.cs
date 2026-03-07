@@ -1,3 +1,4 @@
+﻿// src/Services/Identity/Identity.Infrastructure/Persistence/ApplicationDbContext.cs
 using Identity.Domain.Common;
 using Identity.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -20,9 +21,10 @@ public sealed class ApplicationDbContext
         _tenantContext = tenantContext;
     }
 
-    public DbSet<Tenant>        Tenants        => Set<Tenant>();
-    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
-    public DbSet<AuditLog>      AuditLogs      => Set<AuditLog>();
+    public DbSet<Tenant>             Tenants            => Set<Tenant>();
+    public DbSet<OutboxMessage>      OutboxMessages     => Set<OutboxMessage>();
+    public DbSet<AuditLog>           AuditLogs          => Set<AuditLog>();
+    public DbSet<VerificationToken>  VerificationTokens => Set<VerificationToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
