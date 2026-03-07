@@ -1,10 +1,22 @@
+﻿using Identity.Domain.Common;
+using Identity.Domain.Events;
+
 namespace Identity.Domain.Entities;
 
 public enum TenantTier { Shared, Dedicated, Enterprise }
 public enum SubscriptionStatus { Trial, Active, Suspended, Cancelled }
 
-public sealed class Tenant
+public sealed class Tenant : IAggregateRoot
 {
+    // ── IAggregateRoot ────────────────────────────────────────────────────────
+    // Tenant cannot inherit BaseEntity (no base class available), so the
+    // events list is implemented inline — identical pattern to ApplicationUser.
+    private readonly List<DomainEvent> _domainEvents = [];
+    public IReadOnlyCollection<DomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+    public void ClearDomainEvents() => _domainEvents.Clear();
+    private void RaiseDomainEvent(DomainEvent e) => _domainEvents.Add(e);
+
+    // ── Properties ────────────────────────────────────────────────────────────
     public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string Slug { get; private set; } = string.Empty;
@@ -28,27 +40,33 @@ public sealed class Tenant
 
     private Tenant() { }
 
+    // ── Factory ───────────────────────────────────────────────────────────────
     public static Tenant Create(string name, string slug,
         TenantTier tier = TenantTier.Shared, string region = "default")
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentException.ThrowIfNullOrWhiteSpace(slug);
 
-        return new Tenant
+        var tenant = new Tenant
         {
-            Id = Guid.NewGuid(),
-            Name = name,
-            Slug = slug.ToLowerInvariant(),
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-            Tier = tier,
-            Region = region,
+            Id                 = Guid.NewGuid(),
+            Name               = name,
+            Slug               = slug.ToLowerInvariant(),
+            IsActive           = true,
+            CreatedAt          = DateTime.UtcNow,
+            UpdatedAt          = DateTime.UtcNow,
+            Tier               = tier,
+            Region             = region,
             SubscriptionStatus = SubscriptionStatus.Trial,
-            MaxUsers = tier == TenantTier.Enterprise ? 10000 :
-                       tier == TenantTier.Dedicated ? 1000 : 100,
-            Features = TenantFeatures.Default()
+            MaxUsers           = tier == TenantTier.Enterprise ? 10000 :
+                                 tier == TenantTier.Dedicated  ? 1000  : 100,
+            Features           = TenantFeatures.Default()
         };
+
+        tenant.RaiseDomainEvent(new TenantProvisionedEvent(
+            tenant.Id, tenant.Name, tenant.Slug, tenant.Tier, tenant.Region));
+
+        return tenant;
     }
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -59,9 +77,9 @@ public sealed class Tenant
             throw new InvalidOperationException(
                 "A cancelled tenant cannot be activated. Provision a new tenant instead.");
 
-        IsActive = true;
+        IsActive           = true;
         SubscriptionStatus = SubscriptionStatus.Active;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt          = DateTime.UtcNow;
     }
 
     public void Suspend()
@@ -72,9 +90,11 @@ public sealed class Tenant
         if (SubscriptionStatus == SubscriptionStatus.Suspended)
             return; // idempotent
 
-        IsActive = false;
+        IsActive           = false;
         SubscriptionStatus = SubscriptionStatus.Suspended;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt          = DateTime.UtcNow;
+
+        RaiseDomainEvent(new TenantSuspendedEvent(Id, Slug));
     }
 
     public void Reinstate()
@@ -83,9 +103,9 @@ public sealed class Tenant
             throw new InvalidOperationException(
                 $"Only a suspended tenant can be reinstated. Current status: {SubscriptionStatus}.");
 
-        IsActive = true;
+        IsActive           = true;
         SubscriptionStatus = SubscriptionStatus.Active;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt          = DateTime.UtcNow;
     }
 
     public void Cancel()
@@ -93,9 +113,9 @@ public sealed class Tenant
         if (SubscriptionStatus == SubscriptionStatus.Cancelled)
             return; // idempotent
 
-        IsActive = false;
+        IsActive           = false;
         SubscriptionStatus = SubscriptionStatus.Cancelled;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt          = DateTime.UtcNow;
     }
 
     public void Deactivate()
@@ -103,25 +123,28 @@ public sealed class Tenant
         if (SubscriptionStatus == SubscriptionStatus.Cancelled)
             throw new InvalidOperationException("A cancelled tenant cannot be deactivated.");
 
-        IsActive = false;
+        IsActive  = false;
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void Upgrade(TenantTier tier)
+    public void Upgrade(TenantTier newTier)
     {
         if (SubscriptionStatus == SubscriptionStatus.Cancelled)
             throw new InvalidOperationException("A cancelled tenant cannot be upgraded.");
 
-        Tier = tier;
-        MaxUsers = tier == TenantTier.Enterprise ? 10000 :
-                   tier == TenantTier.Dedicated ? 1000 : 100;
-        UpdatedAt = DateTime.UtcNow;
+        var oldTier = Tier;
+        Tier        = newTier;
+        MaxUsers    = newTier == TenantTier.Enterprise ? 10000 :
+                      newTier == TenantTier.Dedicated  ? 1000  : 100;
+        UpdatedAt   = DateTime.UtcNow;
+
+        RaiseDomainEvent(new TenantUpgradedEvent(Id, Slug, oldTier, newTier));
     }
 
     public void UpdateFeatures(TenantFeatures features)
     {
         ArgumentNullException.ThrowIfNull(features);
-        Features = features;
+        Features  = features;
         UpdatedAt = DateTime.UtcNow;
     }
 

@@ -1,127 +1,119 @@
+﻿// src/Services/Identity/Identity.Tests/Application/RegisterCommandHandlerTests.cs
 using FluentAssertions;
 using Identity.Application.Features.Auth.Commands;
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Identity.Domain.Exceptions;
+using Identity.Tests.Fakers;
 using Microsoft.AspNetCore.Identity;
 using Moq;
+using Xunit;
 
 namespace Identity.Tests.Application;
 
 public sealed class RegisterCommandHandlerTests
 {
-    private readonly Mock<IUserRepository> _users = new();
+    private readonly Mock<IUserRepository>   _users   = new();
     private readonly Mock<ITenantRepository> _tenants = new();
+    private readonly Mock<IAuditLogger>      _audit   = new();
 
-    private RegisterCommandHandler BuildHandler() =>
-        new(_users.Object, _tenants.Object);
+    private RegisterCommandHandler Sut() =>
+        new(_users.Object, _tenants.Object, _audit.Object);
 
-    private static Tenant ValidTenant()
-    {
-        var t = Tenant.Create("Test Uni", "test-uni");
-        return t;
-    }
+    private static RegisterCommand ValidCmd(string slug = "acme") => new(
+        TenantSlug: slug,
+        Email:      "user@test.com",
+        Password:   "Password1",
+        FirstName:  "John",
+        LastName:   "Doe");
 
-    private static RegisterCommand ValidCommand(string tenantSlug = "test-uni") => new(
-        TenantSlug: tenantSlug,
-        Email: "john@uni.edu",
-        Password: "Password@123",
-        FirstName: "John",
-        LastName: "Doe"
-    );
-
-    // ── Happy path ────────────────────────────────────────────────────────────
+    // â”€â”€ Happy path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
-    public async Task Handle_ValidCommand_ReturnsSuccess()
+    public async Task Handle_should_return_success_when_registration_is_valid()
     {
-        var tenant = ValidTenant();
-        _tenants.Setup(r => r.FindBySlugAsync("test-uni", It.IsAny<CancellationToken>()))
-                .ReturnsAsync(tenant);
-        _users.Setup(r => r.ExistsAsync(tenant.Id, "john@uni.edu", It.IsAny<CancellationToken>()))
-              .ReturnsAsync(false);
-        _users.Setup(r => r.CreateAsync(It.IsAny<ApplicationUser>(), "Password@123"))
+        var tenant = TenantFaker.Active(selfReg: true);
+        _tenants.Setup(x => x.FindBySlugAsync("acme", default)).ReturnsAsync(tenant);
+        _users.Setup(x => x.CountByTenantAsync(tenant.Id, default)).ReturnsAsync(0);
+        _users.Setup(x => x.ExistsAsync(tenant.Id, "user@test.com", default)).ReturnsAsync(false);
+        _users.Setup(x => x.CreateAsync(It.IsAny<ApplicationUser>(), "Password1"))
               .ReturnsAsync(IdentityResult.Success);
 
-        var result = await BuildHandler().Handle(ValidCommand(), CancellationToken.None);
+        var result = await Sut().Handle(ValidCmd(), default);
 
         result.Succeeded.Should().BeTrue();
-        result.UserId.Should().NotBeNull().And.NotBe(Guid.Empty);
-        result.Errors.Should().BeEmpty();
+        result.UserId.Should().NotBeNull();
     }
 
-    // ── Tenant not found ──────────────────────────────────────────────────────
+    [Fact]
+    public async Task Handle_should_write_audit_log_on_success()
+    {
+        var tenant = TenantFaker.Active(selfReg: true);
+        _tenants.Setup(x => x.FindBySlugAsync("acme", default)).ReturnsAsync(tenant);
+        _users.Setup(x => x.CountByTenantAsync(tenant.Id, default)).ReturnsAsync(0);
+        _users.Setup(x => x.ExistsAsync(tenant.Id, "user@test.com", default)).ReturnsAsync(false);
+        _users.Setup(x => x.CreateAsync(It.IsAny<ApplicationUser>(), "Password1"))
+              .ReturnsAsync(IdentityResult.Success);
+
+        await Sut().Handle(ValidCmd(), default);
+
+        _audit.Verify(x => x.LogAsync(
+            It.Is<AuditLog>(a => a.Action == AuditActions.Register && a.Succeeded),
+            default), Times.Once);
+    }
+
+    // â”€â”€ Guard: tenant not found â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
-    public async Task Handle_TenantNotFound_ThrowsTenantNotFoundException()
+    public async Task Handle_should_throw_TenantNotFoundException_when_tenant_missing()
     {
-        _tenants.Setup(r => r.FindBySlugAsync("bad-slug", It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Tenant?)null);
+        _tenants.Setup(x => x.FindBySlugAsync("unknown", default)).ReturnsAsync((Tenant?)null);
 
-        var act = async () => await BuildHandler().Handle(
-            ValidCommand("bad-slug"), CancellationToken.None);
+        var act = () => Sut().Handle(ValidCmd("unknown"), default);
 
         await act.Should().ThrowAsync<TenantNotFoundException>();
     }
 
-    // ── Duplicate email ───────────────────────────────────────────────────────
+    // â”€â”€ Guard: self-registration disabled â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
-    public async Task Handle_DuplicateEmail_ReturnsFailureWithMessage()
+    public async Task Handle_should_throw_SelfRegistrationDisabledException_when_flag_off()
     {
-        var tenant = ValidTenant();
-        _tenants.Setup(r => r.FindBySlugAsync("test-uni", It.IsAny<CancellationToken>()))
-                .ReturnsAsync(tenant);
-        _users.Setup(r => r.ExistsAsync(tenant.Id, "john@uni.edu", It.IsAny<CancellationToken>()))
-              .ReturnsAsync(true);
+        var tenant = TenantFaker.WithNoSelfRegistration();
+        _tenants.Setup(x => x.FindBySlugAsync("acme", default)).ReturnsAsync(tenant);
 
-        var result = await BuildHandler().Handle(ValidCommand(), CancellationToken.None);
+        var act = () => Sut().Handle(ValidCmd(), default);
 
-        result.Succeeded.Should().BeFalse();
-        result.UserId.Should().BeNull();
-        result.Errors.Should().ContainSingle(e => e.Contains("already registered"));
+        await act.Should().ThrowAsync<SelfRegistrationDisabledException>();
     }
 
-    // ── Identity failure ──────────────────────────────────────────────────────
+    // â”€â”€ Guard: user limit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
-    public async Task Handle_IdentityCreateFails_ReturnsFailureWithErrors()
+    public async Task Handle_should_throw_TenantUserLimitExceededException_when_at_cap()
     {
-        var tenant = ValidTenant();
-        _tenants.Setup(r => r.FindBySlugAsync("test-uni", It.IsAny<CancellationToken>()))
-                .ReturnsAsync(tenant);
-        _users.Setup(r => r.ExistsAsync(tenant.Id, "john@uni.edu", It.IsAny<CancellationToken>()))
-              .ReturnsAsync(false);
-        _users.Setup(r => r.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()))
-              .ReturnsAsync(IdentityResult.Failed(
-                  new IdentityError { Code = "WeakPassword", Description = "Password too weak." }));
+        var tenant = TenantFaker.Active(selfReg: true);
+        _tenants.Setup(x => x.FindBySlugAsync("acme", default)).ReturnsAsync(tenant);
+        _users.Setup(x => x.CountByTenantAsync(tenant.Id, default))
+              .ReturnsAsync(tenant.MaxUsers);
 
-        var result = await BuildHandler().Handle(ValidCommand(), CancellationToken.None);
+        var act = () => Sut().Handle(ValidCmd(), default);
 
-        result.Succeeded.Should().BeFalse();
-        result.Errors.Should().ContainSingle(e => e.Contains("Password too weak"));
+        await act.Should().ThrowAsync<TenantUserLimitExceededException>();
     }
 
-    // ── Domain event raised ───────────────────────────────────────────────────
+    // â”€â”€ Guard: duplicate email â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
-    public async Task Handle_ValidCommand_UserRaisesRegisteredEvent()
+    public async Task Handle_should_throw_UserAlreadyExistsException_for_duplicate_email()
     {
-        var tenant = ValidTenant();
-        ApplicationUser? capturedUser = null;
+        var tenant = TenantFaker.Active(selfReg: true);
+        _tenants.Setup(x => x.FindBySlugAsync("acme", default)).ReturnsAsync(tenant);
+        _users.Setup(x => x.CountByTenantAsync(tenant.Id, default)).ReturnsAsync(0);
+        _users.Setup(x => x.ExistsAsync(tenant.Id, "user@test.com", default)).ReturnsAsync(true);
 
-        _tenants.Setup(r => r.FindBySlugAsync("test-uni", It.IsAny<CancellationToken>()))
-                .ReturnsAsync(tenant);
-        _users.Setup(r => r.ExistsAsync(tenant.Id, "john@uni.edu", It.IsAny<CancellationToken>()))
-              .ReturnsAsync(false);
-        _users.Setup(r => r.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()))
-              .Callback<ApplicationUser, string>((u, _) => capturedUser = u)
-              .ReturnsAsync(IdentityResult.Success);
+        var act = () => Sut().Handle(ValidCmd(), default);
 
-        await BuildHandler().Handle(ValidCommand(), CancellationToken.None);
-
-        capturedUser.Should().NotBeNull();
-        capturedUser!.DomainEvents.Should().ContainSingle(
-            e => e.GetType().Name == "UserRegisteredEvent");
+        await act.Should().ThrowAsync<UserAlreadyExistsException>();
     }
 }

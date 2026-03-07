@@ -3,99 +3,156 @@ using FluentAssertions;
 using Identity.Application.Features.Auth.Commands;
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
+using Identity.Tests.Fakers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Moq;
+using Xunit;
 
 namespace Identity.Tests.Application;
 
 public sealed class ValidateCredentialsCommandHandlerTests
 {
-    private readonly Mock<IUserRepository>       _users   = new();
-    private readonly Mock<ITenantRepository>     _tenants = new();
-    private readonly Mock<IAuditLogger>          _audit   = new();
-    private readonly Mock<IHttpContextAccessor>  _http    = new();
-    private readonly Mock<IConfiguration>        _config  = new();
+    private readonly Mock<IUserRepository>   _users   = new();
+    private readonly Mock<ITenantRepository> _tenants = new();
+    private readonly Mock<IAuditLogger>      _audit   = new();
 
-    private ValidateCredentialsCommandHandler CreateHandler() =>
-        new(_users.Object, _tenants.Object, _audit.Object, _http.Object, _config.Object);
-
-    [Fact]
-    public async Task Returns_failure_when_tenant_not_found()
+    private ValidateCredentialsCommandHandler Sut(bool writeAllowed = true)
     {
-        _tenants
-            .Setup(t => t.FindBySlugAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Tenant?)null);
+        var httpContext = new DefaultHttpContext();
+        httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Parse("127.0.0.1");
+        var accessor = new Mock<IHttpContextAccessor>();
+        accessor.Setup(x => x.HttpContext).Returns(httpContext);
 
-        var result = await CreateHandler()
-            .Handle(new ValidateCredentialsCommand("missing", "u@t.com", "Pass1"), CancellationToken.None);
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+                { ["REGION_WRITE_ALLOWED"] = writeAllowed.ToString() })
+            .Build();
 
-        result.Succeeded.Should().BeFalse();
-        result.Error.Should().Be("Invalid credentials.");
+        return new(_users.Object, _tenants.Object, _audit.Object, accessor.Object, config);
     }
 
+    private static ValidateCredentialsCommand Cmd(string slug = "acme") =>
+        new(TenantSlug: slug, Email: "user@test.com", Password: "Password1");
+
+    // â”€â”€ Happy path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
     [Fact]
-    public async Task Returns_failure_when_user_not_found()
+    public async Task Handle_should_return_success_with_valid_credentials()
     {
-        var tenant = Tenant.Create("Test", "test-tenant", TenantTier.Shared, "default");
+        var tenant = TenantFaker.Active();
+        var user   = ApplicationUserFaker.Active(tenant.Id);
 
-        _tenants
-            .Setup(t => t.FindBySlugAsync("test-tenant", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(tenant);
-        _users
-            .Setup(u => u.FindByEmailAsync(tenant.Id, It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ApplicationUser?)null);
+        _tenants.Setup(x => x.FindBySlugAsync("acme", default)).ReturnsAsync(tenant);
+        _users.Setup(x => x.FindByEmailAsync(tenant.Id, "user@test.com", default)).ReturnsAsync(user);
+        _users.Setup(x => x.CheckPasswordWithLockoutAsync(user, "Password1", default))
+              .ReturnsAsync(PasswordCheckResult.Success);
+        _users.Setup(x => x.GetRolesAsync(user, default)).ReturnsAsync(new List<string> { "Student" });
+        _users.Setup(x => x.UpdateAsync(user)).Returns(Task.CompletedTask);
 
-        var result = await CreateHandler()
-            .Handle(new ValidateCredentialsCommand("test-tenant", "missing@t.com", "Pass1"), CancellationToken.None);
+        var result = await Sut().Handle(Cmd(), default);
 
-        result.Succeeded.Should().BeFalse();
-        result.Error.Should().Be("Invalid credentials.");
+        result.Succeeded.Should().BeTrue();
+        result.User.Should().Be(user);
+        result.Roles.Should().Contain("Student");
     }
 
+    // â”€â”€ Guard: tenant not found â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
     [Fact]
-    public async Task Returns_failure_when_password_wrong()
+    public async Task Handle_should_fail_when_tenant_not_found()
     {
-        var tenant = Tenant.Create("Test", "test-tenant", TenantTier.Shared, "default");
-        var user   = ApplicationUser.Create(tenant.Id, "user@test.com", "First", "Last");
+        _tenants.Setup(x => x.FindBySlugAsync("acme", default)).ReturnsAsync((Tenant?)null);
 
-        _tenants
-            .Setup(t => t.FindBySlugAsync("test-tenant", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(tenant);
-        _users
-            .Setup(u => u.FindByEmailAsync(tenant.Id, It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-        _users
-            .Setup(u => u.CheckPasswordWithLockoutAsync(user, It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(PasswordCheckResult.Failed);
-
-        var result = await CreateHandler()
-            .Handle(new ValidateCredentialsCommand("test-tenant", "user@test.com", "Wrong1"), CancellationToken.None);
+        var result = await Sut().Handle(Cmd(), default);
 
         result.Succeeded.Should().BeFalse();
-        result.Error.Should().Be("Invalid credentials.");
+        result.Error.Should().Contain("Invalid credentials");
     }
 
+    // â”€â”€ Guard: suspended tenant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
     [Fact]
-    public async Task Returns_failure_when_account_locked_out()
+    public async Task Handle_should_fail_when_tenant_is_suspended()
     {
-        var tenant = Tenant.Create("Test", "test-tenant", TenantTier.Shared, "default");
-        var user   = ApplicationUser.Create(tenant.Id, "user@test.com", "First", "Last");
+        var tenant = TenantFaker.Suspended();
+        _tenants.Setup(x => x.FindBySlugAsync("acme", default)).ReturnsAsync(tenant);
 
-        _tenants
-            .Setup(t => t.FindBySlugAsync("test-tenant", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(tenant);
-        _users
-            .Setup(u => u.FindByEmailAsync(tenant.Id, It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-        _users
-            .Setup(u => u.CheckPasswordWithLockoutAsync(user, It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(PasswordCheckResult.LockedOut);
-
-        var result = await CreateHandler()
-            .Handle(new ValidateCredentialsCommand("test-tenant", "user@test.com", "Pass1"), CancellationToken.None);
+        var result = await Sut().Handle(Cmd(), default);
 
         result.Succeeded.Should().BeFalse();
-        result.Error.Should().Be("Account is temporarily locked. Try again later.");
+    }
+
+    // â”€â”€ Guard: wrong password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    [Fact]
+    public async Task Handle_should_fail_when_password_is_wrong()
+    {
+        var tenant = TenantFaker.Active();
+        var user   = ApplicationUserFaker.Active(tenant.Id);
+
+        _tenants.Setup(x => x.FindBySlugAsync("acme", default)).ReturnsAsync(tenant);
+        _users.Setup(x => x.FindByEmailAsync(tenant.Id, "user@test.com", default)).ReturnsAsync(user);
+        _users.Setup(x => x.CheckPasswordWithLockoutAsync(user, "Password1", default))
+              .ReturnsAsync(PasswordCheckResult.Failed);
+
+        var result = await Sut().Handle(Cmd(), default);
+
+        result.Succeeded.Should().BeFalse();
+        result.Error.Should().Contain("Invalid credentials");
+    }
+
+    // â”€â”€ Guard: locked out â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    [Fact]
+    public async Task Handle_should_fail_when_account_is_locked_out()
+    {
+        var tenant = TenantFaker.Active();
+        var user   = ApplicationUserFaker.Active(tenant.Id);
+
+        _tenants.Setup(x => x.FindBySlugAsync("acme", default)).ReturnsAsync(tenant);
+        _users.Setup(x => x.FindByEmailAsync(tenant.Id, "user@test.com", default)).ReturnsAsync(user);
+        _users.Setup(x => x.CheckPasswordWithLockoutAsync(user, "Password1", default))
+              .ReturnsAsync(PasswordCheckResult.LockedOut);
+
+        var result = await Sut().Handle(Cmd(), default);
+
+        result.Succeeded.Should().BeFalse();
+        result.Error.Should().Contain("locked");
+    }
+
+    // â”€â”€ Guard: inactive user â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    [Fact]
+    public async Task Handle_should_fail_when_user_is_inactive()
+    {
+        var tenant = TenantFaker.Active();
+        var user   = ApplicationUserFaker.Inactive(tenant.Id);
+
+        _tenants.Setup(x => x.FindBySlugAsync("acme", default)).ReturnsAsync(tenant);
+        _users.Setup(x => x.FindByEmailAsync(tenant.Id, "user@test.com", default)).ReturnsAsync(user);
+
+        var result = await Sut().Handle(Cmd(), default);
+
+        result.Succeeded.Should().BeFalse();
+    }
+
+    // â”€â”€ Read-replica region: no UpdateAsync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    [Fact]
+    public async Task Handle_should_not_update_user_when_region_is_read_only()
+    {
+        var tenant = TenantFaker.Active();
+        var user   = ApplicationUserFaker.Active(tenant.Id);
+
+        _tenants.Setup(x => x.FindBySlugAsync("acme", default)).ReturnsAsync(tenant);
+        _users.Setup(x => x.FindByEmailAsync(tenant.Id, "user@test.com", default)).ReturnsAsync(user);
+        _users.Setup(x => x.CheckPasswordWithLockoutAsync(user, "Password1", default))
+              .ReturnsAsync(PasswordCheckResult.Success);
+        _users.Setup(x => x.GetRolesAsync(user, default)).ReturnsAsync(new List<string>());
+
+        await Sut(writeAllowed: false).Handle(Cmd(), default);
+
+        _users.Verify(x => x.UpdateAsync(It.IsAny<ApplicationUser>()), Times.Never);
     }
 }

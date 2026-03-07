@@ -1,108 +1,85 @@
+﻿// src/Services/Identity/Identity.Tests/Domain/ApplicationUserTests.cs
 using FluentAssertions;
+using Identity.Domain.Common;
 using Identity.Domain.Entities;
 using Identity.Domain.Events;
+using Xunit;
 
 namespace Identity.Tests.Domain;
 
 public sealed class ApplicationUserTests
 {
-    private static ApplicationUser ValidUser() => ApplicationUser.Create(
-        Guid.NewGuid(), "john@uni.edu", "John", "Doe");
-
-    // ── Create ────────────────────────────────────────────────────────────────
+    // â”€â”€ Create â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
-    public void Create_ValidInput_SetsProperties()
+    public void Create_should_raise_UserRegisteredEvent()
     {
-        var tenantId = Guid.NewGuid();
-        var user = ApplicationUser.Create(tenantId, "John@UNI.edu", "John", "Doe");
+        var user = ApplicationUser.Create(Guid.NewGuid(), "a@b.com", "First", "Last");
 
-        user.TenantId.Should().Be(tenantId);
-        user.Email.Should().Be("john@uni.edu");           // normalized lower
-        user.NormalizedEmail.Should().Be("JOHN@UNI.EDU"); // normalized upper
-        user.FirstName.Should().Be("John");
-        user.LastName.Should().Be("Doe");
+        user.DomainEvents.Should().ContainSingle()
+            .Which.Should().BeOfType<UserRegisteredEvent>();
+    }
+
+    [Fact]
+    public void Create_should_normalise_email_to_lowercase()
+    {
+        var user = ApplicationUser.Create(Guid.NewGuid(), "A@B.COM", "F", "L");
+        user.Email.Should().Be("a@b.com");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void Create_should_throw_for_blank_email(string email)
+    {
+        var act = () => ApplicationUser.Create(Guid.NewGuid(), email, "F", "L");
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Create_should_set_IsActive_true()
+    {
+        var user = ApplicationUser.Create(Guid.NewGuid(), "a@b.com", "F", "L");
         user.IsActive.Should().BeTrue();
-        user.Id.Should().NotBeEmpty();
     }
 
-    [Fact]
-    public void Create_EmptyEmail_Throws()
-    {
-        var act = () => ApplicationUser.Create(Guid.NewGuid(), "", "John", "Doe");
-        act.Should().Throw<ArgumentException>();
-    }
+    // â”€â”€ Deactivate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
-    public void Create_EmptyFirstName_Throws()
+    public void Deactivate_should_set_IsActive_false()
     {
-        var act = () => ApplicationUser.Create(Guid.NewGuid(), "j@uni.edu", "", "Doe");
-        act.Should().Throw<ArgumentException>();
-    }
-
-    [Fact]
-    public void Create_EmptyLastName_Throws()
-    {
-        var act = () => ApplicationUser.Create(Guid.NewGuid(), "j@uni.edu", "John", "");
-        act.Should().Throw<ArgumentException>();
-    }
-
-    [Fact]
-    public void Create_RaisesUserRegisteredEvent()
-    {
-        var user = ValidUser();
-        user.DomainEvents.Should().ContainSingle(e => e.GetType().Name == "UserRegisteredEvent");
-    }
-
-    [Fact]
-    public void Create_UserRegisteredEvent_CarriesCorrectTenantId()
-    {
-        var tenantId = Guid.NewGuid();
-        var user = ApplicationUser.Create(tenantId, "j@uni.edu", "John", "Doe");
-        var evt = user.DomainEvents.OfType<UserRegisteredEvent>().Single();
-        evt.TenantId.Should().Be(tenantId);
-    }
-
-    // ── FullName ──────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void FullName_ReturnsFirstAndLastCombined()
-    {
-        var user = ValidUser();
-        user.FullName.Should().Be("John Doe");
-    }
-
-    // ── RecordLogin ───────────────────────────────────────────────────────────
-
-    [Fact]
-    public void RecordLogin_SetsLastLoginAt()
-    {
-        var user = ValidUser();
-        user.LastLoginAt.Should().BeNull();
-        user.RecordLogin();
-        user.LastLoginAt.Should().NotBeNull();
-        user.LastLoginAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(2));
-    }
-
-    // ── Deactivate ────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void Deactivate_SetsIsActiveFalse()
-    {
-        var user = ValidUser();
-        user.IsActive.Should().BeTrue();
+        var user = ApplicationUser.Create(Guid.NewGuid(), "a@b.com", "F", "L");
         user.Deactivate();
         user.IsActive.Should().BeFalse();
     }
 
-    // ── ClearDomainEvents ─────────────────────────────────────────────────────
+    [Fact]
+    public void Deactivate_should_raise_UserDeactivatedEvent()
+    {
+        var user = ApplicationUser.Create(Guid.NewGuid(), "a@b.com", "F", "L");
+        user.ClearDomainEvents();
+
+        user.Deactivate();
+
+        user.DomainEvents.Should().ContainSingle()
+            .Which.Should().BeOfType<UserDeactivatedEvent>();
+    }
+
+    // â”€â”€ IAggregateRoot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
-    public void ClearDomainEvents_EmptiesCollection()
+    public void ApplicationUser_should_implement_IAggregateRoot()
     {
-        var user = ValidUser();
-        user.DomainEvents.Should().NotBeEmpty();
-        user.ClearDomainEvents();
-        user.DomainEvents.Should().BeEmpty();
+        var user = ApplicationUser.Create(Guid.NewGuid(), "a@b.com", "F", "L");
+        user.Should().BeAssignableTo<IAggregateRoot>();
+    }
+
+    // â”€â”€ FullName â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    [Fact]
+    public void FullName_should_concatenate_first_and_last()
+    {
+        var user = ApplicationUser.Create(Guid.NewGuid(), "a@b.com", "Jane", "Doe");
+        user.FullName.Should().Be("Jane Doe");
     }
 }

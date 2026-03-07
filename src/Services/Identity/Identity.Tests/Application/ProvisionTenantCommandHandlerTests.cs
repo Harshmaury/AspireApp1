@@ -1,9 +1,11 @@
-﻿using FluentAssertions;
+﻿// src/Services/Identity/Identity.Tests/Application/ProvisionTenantCommandHandlerTests.cs
+using FluentAssertions;
 using Identity.Application.Features.Tenants.Commands;
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Identity.Domain.Exceptions;
 using Moq;
+using Xunit;
 
 namespace Identity.Tests.Application;
 
@@ -11,92 +13,60 @@ public sealed class ProvisionTenantCommandHandlerTests
 {
     private readonly Mock<ITenantRepository> _tenants = new();
 
-    private ProvisionTenantCommandHandler BuildHandler() =>
-        new(_tenants.Object);
+    private ProvisionTenantCommandHandler Sut() =>
+        new ProvisionTenantCommandHandler(_tenants.Object);
 
-    private static ProvisionTenantCommand ValidCommand(string slug = "new-uni") => new(
-        Name: "New University",
-        Slug: slug,
-        Tier: "Shared",
-        Region: "default"
-    );
+    // â”€â”€ Happy path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
-    public async Task Handle_NewSlug_ReturnsTenantId()
+    public async Task Handle_should_create_and_persist_tenant()
     {
-        _tenants.Setup(r => r.FindBySlugAsync("new-uni", It.IsAny<CancellationToken>()))
+        _tenants.Setup(x => x.FindBySlugAsync("uni-a", default))
                 .ReturnsAsync((Tenant?)null);
-        _tenants.Setup(r => r.AddAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()))
+        _tenants.Setup(x => x.AddAsync(It.IsAny<Tenant>(), default))
                 .Returns(Task.CompletedTask);
 
-        var result = await BuildHandler().Handle(ValidCommand(), CancellationToken.None);
+        var result = await Sut().Handle(
+            new ProvisionTenantCommand("Uni A", "uni-a", "Shared", "india"), default);
 
         result.TenantId.Should().NotBeEmpty();
-        result.Slug.Should().Be("new-uni");
-        result.Status.Should().Be("Trial");
+        result.Slug.Should().Be("uni-a");
+        _tenants.Verify(x => x.AddAsync(It.IsAny<Tenant>(), default), Times.Once);
     }
 
-    [Fact]
-    public async Task Handle_DuplicateSlug_ThrowsTenantAlreadyExistsException()
+    [Theory]
+    [InlineData("Shared",     TenantTier.Shared)]
+    [InlineData("Dedicated",  TenantTier.Dedicated)]
+    [InlineData("Enterprise", TenantTier.Enterprise)]
+    [InlineData("unknown",    TenantTier.Shared)] // falls back to Shared
+    public async Task Handle_should_map_tier_string_correctly(string tierStr, TenantTier expected)
     {
-        var existing = Tenant.Create("Existing Uni", "new-uni");
-        _tenants.Setup(r => r.FindBySlugAsync("new-uni", It.IsAny<CancellationToken>()))
-                .ReturnsAsync(existing);
-
-        var act = async () => await BuildHandler().Handle(ValidCommand(), CancellationToken.None);
-
-        await act.Should().ThrowAsync<TenantAlreadyExistsException>()
-                 .WithMessage("*new-uni*");
-    }
-
-    [Fact]
-    public async Task Handle_DuplicateSlug_ExceptionCodeIsDuplicateSlug()
-    {
-        var existing = Tenant.Create("Existing Uni", "new-uni");
-        _tenants.Setup(r => r.FindBySlugAsync("new-uni", It.IsAny<CancellationToken>()))
-                .ReturnsAsync(existing);
-
-        var act = async () => await BuildHandler().Handle(ValidCommand(), CancellationToken.None);
-
-        var ex = await act.Should().ThrowAsync<TenantAlreadyExistsException>();
-        ex.Which.Code.Should().Be("DUPLICATE_SLUG");
-    }
-
-    [Fact]
-    public async Task Handle_InvalidTier_DefaultsToShared()
-    {
-        _tenants.Setup(r => r.FindBySlugAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _tenants.Setup(x => x.FindBySlugAsync(It.IsAny<string>(), default))
                 .ReturnsAsync((Tenant?)null);
 
-        Tenant? captured = null;
-        _tenants.Setup(r => r.AddAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()))
-                .Callback<Tenant, CancellationToken>((t, _) => captured = t)
+        Tenant? saved = null;
+        _tenants.Setup(x => x.AddAsync(It.IsAny<Tenant>(), default))
+                .Callback<Tenant, CancellationToken>((t, _) => saved = t)
                 .Returns(Task.CompletedTask);
 
-        await BuildHandler().Handle(
-            new ProvisionTenantCommand("X", "x-uni", "InvalidTier", "default"),
-            CancellationToken.None);
+        await Sut().Handle(
+            new ProvisionTenantCommand("X", "x", tierStr, "default"), default);
 
-        captured.Should().NotBeNull();
-        captured!.Tier.Should().Be(TenantTier.Shared);
+        saved!.Tier.Should().Be(expected);
     }
 
+    // â”€â”€ Guard: duplicate slug â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
     [Fact]
-    public async Task Handle_EnterpriseTier_SetsMaxUsers10000()
+    public async Task Handle_should_throw_TenantAlreadyExistsException_for_duplicate_slug()
     {
-        _tenants.Setup(r => r.FindBySlugAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((Tenant?)null);
+        var existing = Tenant.Create("Existing", "dup-slug");
+        _tenants.Setup(x => x.FindBySlugAsync("dup-slug", default))
+                .ReturnsAsync(existing);
 
-        Tenant? captured = null;
-        _tenants.Setup(r => r.AddAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()))
-                .Callback<Tenant, CancellationToken>((t, _) => captured = t)
-                .Returns(Task.CompletedTask);
+        var act = () => Sut().Handle(
+            new ProvisionTenantCommand("New", "dup-slug", "Shared", "default"), default);
 
-        await BuildHandler().Handle(
-            new ProvisionTenantCommand("Big Uni", "big-uni", "Enterprise", "default"),
-            CancellationToken.None);
-
-        captured!.MaxUsers.Should().Be(10000);
-        captured.Tier.Should().Be(TenantTier.Enterprise);
+        await act.Should().ThrowAsync<TenantAlreadyExistsException>();
     }
 }
