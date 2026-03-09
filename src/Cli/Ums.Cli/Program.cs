@@ -1,4 +1,4 @@
-using Microsoft.Build.Locator;
+﻿using Microsoft.Build.Locator;
 using System.CommandLine;
 using Ums.Cli.Adapters;
 using Ums.Cli.Commands;
@@ -9,14 +9,13 @@ if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_ROOT")))
 
 MSBuildLocator.RegisterDefaults();
 
-var root = new RootCommand("ums — UMS Platform CLI  (infra · govern · context · git · ai)");
+var root = new RootCommand("ums — UMS Platform CLI  (infra · govern · context · git)");
 
 // ── core domains ──────────────────────────────────────────────────────────
 root.AddCommand(InfraCommands.Build());
 root.AddCommand(GovernCommands.Build());
 root.AddCommand(ContextCommands.Build());
 root.AddCommand(GitCommands.Build());
-root.AddCommand(AiCommands.Build());
 
 // ── legacy top-level aliases (CI backward-compat) ────────────────────────
 root.AddCommand(VerifyDependenciesAdapter.Build());
