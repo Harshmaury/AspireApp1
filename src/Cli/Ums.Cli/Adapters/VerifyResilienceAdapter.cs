@@ -1,4 +1,4 @@
-namespace Ums.Cli.Adapters;
+﻿namespace Ums.Cli.Adapters;
 
 using Aegis.Core.Building;
 using Aegis.Core.Config;

@@ -28,13 +28,8 @@ public static class GitCommands
     {
         var cmd = new Command("status", "Show git status of the repo");
         cmd.SetHandler(() =>
-        {
-            var repoRoot = Environment.GetEnvironmentVariable("UMS_REPO_ROOT")
-                ?? Directory.GetCurrentDirectory();
-            BashBridge.RunRaw($"git -C {repoRoot} status");
-        });
+            BashBridge.RunRaw($"git -C \"{Environment.GetEnvironmentVariable(\"UMS_REPO_ROOT\") ?? Directory.GetCurrentDirectory()}\" status"));
         return cmd;
     }
 }
-
 

@@ -11,4 +11,12 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" />
   </ItemGroup>
+  <PropertyGroup>
+    <!-- Microsoft.Build.Tasks.Core has no patched version available.
+         Vulnerability is not exploitable at runtime — MSBuildLocator
+         loads MSBuild from the SDK, not from this package output. -->
+    <NoWarn>$(NoWarn);NU1902;NU1903</NoWarn>
+  </PropertyGroup>
 </Project>
+
+

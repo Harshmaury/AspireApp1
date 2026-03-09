@@ -1,4 +1,4 @@
-namespace Ums.Cli.Commands;
+﻿namespace Ums.Cli.Commands;
 
 using System.CommandLine;
 using Aegis.Core.Building;
@@ -13,10 +13,12 @@ using Ums.Cli.Rendering;
 
 public static class GovernCommands
 {
-    private const string DefaultProject =
-        "/mnt/c/Users/harsh/source/repos/AspireApp1";
-    private const string SnapshotDir =
-        "/mnt/c/Users/harsh/source/repos/AspireApp1/src/.ums/snapshots";
+    private static string DefaultProject =>
+        Environment.GetEnvironmentVariable("UMS_REPO_ROOT")
+        ?? Directory.GetCurrentDirectory();
+
+    private static string SnapshotDir =>
+        Path.Combine(DefaultProject, "src", ".ums", "snapshots");
 
     public static Command Build()
     {
@@ -27,7 +29,7 @@ public static class GovernCommands
         return govern;
     }
 
-    // ── verify ────────────────────────────────────────────────────────────
+    // â”€â”€ verify â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static Command BuildVerify()
     {
@@ -141,7 +143,7 @@ public static class GovernCommands
         return cmd;
     }
 
-    // ── snapshot ──────────────────────────────────────────────────────────
+    // â”€â”€ snapshot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static Command BuildSnapshot()
     {
@@ -248,7 +250,7 @@ public static class GovernCommands
         return cmd;
     }
 
-    // ── report ────────────────────────────────────────────────────────────
+    // â”€â”€ report â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static Command BuildReport()
     {
@@ -288,7 +290,7 @@ public static class GovernCommands
         return cmd;
     }
 
-    // ── helpers ───────────────────────────────────────────────────────────
+    // â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static Option<string> ProjectOption() =>
         new("--project", () => DefaultProject, "Path to .sln, .csproj, or root directory");
@@ -307,3 +309,4 @@ public static class GovernCommands
         AnsiConsole.MarkupLine($"\n  {icon}  {errs}  {warns}");
     }
 }
+
