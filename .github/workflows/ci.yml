@@ -1,4 +1,4 @@
-name: CI/CD
+name: CI
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
       - main
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -18,15 +18,11 @@ env:
   DOTNET_NOLOGO:               true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   NUGET_PACKAGES:              ${{ github.workspace }}/.nuget/packages
-  REGISTRY:                    ghcr.io
-  IMAGE_PREFIX:                ${{ github.repository_owner }}/ums
-  DEFAULT_BRANCH:              main
 
 # ─────────────────────────────────────────────────────────────
 # CHANGE DETECTION
-# Every downstream job reads these outputs to decide
-# whether to run or skip. Shared + ServiceDefaults changes
-# mark ALL services as changed (safe fallback).
+# Downstream jobs read these outputs to decide whether to run.
+# Shared + ServiceDefaults changes mark ALL services as changed.
 # ─────────────────────────────────────────────────────────────
 jobs:
   detect-changes:
@@ -44,11 +40,10 @@ jobs:
       notification: ${{ steps.filter.outputs.notification }}
       gateway:      ${{ steps.filter.outputs.gateway }}
       bff:          ${{ steps.filter.outputs.bff }}
-      infra:        ${{ steps.filter.outputs.infra }}
-      governance:   ${{ steps.filter.outputs.governance }}
       shared:       ${{ steps.filter.outputs.shared }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -98,17 +93,9 @@ jobs:
             bff:
               - 'src/BFF/**'
               - 'src/ServiceDefaults/**'
-            infra:
-              - 'k8s/**'
-              - '.github/workflows/**'
-            governance:
-              - 'src/Governance/**'
-              - 'src/Cli/**'
-              - 'src/**/*.cs'
-              - 'aegis.config.json'
 
   # ─────────────────────────────────────────────────────────────
-  # BUILD — always runs, uploads artifact so no job rebuilds
+  # BUILD — whole solution, uploads artifact for downstream jobs
   # ─────────────────────────────────────────────────────────────
   build:
     name: Build
@@ -127,8 +114,11 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
           restore-keys: ${{ runner.os }}-nuget-
 
-      - run: dotnet restore AspireApp1.slnx
-      - run: dotnet build AspireApp1.slnx --no-restore --configuration Release
+      - name: Restore
+        run: dotnet restore AspireApp1.slnx
+
+      - name: Build
+        run: dotnet build AspireApp1.slnx --no-restore --configuration Release
 
       - uses: actions/upload-artifact@v4
         with:
@@ -137,109 +127,15 @@ jobs:
           retention-days: 1
 
   # ─────────────────────────────────────────────────────────────
-  # AEGIS GOVERNANCE GATE
-  # Skipped only when zero .cs / governance files changed.
-  # Always runs on main push and all PRs.
-  # ─────────────────────────────────────────────────────────────
-  governance:
-    name: Aegis Governance Gate
-    runs-on: ubuntu-latest
-    needs: [build, detect-changes]
-    # Skip on feature branches only when no governance-relevant files changed
-    if: |
-      github.ref == 'refs/heads/main'         ||
-      github.event_name == 'pull_request'     ||
-      needs.detect-changes.outputs.governance == 'true'
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - uses: actions/cache@v4
-        with:
-          path: ${{ env.NUGET_PACKAGES }}
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: ${{ runner.os }}-nuget-
-
-      - name: Restore & build CLI
-        run: |
-          dotnet restore src/Cli/Ums.Cli/Ums.Cli.csproj
-          dotnet build   src/Cli/Ums.Cli/Ums.Cli.csproj --no-restore -c Release
-
-      - name: Aegis — verify all rules
-        run: |
-          dotnet run --project src/Cli/Ums.Cli -c Release -- \
-            govern verify all \
-            --project . \
-            --format json \
-            --output governance-report.json
-
-      - name: Aegis — snapshot drift check
-        run: |
-          SNAP="src/.ums/snapshots/baseline-latest.snap.json"
-          if [ -f "$SNAP" ]; then
-            dotnet run --project src/Cli/Ums.Cli -c Release -- \
-              govern snapshot diff baseline-latest \
-              --project . \
-              --fail-on-drift
-          else
-            echo "⚠ No baseline snapshot — skipping drift check."
-            echo "  Commit src/.ums/snapshots/baseline-latest.snap.json to enable."
-          fi
-
-      - name: Aegis — event contract compatibility
-        run: |
-          SCHEMA="src/.ums/event-schemas"
-          if [ -d "$SCHEMA" ]; then
-            dotnet run --project src/Cli/Ums.Cli -c Release -- \
-              verify-event-contracts \
-              --project . \
-              --schema-dir "$SCHEMA" \
-              --format json \
-              --output event-contracts-report.json
-          else
-            echo "⚠ No event schemas dir — skipping."
-          fi
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: governance-report
-          path: |
-            governance-report.json
-            event-contracts-report.json
-          retention-days: 7
-
-      - name: Annotate PR with violations
-        if: github.event_name == 'pull_request' && always()
-        run: |
-          [ -f governance-report.json ] && python3 - <<'EOF'
-          import json
-          data = json.load(open("governance-report.json"))
-          for rule in data.get("rules", []):
-            for v in rule.get("violations", []):
-              sev  = v.get("severity","WARNING").upper()
-              level = "error" if sev == "ERROR" else "warning"
-              print(f"::{level} title=Aegis {rule['id']}::{v.get('message','')} ({v.get('project','')})")
-          EOF
-
-  # ─────────────────────────────────────────────────────────────
-  # UNIT TESTS — parallel matrix, change-aware per service
-  # Each service only runs when its own code changed.
-  # Shared changes trigger all 9 (safe fallback).
+  # UNIT TESTS — 9 services in parallel, change-aware
   # ─────────────────────────────────────────────────────────────
   unit-tests:
     name: "Tests: ${{ matrix.service }}"
     runs-on: ubuntu-latest
-    needs: [build, governance, detect-changes]
-    # governance is conditional — use always() so tests don't
-    # get blocked when governance was legitimately skipped
-    if: always() && needs.build.result == 'success'
+    needs: [build, detect-changes]
     strategy:
       fail-fast: false
-      max-parallel: 9        # all 9 in parallel
+      max-parallel: 9
       matrix:
         include:
           - service:  Academic
@@ -271,21 +167,17 @@ jobs:
             changed:  ${{ needs.detect-changes.outputs.hostel }}
 
     steps:
-      - name: Decide — run or skip
+      - name: Gate — run or skip
         id: gate
         run: |
-          CHANGED="${{ matrix.changed }}"
-          SHARED="${{ needs.detect-changes.outputs.shared }}"
-          MAIN="${{ github.ref == 'refs/heads/main' }}"
-          PR="${{ github.event_name == 'pull_request' }}"
-
-          if [[ "$CHANGED" == "true" || "$SHARED" == "true" || \
-                "$MAIN" == "true"    || "$PR"    == "true" ]]; then
+          if [[ "${{ matrix.changed }}" == "true"                  || \
+                "${{ needs.detect-changes.outputs.shared }}" == "true" || \
+                "${{ github.ref }}" == "refs/heads/main"            || \
+                "${{ github.event_name }}" == "pull_request" ]]; then
             echo "run=true"  >> $GITHUB_OUTPUT
-            echo "▶ Running ${{ matrix.service }} tests"
           else
             echo "run=false" >> $GITHUB_OUTPUT
-            echo "⏭ Skipping ${{ matrix.service }} — no changes detected"
+            echo "⏭ Skipping ${{ matrix.service }} — no relevant changes"
           fi
 
       - uses: actions/checkout@v4
@@ -318,35 +210,33 @@ jobs:
             --results-directory ./TestResults \
             --collect:"XPlat Code Coverage"
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         if: steps.gate.outputs.run == 'true' && always()
         with:
           name: unit-test-results-${{ matrix.service }}
           path: ./TestResults/*.trx
+          retention-days: 7
 
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         if: steps.gate.outputs.run == 'true' && always()
         with:
           name: coverage-${{ matrix.service }}
           path: ./TestResults/**/coverage.cobertura.xml
+          retention-days: 7
 
   # ─────────────────────────────────────────────────────────────
-  # INTEGRATION TESTS
-  # Skipped on feature branches with no relevant changes.
+  # INTEGRATION TESTS — database-backed, main + PRs only
   # ─────────────────────────────────────────────────────────────
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: [unit-tests, detect-changes]
-    # Run on main, all PRs, or when shared/tenant code changed
     if: |
-      always()                                              &&
-      needs.unit-tests.result != 'failure'                 &&
+      always()                                         &&
+      needs.unit-tests.result != 'failure'             &&
       (
-        github.ref == 'refs/heads/main'                    ||
-        github.event_name == 'pull_request'                ||
+        github.ref == 'refs/heads/main'                ||
+        github.event_name == 'pull_request'            ||
         needs.detect-changes.outputs.shared == 'true'
       )
     services:
@@ -363,6 +253,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -397,10 +288,10 @@ jobs:
         with:
           name: integration-test-results
           path: ./TestResults/*.trx
+          retention-days: 7
 
   # ─────────────────────────────────────────────────────────────
   # TEST SUMMARY + COVERAGE
-  # Uses always() so it runs even when some test jobs skipped.
   # ─────────────────────────────────────────────────────────────
   test-summary:
     name: Test Summary & Coverage
@@ -408,14 +299,12 @@ jobs:
     needs: [unit-tests, integration-tests]
     if: always()
     steps:
-      - name: Download test results
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           path: ./TestResults
-          pattern: '*-test-results-*'
+          pattern: '*-test-results*'
 
-      - name: Publish test summary
-        uses: dorny/test-reporter@v1
+      - uses: dorny/test-reporter@v1
         if: always()
         with:
           name:          Test Results
@@ -423,14 +312,12 @@ jobs:
           reporter:      dotnet-trx
           fail-on-error: true
 
-      - name: Download coverage reports
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           path: ./Coverage
           pattern: 'coverage-*'
 
-      - name: Generate merged coverage report
-        uses: danielpalme/ReportGenerator-GitHub-Action@5
+      - uses: danielpalme/ReportGenerator-GitHub-Action@5
         if: always()
         with:
           reports:         './Coverage/**/coverage.cobertura.xml'
@@ -443,309 +330,10 @@ jobs:
         with:
           name: coverage-merged
           path: ./CoverageReport
+          retention-days: 14
 
       - name: Post coverage to job summary
         if: always()
         run: |
           [ -f ./CoverageReport/SummaryGithub.md ] && \
             cat ./CoverageReport/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
-
-  # ─────────────────────────────────────────────────────────────
-  # DOCKER — only builds changed services, same as before
-  # Added: governance must pass before any image is pushed
-  # ─────────────────────────────────────────────────────────────
-  docker:
-    name: "Docker: ${{ matrix.service }}"
-    runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests, detect-changes, governance]
-    if: |
-      github.ref == 'refs/heads/main'          &&
-      needs.governance.result == 'success'     &&
-      needs.unit-tests.result != 'failure'
-    permissions:
-      contents: read
-      packages: write
-      security-events: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - service:    identity-api
-            dockerfile: src/Services/Identity/Identity.API/Dockerfile
-            changed:    ${{ needs.detect-changes.outputs.identity }}
-          - service:    academic-api
-            dockerfile: src/Services/Academic/Academic.API/Dockerfile
-            changed:    ${{ needs.detect-changes.outputs.academic }}
-          - service:    student-api
-            dockerfile: src/Services/Student/Student.API/Dockerfile
-            changed:    ${{ needs.detect-changes.outputs.student }}
-          - service:    attendance-api
-            dockerfile: src/Services/Attendance/Attendance.API/Dockerfile
-            changed:    ${{ needs.detect-changes.outputs.attendance }}
-          - service:    examination-api
-            dockerfile: src/Services/Examination/Examination.API/Dockerfile
-            changed:    ${{ needs.detect-changes.outputs.examination }}
-          - service:    fee-api
-            dockerfile: src/Services/Fee/Fee.API/Dockerfile
-            changed:    ${{ needs.detect-changes.outputs.fee }}
-          - service:    notification-api
-            dockerfile: src/Services/Notification/Notification.API/Dockerfile
-            changed:    ${{ needs.detect-changes.outputs.notification }}
-          - service:    faculty-api
-            dockerfile: src/Services/Faculty/Faculty.API/Dockerfile
-            changed:    ${{ needs.detect-changes.outputs.faculty }}
-          - service:    hostel-api
-            dockerfile: src/Services/Hostel/Hostel.API/Dockerfile
-            changed:    ${{ needs.detect-changes.outputs.hostel }}
-          - service:    api-gateway
-            dockerfile: src/ApiGateway/Dockerfile
-            changed:    ${{ needs.detect-changes.outputs.gateway }}
-          - service:    bff
-            dockerfile: src/BFF/Dockerfile
-            changed:    ${{ needs.detect-changes.outputs.bff }}
-
-    steps:
-      - name: Decide — build or skip
-        id: gate
-        run: |
-          if [[ "${{ matrix.changed }}" == "true" || \
-                "${{ needs.detect-changes.outputs.infra }}" == "true" || \
-                "${{ needs.detect-changes.outputs.shared }}" == "true" ]]; then
-            echo "build=true"  >> $GITHUB_OUTPUT
-            echo "🔨 Building ${{ matrix.service }}"
-          else
-            echo "build=false" >> $GITHUB_OUTPUT
-            echo "⏭ Skipping ${{ matrix.service }} — no changes"
-          fi
-
-      - uses: actions/checkout@v4
-        if: steps.gate.outputs.build == 'true'
-
-      - name: Set image tag
-        if: steps.gate.outputs.build == 'true'
-        id: tag
-        run: |
-          echo "tag=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
-          echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}" >> $GITHUB_OUTPUT
-
-      - uses: docker/login-action@v3
-        if: steps.gate.outputs.build == 'true'
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: docker/setup-buildx-action@v3
-        if: steps.gate.outputs.build == 'true'
-
-      - uses: actions/cache@v4
-        if: steps.gate.outputs.build == 'true'
-        with:
-          path: /tmp/.buildx-cache-${{ matrix.service }}
-          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ hashFiles(matrix.dockerfile, 'src/Shared/**', 'src/ServiceDefaults/**') }}
-          restore-keys: ${{ runner.os }}-buildx-${{ matrix.service }}-
-
-      - name: Build and push
-        if: steps.gate.outputs.build == 'true'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file:    ${{ matrix.dockerfile }}
-          push:    true
-          tags: |
-            ${{ steps.tag.outputs.image }}:${{ steps.tag.outputs.tag }}
-            ${{ steps.tag.outputs.image }}:latest
-          cache-from: type=local,src=/tmp/.buildx-cache-${{ matrix.service }}
-          cache-to:   type=local,dest=/tmp/.buildx-cache-${{ matrix.service }}-new,mode=max
-          labels: |
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-
-      - name: Move cache
-        if: steps.gate.outputs.build == 'true'
-        run: |
-          rm -rf /tmp/.buildx-cache-${{ matrix.service }}
-          mv /tmp/.buildx-cache-${{ matrix.service }}-new /tmp/.buildx-cache-${{ matrix.service }}
-
-      - name: Scan image (SARIF → Security tab)
-        if: steps.gate.outputs.build == 'true'
-        uses: aquasecurity/trivy-action@main
-        with:
-          image-ref: ${{ steps.tag.outputs.image }}:${{ steps.tag.outputs.tag }}
-          format:    sarif
-          output:    trivy-${{ matrix.service }}.sarif
-          severity:  CRITICAL,HIGH
-          exit-code: 0
-
-      - uses: github/codeql-action/upload-sarif@v3
-        if: steps.gate.outputs.build == 'true'
-        with:
-          sarif_file: trivy-${{ matrix.service }}.sarif
-          category:   trivy-${{ matrix.service }}
-
-  # ─────────────────────────────────────────────────────────────
-  # UPDATE K8S MANIFESTS — yq safe YAML edits
-  # ─────────────────────────────────────────────────────────────
-  update-manifests:
-    name: Update K8s Image Tags
-    runs-on: ubuntu-latest
-    needs: docker
-    if: github.ref == 'refs/heads/main'
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install yq
-        run: |
-          wget -qO /usr/local/bin/yq \
-            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          chmod +x /usr/local/bin/yq
-
-      - name: Set image tag
-        id: tag
-        run: echo "tag=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
-
-      - name: Update image tags
-        run: |
-          TAG=${{ steps.tag.outputs.tag }}
-          REGISTRY=${{ env.REGISTRY }}
-          PREFIX=${{ env.IMAGE_PREFIX }}
-
-          declare -A services=(
-            ["identity-api"]="k8s/base/services/identity-api-deployment.yaml"
-            ["academic-api"]="k8s/base/services/academic-api-deployment.yaml"
-            ["student-api"]="k8s/base/services/student-api-deployment.yaml"
-            ["attendance-api"]="k8s/base/services/attendance-api-deployment.yaml"
-            ["examination-api"]="k8s/base/services/examination-api-deployment.yaml"
-            ["fee-api"]="k8s/base/services/fee-api-deployment.yaml"
-            ["notification-api"]="k8s/base/services/notification-api-deployment.yaml"
-            ["faculty-api"]="k8s/base/services/faculty-api-deployment.yaml"
-            ["hostel-api"]="k8s/base/services/hostel-api-deployment.yaml"
-            ["api-gateway"]="k8s/base/gateway/deployment.yaml"
-            ["bff"]="k8s/base/bff/deployment.yaml"
-          )
-
-          for service in "${!services[@]}"; do
-            file="${services[$service]}"
-            new_image="$REGISTRY/$PREFIX/$service:$TAG"
-            yq e ".spec.template.spec.containers[0].image = \"$new_image\"" \
-              -i "$file" 2>/dev/null || echo "⚠ $file not found — skipping"
-            echo "✅ $service → $new_image"
-          done
-
-      - name: Commit manifests
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add k8s/
-          git diff --staged --quiet || \
-            git commit -m "ci: update image tags to ${GITHUB_SHA::8} [skip ci]"
-          git push
-
-  # ─────────────────────────────────────────────────────────────
-  # DEPLOY — smoke tests all 10 endpoints, updates baseline snap
-  # ─────────────────────────────────────────────────────────────
-  deploy:
-    name: Deploy to Minikube
-    runs-on: self-hosted
-    needs: update-manifests
-    if: github.ref == 'refs/heads/main'
-    environment:
-      name: dev-local
-      url:  http://localhost:8080
-    steps:
-      - uses: actions/checkout@v4
-      - run: git pull origin main
-
-      - name: Set image tag
-        id: tag
-        run: echo "tag=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
-
-      - name: Pull images into Minikube
-        run: |
-          TAG=${{ steps.tag.outputs.tag }}
-          services=(
-            identity-api academic-api student-api attendance-api
-            examination-api fee-api notification-api faculty-api
-            hostel-api api-gateway bff
-          )
-          for svc in "${services[@]}"; do
-            minikube image load \
-              "${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/$svc:$TAG" \
-              --overwrite=true
-          done
-
-      - name: Ensure Kafka topics
-        run: |
-          kubectl exec -n ums deployment/kafka -- /bin/sh -c '
-            for topic in student-events identity-events academic-events \
-                         attendance-events examination-events fee-events \
-                         faculty-events hostel-events notification-events; do
-              /usr/bin/kafka-topics --bootstrap-server kafka:9092 \
-                --create --if-not-exists --topic $topic \
-                --partitions 3 --replication-factor 1
-            done
-          '
-
-      - name: Deploy with Kustomize
-        run: |
-          kubectl apply -k k8s/overlays/dev-local
-          kubectl rollout status deployment/api-gateway -n ums --timeout=120s
-          kubectl rollout status deployment/bff         -n ums --timeout=120s
-
-      - name: Wait for all pods
-        run: kubectl wait --for=condition=ready pod --all -n ums --timeout=180s || true
-
-      - name: Smoke test — all services
-        run: |
-          kubectl port-forward -n ums service/api-gateway 18080:8080 &
-          PF_PID=$!
-          for i in $(seq 1 15); do nc -z localhost 18080 2>/dev/null && break; sleep 2; done
-
-          FAILED=0
-          declare -A endpoints=(
-            ["api-gateway"]="http://localhost:18080/health"
-            ["identity-api"]="http://localhost:18080/identity/health"
-            ["student-api"]="http://localhost:18080/student/health"
-            ["academic-api"]="http://localhost:18080/academic/health"
-            ["attendance-api"]="http://localhost:18080/attendance/health"
-            ["examination-api"]="http://localhost:18080/examination/health"
-            ["fee-api"]="http://localhost:18080/fee/health"
-            ["faculty-api"]="http://localhost:18080/faculty/health"
-            ["hostel-api"]="http://localhost:18080/hostel/health"
-            ["notification-api"]="http://localhost:18080/notification/health"
-          )
-
-          for name in "${!endpoints[@]}"; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-                       --max-time 10 "${endpoints[$name]}" || echo "000")
-            if [[ "$STATUS" == "200" ]]; then echo "✅ $name → $STATUS"
-            else echo "❌ $name → $STATUS"; FAILED=$((FAILED+1)); fi
-          done
-
-          kill $PF_PID 2>/dev/null || true
-          [ $FAILED -gt 0 ] && { echo "❌ $FAILED service(s) failed"; exit 1; }
-          echo "✅ All smoke tests passed"
-
-      - name: Update architecture baseline snapshot
-        run: |
-          dotnet run --project src/Cli/Ums.Cli -c Release -- \
-            govern snapshot create baseline --project .
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src/.ums/snapshots/
-          git diff --staged --quiet || \
-            git commit -m "ci: update architecture baseline [skip ci]"
-          git push
-
-      - name: Deployment summary
-        if: always()
-        run: |
-          echo "════════════════════════════════════"
-          echo " Deploy: ${GITHUB_SHA::8}"
-          echo "════════════════════════════════════"
-          kubectl get pods -n ums
-          kubectl get svc  -n ums

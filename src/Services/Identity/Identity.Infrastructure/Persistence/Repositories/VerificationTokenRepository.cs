@@ -29,6 +29,12 @@ internal sealed class VerificationTokenRepository : IVerificationTokenRepository
                   && t.ExpiresAt > DateTime.UtcNow,
                 ct);
 
+    public async Task UpdateAsync(VerificationToken token, CancellationToken ct = default)
+    {
+        _db.VerificationTokens.Update(token);
+        await _db.SaveChangesAsync(ct);
+    }
+
     public async Task InvalidateAllForUserAsync(
         Guid userId,
         TokenPurpose purpose,
@@ -47,3 +53,4 @@ internal sealed class VerificationTokenRepository : IVerificationTokenRepository
             await _db.SaveChangesAsync(ct);
     }
 }
+

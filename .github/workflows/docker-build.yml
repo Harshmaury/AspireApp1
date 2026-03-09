@@ -1,0 +1,256 @@
+name: Docker Build
+
+# Triggered only when CI workflow succeeds on main.
+# This ensures we never push a broken image.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  REGISTRY:       ghcr.io
+  IMAGE_PREFIX:   ${{ github.repository_owner }}/ums
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # GATE — abort if CI did not succeed
+  # ─────────────────────────────────────────────────────────────
+  gate:
+    name: Check CI Status
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.sha.outputs.value }}
+    steps:
+      - name: Abort if CI failed
+        if: ${{ github.event.workflow_run.conclusion != 'success' }}
+        run: |
+          echo "❌ CI workflow did not succeed (conclusion: ${{ github.event.workflow_run.conclusion }})"
+          exit 1
+
+      - name: Export triggering SHA
+        id: sha
+        run: echo "value=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+
+  # ─────────────────────────────────────────────────────────────
+  # DETECT CHANGES — re-run paths-filter on the triggering commit
+  # ─────────────────────────────────────────────────────────────
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    needs: gate
+    outputs:
+      identity:     ${{ steps.filter.outputs.identity }}
+      academic:     ${{ steps.filter.outputs.academic }}
+      student:      ${{ steps.filter.outputs.student }}
+      attendance:   ${{ steps.filter.outputs.attendance }}
+      examination:  ${{ steps.filter.outputs.examination }}
+      fee:          ${{ steps.filter.outputs.fee }}
+      faculty:      ${{ steps.filter.outputs.faculty }}
+      hostel:       ${{ steps.filter.outputs.hostel }}
+      notification: ${{ steps.filter.outputs.notification }}
+      gateway:      ${{ steps.filter.outputs.gateway }}
+      bff:          ${{ steps.filter.outputs.bff }}
+      shared:       ${{ steps.filter.outputs.shared }}
+      infra:        ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            shared:
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            infra:
+              - 'k8s/**'
+            identity:
+              - 'src/Services/Identity/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            academic:
+              - 'src/Services/Academic/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            student:
+              - 'src/Services/Student/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            attendance:
+              - 'src/Services/Attendance/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            examination:
+              - 'src/Services/Examination/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            fee:
+              - 'src/Services/Fee/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            faculty:
+              - 'src/Services/Faculty/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            hostel:
+              - 'src/Services/Hostel/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            notification:
+              - 'src/Services/Notification/**'
+              - 'src/Shared/**'
+              - 'src/ServiceDefaults/**'
+            gateway:
+              - 'src/ApiGateway/**'
+              - 'src/ServiceDefaults/**'
+            bff:
+              - 'src/BFF/**'
+              - 'src/ServiceDefaults/**'
+
+  # ─────────────────────────────────────────────────────────────
+  # BUILD & PUSH — change-aware, parallel per service
+  # Uses GitHub Actions cache (type=gha) — works on cloud runners
+  # ─────────────────────────────────────────────────────────────
+  build-push:
+    name: "Docker: ${{ matrix.service }}"
+    runs-on: ubuntu-latest
+    needs: [gate, detect-changes]
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service:    identity-api
+            dockerfile: src/Services/Identity/Identity.API/Dockerfile
+            changed:    ${{ needs.detect-changes.outputs.identity }}
+          - service:    academic-api
+            dockerfile: src/Services/Academic/Academic.API/Dockerfile
+            changed:    ${{ needs.detect-changes.outputs.academic }}
+          - service:    student-api
+            dockerfile: src/Services/Student/Student.API/Dockerfile
+            changed:    ${{ needs.detect-changes.outputs.student }}
+          - service:    attendance-api
+            dockerfile: src/Services/Attendance/Attendance.API/Dockerfile
+            changed:    ${{ needs.detect-changes.outputs.attendance }}
+          - service:    examination-api
+            dockerfile: src/Services/Examination/Examination.API/Dockerfile
+            changed:    ${{ needs.detect-changes.outputs.examination }}
+          - service:    fee-api
+            dockerfile: src/Services/Fee/Fee.API/Dockerfile
+            changed:    ${{ needs.detect-changes.outputs.fee }}
+          - service:    notification-api
+            dockerfile: src/Services/Notification/Notification.API/Dockerfile
+            changed:    ${{ needs.detect-changes.outputs.notification }}
+          - service:    faculty-api
+            dockerfile: src/Services/Faculty/Faculty.API/Dockerfile
+            changed:    ${{ needs.detect-changes.outputs.faculty }}
+          - service:    hostel-api
+            dockerfile: src/Services/Hostel/Hostel.API/Dockerfile
+            changed:    ${{ needs.detect-changes.outputs.hostel }}
+          - service:    api-gateway
+            dockerfile: src/ApiGateway/Dockerfile
+            changed:    ${{ needs.detect-changes.outputs.gateway }}
+          - service:    bff
+            dockerfile: src/BFF/Dockerfile
+            changed:    ${{ needs.detect-changes.outputs.bff }}
+
+    steps:
+      - name: Gate — build or skip
+        id: gate
+        run: |
+          if [[ "${{ matrix.changed }}" == "true"                          || \
+                "${{ needs.detect-changes.outputs.shared }}" == "true"     || \
+                "${{ needs.detect-changes.outputs.infra }}" == "true" ]]; then
+            echo "build=true"  >> $GITHUB_OUTPUT
+            echo "🔨 Building ${{ matrix.service }}"
+          else
+            echo "build=false" >> $GITHUB_OUTPUT
+            echo "⏭ Skipping ${{ matrix.service }} — no relevant changes"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.build == 'true'
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+
+      - name: Compute image tag
+        if: steps.gate.outputs.build == 'true'
+        id: tag
+        run: |
+          SHA="${{ needs.gate.outputs.sha }}"
+          echo "tag=${SHA::8}"                                                          >> $GITHUB_OUTPUT
+          echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}" >> $GITHUB_OUTPUT
+
+      - uses: docker/login-action@v3
+        if: steps.gate.outputs.build == 'true'
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+        if: steps.gate.outputs.build == 'true'
+
+      - name: Build and push
+        if: steps.gate.outputs.build == 'true'
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file:    ${{ matrix.dockerfile }}
+          push:    true
+          tags: |
+            ${{ steps.tag.outputs.image }}:${{ steps.tag.outputs.tag }}
+            ${{ steps.tag.outputs.image }}:latest
+          # GitHub Actions cache — no filesystem workaround needed
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to:   type=gha,mode=max,scope=${{ matrix.service }}
+          labels: |
+            org.opencontainers.image.revision=${{ needs.gate.outputs.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.created=${{ github.event.workflow_run.updated_at }}
+
+      - name: Record image digest
+        if: steps.gate.outputs.build == 'true'
+        run: |
+          echo "${{ matrix.service }}=${{ steps.tag.outputs.image }}@${{ steps.build.outputs.digest }}" \
+            >> image-digests.txt
+
+      - uses: actions/upload-artifact@v4
+        if: steps.gate.outputs.build == 'true'
+        with:
+          name: image-digest-${{ matrix.service }}
+          path: image-digests.txt
+          retention-days: 1
+
+  # ─────────────────────────────────────────────────────────────
+  # MERGE DIGESTS — single artifact consumed by security + deploy
+  # ─────────────────────────────────────────────────────────────
+  collect-digests:
+    name: Collect Image Digests
+    runs-on: ubuntu-latest
+    needs: build-push
+    if: always() && needs.build-push.result != 'failure'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: ./digests
+          pattern: 'image-digest-*'
+
+      - name: Merge into single file
+        run: |
+          cat ./digests/**/*.txt > image-digests-all.txt
+          echo "=== Built Images ==="
+          cat image-digests-all.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image-digests
+          path: image-digests-all.txt
+          retention-days: 3

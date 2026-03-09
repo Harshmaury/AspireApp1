@@ -1,4 +1,4 @@
-using Identity.Domain.Common;
+﻿using Identity.Domain.Common;
 using Identity.Domain.Events;
 using Microsoft.AspNetCore.Identity;
 
@@ -13,7 +13,7 @@ public sealed class ApplicationUser : IdentityUser<Guid>, IAggregateRoot
     public DateTime CreatedAt { get; private set; }
     public DateTime? LastLoginAt { get; private set; }
 
-    // Optimistic concurrency token — managed by EF, never set manually
+    // Optimistic concurrency token â€” managed by EF, never set manually
     public byte[]? RowVersion { get; private set; }
 
     public Tenant? Tenant { get; private set; }
@@ -51,6 +51,11 @@ public sealed class ApplicationUser : IdentityUser<Guid>, IAggregateRoot
     }
 
     public void RecordLogin() => LastLoginAt = DateTime.UtcNow;
-    public void Deactivate() => IsActive = false;
+    public void Deactivate()
+    {
+        IsActive = false;
+        _domainEvents.Add(new UserDeactivatedEvent(Id, TenantId, Email!));
+    }
     public string FullName => $"{FirstName} {LastName}";
 }
+

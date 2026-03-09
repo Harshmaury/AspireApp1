@@ -58,7 +58,7 @@ internal sealed class VerifyEmailCommandHandler
 
         // 4. Mark token used
         token.MarkUsed();
-        await _tokens.CreateAsync(token, ct);
+        await _tokens.UpdateAsync(token, ct);
 
         // 5. Audit
         await _audit.LogAsync(AuditLog.Create(
@@ -82,3 +82,4 @@ internal sealed class VerifyEmailCommandHandler
         return ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     }
 }
+

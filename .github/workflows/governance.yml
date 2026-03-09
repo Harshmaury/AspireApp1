@@ -1,0 +1,166 @@
+name: Governance
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**/*.cs'
+      - 'src/Governance/**'
+      - 'src/Cli/**'
+      - 'aegis.config.json'
+  pull_request:
+    branches:
+      - main
+  # Weekly scheduled run catches drift even without code changes
+  schedule:
+    - cron: '0 2 * * 1'
+
+concurrency:
+  group: governance-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_VERSION:              '10.0.x'
+  DOTNET_NOLOGO:               true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  NUGET_PACKAGES:              ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # AEGIS GOVERNANCE GATE
+  # Runs Aegis rule engine: layer matrix, domain isolation,
+  # tenant isolation, circular deps, cross-service references,
+  # event contracts, resilience, logging contracts, etc.
+  # ─────────────────────────────────────────────────────────────
+  aegis:
+    name: Aegis Governance Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Restore & build Aegis CLI
+        run: |
+          dotnet restore src/Cli/Ums.Cli/Ums.Cli.csproj
+          dotnet build   src/Cli/Ums.Cli/Ums.Cli.csproj --no-restore -c Release
+
+      - name: Aegis — verify all rules
+        run: |
+          dotnet run --project src/Cli/Ums.Cli -c Release -- \
+            govern verify all \
+            --project . \
+            --format json \
+            --output governance-report.json
+
+      - name: Aegis — snapshot drift check
+        run: |
+          SNAP="src/.ums/snapshots/baseline-latest.snap.json"
+          if [ -f "$SNAP" ]; then
+            dotnet run --project src/Cli/Ums.Cli -c Release -- \
+              govern snapshot diff baseline-latest \
+              --project . \
+              --fail-on-drift
+          else
+            echo "⚠ No baseline snapshot — skipping drift check."
+            echo "  Commit src/.ums/snapshots/baseline-latest.snap.json to enable."
+          fi
+
+      - name: Aegis — event contract compatibility
+        run: |
+          SCHEMA="src/.ums/event-schemas"
+          if [ -d "$SCHEMA" ]; then
+            dotnet run --project src/Cli/Ums.Cli -c Release -- \
+              verify-event-contracts \
+              --project . \
+              --schema-dir "$SCHEMA" \
+              --format json \
+              --output event-contracts-report.json
+          else
+            echo "⚠ No event schemas dir — skipping event contract check."
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: governance-report
+          path: |
+            governance-report.json
+            event-contracts-report.json
+          retention-days: 14
+
+      - name: Annotate PR with violations
+        if: github.event_name == 'pull_request' && always()
+        run: |
+          [ -f governance-report.json ] && python3 - <<'EOF'
+          import json, sys
+          data = json.load(open("governance-report.json"))
+          violations_found = False
+          for rule in data.get("rules", []):
+            for v in rule.get("violations", []):
+              violations_found = True
+              sev   = v.get("severity", "WARNING").upper()
+              level = "error" if sev == "ERROR" else "warning"
+              print(f"::{level} title=Aegis {rule['id']}::{v.get('message','')} ({v.get('project','')})")
+          if not violations_found:
+            print("✅ No Aegis violations found")
+          EOF
+
+  # ─────────────────────────────────────────────────────────────
+  # DEPENDENCY AUDIT
+  # Checks for known-vulnerable and deprecated NuGet packages.
+  # ─────────────────────────────────────────────────────────────
+  dependency-audit:
+    name: NuGet Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Restore solution
+        run: dotnet restore AspireApp1.slnx
+
+      - name: Check for vulnerable packages
+        run: |
+          echo "### Vulnerable Packages" >> $GITHUB_STEP_SUMMARY
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vuln-report.txt
+          # Fail if CRITICAL or HIGH vulnerabilities found
+          if grep -qiE "(critical|high)" vuln-report.txt; then
+            echo "❌ Critical/High vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          echo "✅ No critical/high vulnerable packages" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for deprecated packages
+        continue-on-error: true   # warn only, don't fail
+        run: |
+          echo "### Deprecated Packages" >> $GITHUB_STEP_SUMMARY
+          dotnet list package --deprecated 2>&1 | tee deprecated-report.txt
+          cat deprecated-report.txt >> $GITHUB_STEP_SUMMARY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-audit-report
+          path: |
+            vuln-report.txt
+            deprecated-report.txt
+          retention-days: 14

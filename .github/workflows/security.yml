@@ -1,0 +1,203 @@
+name: Security
+
+# Security scanning runs:
+# 1. After Docker Build completes (scans fresh images)
+# 2. On every PR (filesystem scan, no image needed)
+# 3. Daily at 03:00 UTC (catch new CVEs in pinned images)
+on:
+  workflow_run:
+    workflows: ["Docker Build"]
+    types: [completed]
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * *'
+
+permissions:
+  security-events: write
+  contents: read
+  packages: read
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  REGISTRY:       ghcr.io
+  IMAGE_PREFIX:   ${{ github.repository_owner }}/ums
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # TRIVY — CONTAINER SCANNING
+  # Scans each service image for OS + library CVEs.
+  # CRITICAL findings block the pipeline; HIGH are advisory.
+  # Runs only when triggered by Docker Build (images exist).
+  # ─────────────────────────────────────────────────────────────
+  trivy-containers:
+    name: "Trivy Container: ${{ matrix.service }}"
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success'
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - identity-api
+          - academic-api
+          - student-api
+          - attendance-api
+          - examination-api
+          - fee-api
+          - notification-api
+          - faculty-api
+          - hostel-api
+          - api-gateway
+          - bff
+
+    steps:
+      - name: Compute image ref
+        id: ref
+        run: |
+          SHA="${{ github.event.workflow_run.head_sha }}"
+          echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${SHA::8}" >> $GITHUB_OUTPUT
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trivy — CRITICAL (blocking)
+        uses: aquasecurity/trivy-action@main
+        with:
+          image-ref: ${{ steps.ref.outputs.image }}
+          format:    table
+          severity:  CRITICAL
+          exit-code: 1   # fail the job if CRITICAL CVEs found
+
+      - name: Trivy — HIGH + CRITICAL (SARIF for Security tab)
+        uses: aquasecurity/trivy-action@main
+        if: always()
+        with:
+          image-ref: ${{ steps.ref.outputs.image }}
+          format:    sarif
+          output:    trivy-container-${{ matrix.service }}.sarif
+          severity:  CRITICAL,HIGH
+          exit-code: 0
+
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-container-${{ matrix.service }}.sarif
+          category:   container-${{ matrix.service }}
+
+  # ─────────────────────────────────────────────────────────────
+  # TRIVY — FILESYSTEM SCAN
+  # Scans source tree for IaC misconfigurations and secret patterns.
+  # Runs on PRs and scheduled — no Docker images required.
+  # ─────────────────────────────────────────────────────────────
+  trivy-filesystem:
+    name: Trivy Filesystem Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy — filesystem (SARIF)
+        uses: aquasecurity/trivy-action@main
+        with:
+          scan-type:  fs
+          scan-ref:   .
+          format:     sarif
+          output:     trivy-fs.sarif
+          severity:   CRITICAL,HIGH,MEDIUM
+          exit-code:  0
+
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-fs.sarif
+          category:   filesystem
+
+      - name: Trivy — fail on CRITICAL misconfigs
+        uses: aquasecurity/trivy-action@main
+        with:
+          scan-type:    fs
+          scan-ref:     .
+          severity:     CRITICAL
+          exit-code:    1
+          scanners:     misconfig,secret
+
+  # ─────────────────────────────────────────────────────────────
+  # SECRET SCANNING — Gitleaks
+  # Detects committed secrets, API keys, connection strings, tokens.
+  # ─────────────────────────────────────────────────────────────
+  secret-scanning:
+    name: Secret Scanning (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history needed for Gitleaks
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN:    ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}   # only needed for org repos
+
+  # ─────────────────────────────────────────────────────────────
+  # CODEQL — SAST (Static Analysis Security Testing)
+  # Analyzes C# source for injection, path traversal, etc.
+  # Runs on PRs and main push.
+  # ─────────────────────────────────────────────────────────────
+  codeql:
+    name: CodeQL SAST
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule'
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+          queries: security-extended,security-and-quality
+
+      - name: Build for CodeQL
+        run: dotnet build AspireApp1.slnx --configuration Release
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: csharp-sast
+
+  # ─────────────────────────────────────────────────────────────
+  # SECURITY SUMMARY
+  # Aggregates all scan results into a single job summary.
+  # ─────────────────────────────────────────────────────────────
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [trivy-filesystem, secret-scanning, codeql]
+    if: always() && (github.event_name == 'pull_request' || github.event_name == 'schedule')
+    steps:
+      - name: Write summary
+        run: |
+          echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Trivy Filesystem | ${{ needs.trivy-filesystem.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret Scanning  | ${{ needs.secret-scanning.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CodeQL SAST      | ${{ needs.codeql.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View full results in the [Security tab](${{ github.server_url }}/${{ github.repository }}/security)." >> $GITHUB_STEP_SUMMARY

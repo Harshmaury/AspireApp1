@@ -1,0 +1,296 @@
+name: Deploy
+
+# Triggered after Docker Build succeeds on main.
+# Owns: manifest updates, Minikube rollout, smoke tests,
+# architecture baseline snapshot, deployment summary.
+on:
+  workflow_run:
+    workflows: ["Docker Build"]
+    types: [completed]
+    branches: [main]
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  REGISTRY:       ghcr.io
+  IMAGE_PREFIX:   ${{ github.repository_owner }}/ums
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # GATE — abort if Docker Build did not succeed
+  # ─────────────────────────────────────────────────────────────
+  gate:
+    name: Check Docker Build Status
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.sha.outputs.value }}
+      tag: ${{ steps.tag.outputs.value }}
+    steps:
+      - name: Abort if Docker Build failed
+        if: ${{ github.event.workflow_run.conclusion != 'success' }}
+        run: |
+          echo "❌ Docker Build did not succeed (conclusion: ${{ github.event.workflow_run.conclusion }})"
+          exit 1
+
+      - name: Export values
+        id: sha
+        run: echo "value=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+
+      - name: Compute tag
+        id: tag
+        run: |
+          SHA="${{ github.event.workflow_run.head_sha }}"
+          echo "value=${SHA::8}" >> $GITHUB_OUTPUT
+
+  # ─────────────────────────────────────────────────────────────
+  # UPDATE K8S MANIFESTS
+  # Uses yq to patch image tags in deployment YAMLs.
+  # Commits back to main with [skip ci] to avoid loop.
+  # Runs on cloud runner — no self-hosted dependency.
+  # ─────────────────────────────────────────────────────────────
+  update-manifests:
+    name: Update K8s Image Tags
+    runs-on: ubuntu-latest
+    needs: gate
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref:   ${{ needs.gate.outputs.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install yq
+        run: |
+          wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
+
+      - name: Update image tags in K8s manifests
+        run: |
+          TAG="${{ needs.gate.outputs.tag }}"
+          REGISTRY="${{ env.REGISTRY }}"
+          PREFIX="${{ env.IMAGE_PREFIX }}"
+
+          declare -A services=(
+            ["identity-api"]="k8s/base/services/identity-api-deployment.yaml"
+            ["academic-api"]="k8s/base/services/academic-api-deployment.yaml"
+            ["student-api"]="k8s/base/services/student-api-deployment.yaml"
+            ["attendance-api"]="k8s/base/services/attendance-api-deployment.yaml"
+            ["examination-api"]="k8s/base/services/examination-api-deployment.yaml"
+            ["fee-api"]="k8s/base/services/fee-api-deployment.yaml"
+            ["notification-api"]="k8s/base/services/notification-api-deployment.yaml"
+            ["faculty-api"]="k8s/base/services/faculty-api-deployment.yaml"
+            ["hostel-api"]="k8s/base/services/hostel-api-deployment.yaml"
+            ["api-gateway"]="k8s/base/gateway/deployment.yaml"
+            ["bff"]="k8s/base/bff/deployment.yaml"
+          )
+
+          for service in "${!services[@]}"; do
+            file="${services[$service]}"
+            new_image="$REGISTRY/$PREFIX/$service:$TAG"
+            if [ -f "$file" ]; then
+              yq e ".spec.template.spec.containers[0].image = \"$new_image\"" -i "$file"
+              echo "✅ $service → $new_image"
+            else
+              echo "⚠ $file not found — skipping $service"
+            fi
+          done
+
+      - name: Commit updated manifests
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add k8s/
+          if git diff --staged --quiet; then
+            echo "No manifest changes to commit (all services skipped)"
+          else
+            git commit -m "ci: update image tags to ${{ needs.gate.outputs.tag }} [skip ci]"
+            git push
+          fi
+
+  # ─────────────────────────────────────────────────────────────
+  # DEPLOY TO MINIKUBE
+  # Runs on self-hosted runner (WSL2 with Minikube).
+  # Uses GitHub environment for visibility + optional approval.
+  # ─────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Minikube
+    runs-on: self-hosted
+    needs: [gate, update-manifests]
+    environment:
+      name: dev-local
+      url:  http://localhost:8080
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pull latest manifests
+        run: git pull origin main
+
+      - name: Verify runner environment
+        run: |
+          echo "── Environment Check ──"
+          minikube version    || { echo "❌ minikube not found"; exit 1; }
+          kubectl version --client || { echo "❌ kubectl not found"; exit 1; }
+          kubectl cluster-info     || { echo "❌ Minikube not running — run: dev start"; exit 1; }
+          kubectl get namespace ums 2>/dev/null || { echo "❌ ums namespace not found"; exit 1; }
+
+      - name: Pull images into Minikube
+        run: |
+          TAG="${{ needs.gate.outputs.tag }}"
+          REGISTRY="${{ env.REGISTRY }}"
+          PREFIX="${{ env.IMAGE_PREFIX }}"
+
+          services=(
+            identity-api academic-api student-api attendance-api
+            examination-api fee-api notification-api faculty-api
+            hostel-api api-gateway bff
+          )
+
+          for svc in "${services[@]}"; do
+            IMAGE="$REGISTRY/$PREFIX/$svc:$TAG"
+            echo "Loading $IMAGE ..."
+            minikube image load "$IMAGE" --overwrite=true || \
+              echo "⚠ Could not load $svc (may not have been rebuilt — continuing)"
+          done
+
+      - name: Ensure Kafka topics
+        run: |
+          kubectl exec -n ums deployment/kafka -- /bin/sh -c '
+            for topic in student-events identity-events academic-events \
+                         attendance-events examination-events fee-events \
+                         faculty-events hostel-events notification-events; do
+              /usr/bin/kafka-topics --bootstrap-server kafka:9092 \
+                --create --if-not-exists --topic $topic \
+                --partitions 3 --replication-factor 1
+            done
+            echo "Kafka topics verified."
+          '
+
+      - name: Apply Kustomize overlay
+        run: |
+          kubectl apply -k k8s/overlays/dev-local
+          echo "Waiting for api-gateway rollout..."
+          kubectl rollout status deployment/api-gateway -n ums --timeout=120s
+          echo "Waiting for bff rollout..."
+          kubectl rollout status deployment/bff         -n ums --timeout=120s
+
+      - name: Wait for all pods to be ready
+        run: |
+          kubectl wait --for=condition=ready pod --all -n ums --timeout=180s || \
+            echo "⚠ Some pods not ready — proceeding to smoke tests"
+
+      - name: Smoke tests — all 10 service health endpoints
+        run: |
+          kubectl port-forward -n ums service/api-gateway 18080:8080 &
+          PF_PID=$!
+          trap "kill $PF_PID 2>/dev/null || true" EXIT
+
+          # Wait up to 30s for port-forward to come up
+          for i in $(seq 1 15); do
+            nc -z localhost 18080 2>/dev/null && break
+            sleep 2
+          done
+
+          FAILED=0
+          declare -A endpoints=(
+            ["api-gateway"]="http://localhost:18080/health"
+            ["identity-api"]="http://localhost:18080/identity/health"
+            ["student-api"]="http://localhost:18080/student/health"
+            ["academic-api"]="http://localhost:18080/academic/health"
+            ["attendance-api"]="http://localhost:18080/attendance/health"
+            ["examination-api"]="http://localhost:18080/examination/health"
+            ["fee-api"]="http://localhost:18080/fee/health"
+            ["faculty-api"]="http://localhost:18080/faculty/health"
+            ["hostel-api"]="http://localhost:18080/hostel/health"
+            ["notification-api"]="http://localhost:18080/notification/health"
+          )
+
+          echo "## Smoke Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          for name in "${!endpoints[@]}"; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+                       --max-time 10 "${endpoints[$name]}" || echo "000")
+            if [[ "$STATUS" == "200" ]]; then
+              echo "| $name | ✅ $STATUS |" >> $GITHUB_STEP_SUMMARY
+              echo "✅ $name → $STATUS"
+            else
+              echo "| $name | ❌ $STATUS |" >> $GITHUB_STEP_SUMMARY
+              echo "❌ $name → $STATUS"
+              FAILED=$((FAILED+1))
+            fi
+          done
+
+          if [ $FAILED -gt 0 ]; then
+            echo "❌ $FAILED service(s) failed smoke tests"
+            exit 1
+          fi
+          echo "✅ All smoke tests passed"
+
+      - name: Update architecture baseline snapshot
+        if: success()
+        run: |
+          dotnet run --project src/Cli/Ums.Cli -c Release -- \
+            govern snapshot create baseline --project .
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/.ums/snapshots/
+          if git diff --staged --quiet; then
+            echo "No snapshot changes"
+          else
+            git commit -m "ci: update architecture baseline [${{ needs.gate.outputs.tag }}] [skip ci]"
+            git push
+          fi
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA:** ${{ needs.gate.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** ${{ needs.gate.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pod Status" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          kubectl get pods -n ums >> $GITHUB_STEP_SUMMARY 2>&1 || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────────────────────
+  # NOTIFY ON FAILURE
+  # Creates a GitHub issue when deploy fails so it's visible.
+  # Extend to Slack/Teams as needed.
+  # ─────────────────────────────────────────────────────────────
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [gate, update-manifests, deploy]
+    if: failure()
+    permissions:
+      issues: write
+    steps:
+      - name: Create failure issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha    = '${{ needs.gate.outputs.sha }}';
+            const tag    = '${{ needs.gate.outputs.tag }}';
+            const runUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              title: `🚨 Deploy failed — ${tag}`,
+              body: [
+                `## Deploy Failure`,
+                ``,
+                `- **SHA:** \`${sha}\``,
+                `- **Tag:** \`${tag}\``,
+                `- **Run:** ${runUrl}`,
+                ``,
+                `Check the runner logs and run \`dev recovery\` if needed.`,
+                ``,
+                `Close this issue once the problem is resolved.`,
+              ].join('\n'),
+              labels: ['deploy-failure', 'ci/cd'],
+            });

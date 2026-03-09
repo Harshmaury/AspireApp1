@@ -1,4 +1,4 @@
-using Identity.Domain.Entities;
+﻿using Identity.Domain.Entities;
 
 namespace Identity.Application.Interfaces;
 
