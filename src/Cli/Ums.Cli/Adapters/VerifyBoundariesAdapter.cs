@@ -31,7 +31,6 @@ public static class VerifyBoundariesAdapter
                 ? parsed : aegisConfig.FailLevel;
 
             var builder = new RuleEngineBuilder()
-                .AddRule<DomainIsolationRule>()
                 .AddRule<ApplicationLayerRule>()
                 .AddRule<ApiLayerRule>()
                 .AddRule<SharedKernelIsolationRule>();
@@ -41,7 +40,9 @@ public static class VerifyBoundariesAdapter
                 builder.Disable(id.Trim());
 
             var model  = await new ArchitectureModelBuilder().BuildAsync(proj);
-            var report = builder.Build().Evaluate(model);
+            var report = builder
+            .AddRule(new LayerMatrixRule(LayerMatrix.CleanArchitecture())).Build().Evaluate(model);
+            .AddRule(new EventSchemaCompatibilityRule(Path.Combine(proj, "src", ".ums", "event-schemas")))
             report     = VerifyDependenciesAdapter.ApplyExceptions(report, aegisConfig);
 
             var text = RendererFactory.Create(fmt).Render(report);

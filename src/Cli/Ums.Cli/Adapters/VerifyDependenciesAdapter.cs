@@ -33,14 +33,15 @@ public static class VerifyDependenciesAdapter
             var builder = new RuleEngineBuilder()
                 .AddRule<CircularDependencyRule>()
                 .AddRule<CrossServiceDirectReferenceRule>()
-                .AddRule<DomainIsolationRule>();
 
             aegisConfig.Apply(builder);
             foreach (var id in dis.SelectMany(d => d.Split(',', StringSplitOptions.RemoveEmptyEntries)))
                 builder.Disable(id.Trim());
 
             var model  = await new ArchitectureModelBuilder().BuildAsync(proj);
-            var report = builder.Build().Evaluate(model);
+            var report = builder
+            .AddRule(new LayerMatrixRule(LayerMatrix.CleanArchitecture())).Build().Evaluate(model);
+            .AddRule(new EventSchemaCompatibilityRule(Path.Combine(proj, "src", ".ums", "event-schemas")))
             report     = ApplyExceptions(report, aegisConfig);
 
             var text = RendererFactory.Create(fmt).Render(report);

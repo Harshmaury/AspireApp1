@@ -1,12 +1,20 @@
 {
-  "failLevel": "Error",
-  "disabledRules": [],
-  "excludedCategories": [],
-  "severityOverrides": {
-    "AGS-014": "Info",
-    "AGS-015": "Info"
-  },
-  "allowedExceptions": [
-    { "ruleId": "AGS-006", "target": null, "reason": "Infrastructure->Application within same bounded context is correct DI. SharedKernel is a legitimate cross-cutting dependency." }
-  ]
+    "failLevel":  "Error",
+    "disabledRules":  [
+
+                      ],
+    "excludedCategories":  [
+
+                           ],
+    "severityOverrides":  {
+                              "AGS-014":  "Info",
+                              "AGS-015":  "Info"
+                          },
+    "allowedExceptions":  [
+                              {
+                                  "ruleId":  "AGS-006",
+                                  "target":  "UMS.SharedKernel",
+                                  "reason":  "SharedKernel is a legitimate cross-cutting dependency."
+                              }
+                          ]
 }

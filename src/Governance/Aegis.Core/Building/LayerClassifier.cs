@@ -19,6 +19,7 @@ public sealed class LayerClassifier
         ["Persistence"]    = ArchitectureLayer.Infrastructure,
         ["API"]            = ArchitectureLayer.API,
         ["Controllers"]    = ArchitectureLayer.API,
+            ["Endpoints"] = ArchitectureLayer.API,
         ["SharedKernel"]   = ArchitectureLayer.SharedKernel,
         ["Contracts"]      = ArchitectureLayer.SharedKernel,
     });

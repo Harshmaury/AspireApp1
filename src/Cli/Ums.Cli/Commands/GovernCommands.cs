@@ -1,4 +1,4 @@
-﻿namespace Ums.Cli.Commands;
+namespace Ums.Cli.Commands;
 
 using System.CommandLine;
 using Aegis.Core.Building;
@@ -29,7 +29,7 @@ public static class GovernCommands
         return govern;
     }
 
-    // â”€â”€ verify â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── verify ────────────────────────────────────────────────────────────
 
     private static Command BuildVerify()
     {
@@ -93,7 +93,8 @@ public static class GovernCommands
                 model = await new ArchitectureModelBuilder().BuildAsync(proj);
             });
 
-            var report = builder.Build().Evaluate(model);
+            var report = builder
+            .AddRule(new LayerMatrixRule(LayerMatrix.CleanArchitecture())).Build().Evaluate(model);
             report = VerifyDependenciesAdapter.ApplyExceptions(report, cfg);
             var text = RendererFactory.Create(fmt).Render(report);
             Console.Write(text);
@@ -131,7 +132,8 @@ public static class GovernCommands
                 model = await new ArchitectureModelBuilder().BuildAsync(proj);
             });
 
-            var report = builder.Build().Evaluate(model);
+            var report = builder
+            .AddRule(new LayerMatrixRule(LayerMatrix.CleanArchitecture())).Build().Evaluate(model);
             report = VerifyDependenciesAdapter.ApplyExceptions(report, cfg);
             var text = RendererFactory.Create(fmt).Render(report);
             Console.Write(text);
@@ -143,7 +145,7 @@ public static class GovernCommands
         return cmd;
     }
 
-    // â”€â”€ snapshot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── snapshot ──────────────────────────────────────────────────────────
 
     private static Command BuildSnapshot()
     {
@@ -250,7 +252,7 @@ public static class GovernCommands
         return cmd;
     }
 
-    // â”€â”€ report â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── report ────────────────────────────────────────────────────────────
 
     private static Command BuildReport()
     {
@@ -279,7 +281,9 @@ public static class GovernCommands
                 model = await new ArchitectureModelBuilder().BuildAsync(proj);
             });
 
-            var report = builder.Build().Evaluate(model);
+            var report = builder
+            .AddRule(new LayerMatrixRule(LayerMatrix.CleanArchitecture())).Build().Evaluate(model);
+            .AddRule(new EventSchemaCompatibilityRule(Path.Combine(proj, "src", ".ums", "event-schemas")))
             report = VerifyDependenciesAdapter.ApplyExceptions(report, cfg);
             var text = RendererFactory.Create(fmt).Render(report);
             var dest = out_ ?? $"governance-report-{DateTime.Now:yyyyMMdd-HHmmss}.{fmt}";
@@ -290,7 +294,7 @@ public static class GovernCommands
         return cmd;
     }
 
-    // â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── helpers ───────────────────────────────────────────────────────────
 
     private static Option<string> ProjectOption() =>
         new("--project", () => DefaultProject, "Path to .sln, .csproj, or root directory");
