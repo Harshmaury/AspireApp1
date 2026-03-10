@@ -151,7 +151,7 @@ var app = builder.Build();
 // -- Middleware order matters - do NOT rearrange -----------------------------
 
 // 1. Global exception handler - must be first to catch everything
-app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseGlobalExceptionHandler();
 
 // 2. Serilog request logging
 app.UseSerilogDefaults();

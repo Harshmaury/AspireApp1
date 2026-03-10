@@ -1,0 +1,90 @@
+﻿using System;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+
+namespace TenantIsolation.Tests.Helpers;
+
+/// <summary>
+/// Creates isolated, schema-scoped DbContext instances for tenant-isolation tests.
+/// Each context gets its own PostgreSQL schema provisioned via EF EnsureCreated(),
+/// which guarantees table names, columns, and constraints match the EF model exactly.
+/// Callers are responsible for disposing the returned context.
+/// </summary>
+public static class DbFactory
+{
+    // -------------------------------------------------------------------------
+    // Public factory
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Creates a <typeparamref name="T"/> scoped to <paramref name="schemaName"/>.
+    ///
+    /// Lifecycle:
+    ///   1. Standalone NpgsqlConnection creates the Postgres schema (DDL only).
+    ///   2. Standalone connection is disposed — no shared state with DbContext.
+    ///   3. DbContext is built with the schema wired into EF options.
+    ///   4. EnsureCreated() provisions all tables exactly as EF model defines.
+    ///
+    /// The caller MUST dispose the returned context (use `await using` in tests).
+    /// </summary>
+    public static T Create<T>(
+        Func<DbContextOptions<T>, T> ctor,
+        string connectionString,
+        string schemaName)
+        where T : DbContext
+    {
+        // Step 1 & 2 — create Postgres schema via standalone connection.
+        CreateSchema(connectionString, schemaName);
+
+        // Step 3 — build EF options with schema search path baked in.
+        var options = new DbContextOptionsBuilder<T>()
+            .UseNpgsql(
+                connectionString + BuildSearchPathParam(schemaName),
+                npgsql => npgsql.MigrationsHistoryTable(
+                    "__EFMigrationsHistory", schemaName))
+            .Options;
+
+        // Step 4 — construct context; do NOT wrap in 'using' — caller owns it.
+        var ctx = ctor(options);
+
+        // Step 5 — let EF create tables exactly as the model defines them.
+        //          EnsureCreated() is idempotent; safe to call on every test run.
+        ctx.Database.EnsureCreated();
+
+        return ctx;
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Creates the Postgres schema using a short-lived standalone connection.
+    /// Connection is fully disposed before any DbContext is constructed.
+    /// </summary>
+    private static void CreateSchema(string connectionString, string schema)
+    {
+        using var conn = new NpgsqlConnection(connectionString);
+        conn.Open();
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = string.Format(
+            "CREATE SCHEMA IF NOT EXISTS \"{0}\";", schema);
+        cmd.ExecuteNonQuery();
+
+        // conn disposed here — completely isolated from the upcoming DbContext.
+    }
+
+    /// <summary>
+    /// Appends a search_path query parameter to the Npgsql connection string
+    /// so every connection from the pool targets the correct schema by default.
+    /// This is more reliable than SET search_path (which is per-session and
+    /// can be reset by connection pool recycling).
+    /// </summary>
+    private static string BuildSearchPathParam(string schema)
+    {
+        // Npgsql supports 'Search Path' as a connection string keyword.
+        // We append it only if not already present.
+        return string.Format(";Search Path={0}", schema);
+    }
+}

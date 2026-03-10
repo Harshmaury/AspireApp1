@@ -1,3 +1,4 @@
+﻿using AspireApp1.ServiceDefaults;
 using Fee.API.Endpoints;
 using Fee.Application;
 using Fee.Infrastructure;
@@ -37,3 +38,4 @@ app.MapFeePaymentEndpoints();
 app.MapScholarshipEndpoints();
 app.MapRegionHealthEndpoints();
 app.Run();
+

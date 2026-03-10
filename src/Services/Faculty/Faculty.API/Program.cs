@@ -1,3 +1,4 @@
+﻿using AspireApp1.ServiceDefaults;
 using Faculty.API.Endpoints;
 using Faculty.API.Middleware;
 using Faculty.API.Services;
@@ -29,3 +30,4 @@ app.UseHttpsRedirection();
 app.MapFacultyEndpoints();
 app.MapRegionHealthEndpoints();
 app.Run();
+

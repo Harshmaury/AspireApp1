@@ -1,3 +1,4 @@
+﻿using AspireApp1.ServiceDefaults;
 using Hostel.API.Endpoints;
 using Hostel.API.Middleware;
 using Hostel.Application;
@@ -16,7 +17,7 @@ builder.Services.AddHostelApplication();
 builder.Services.AddHostelInfrastructure(builder.Configuration);
 
 // FIX PLAT-2: AddAuthentication was missing. TenantMiddleware reads ctx.User
-// to extract TenantId � without this, ctx.User is always unauthenticated,
+// to extract TenantId — without this, ctx.User is always unauthenticated,
 // TenantId is never set, and every protected endpoint throws UnauthorizedAccessException.
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -42,3 +43,4 @@ app.MapAllotmentEndpoints();
 app.MapComplaintEndpoints();
 app.MapRegionHealthEndpoints();
 app.Run();
+

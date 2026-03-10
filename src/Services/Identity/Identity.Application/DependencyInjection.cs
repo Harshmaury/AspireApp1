@@ -1,11 +1,11 @@
-// ═══════════════════════════════════════════════════════════════════════
+﻿using UMS.SharedKernel.Application;
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // FILE 3: src/Services/Identity/Identity.Application/DependencyInjection.cs
 // (Replace existing file)
-// ═══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 namespace Identity.Application;
 
 using FluentValidation;
-using Identity.Application.Behaviours;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,9 +23,11 @@ public static class DependencyInjection
             // Pipeline: Validation runs before every command handler
             cfg.AddBehavior(
                 typeof(IPipelineBehavior<,>),
-                typeof(ValidationBehaviour<,>));
+                typeof(ValidationBehavior<,>));
         });
 
         return services;
     }
 }
+
+

@@ -1,37 +1,41 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
 
 namespace TenantIsolation.Tests.Helpers;
 
-// TST-4 fix: switched from InMemory to real Postgres.
-// Each unique schemaName (a Guid string) maps to a dedicated Postgres schema,
-// giving the same write-then-read isolation the InMemory tests relied on,
-// but now on a provider that faithfully enforces EF global query filters.
 public static class DbFactory
 {
     public static T Create<T>(
         Func<DbContextOptions<T>, T> ctor,
         string connectionString,
-        string schemaName)
+        string rawSchemaName)
         where T : DbContext
     {
-        // Strip hyphens — Postgres schema names cannot contain them unquoted
-        var safeSchema = "t" + schemaName.Replace("-", "");
+        var schema = "t_" + Regex.Replace(rawSchemaName.ToLowerInvariant(), "[^a-z0-9]", "");
 
-        var builder = new NpgsqlConnectionStringBuilder(connectionString)
+        using (var conn = new NpgsqlConnection(connectionString))
         {
-            SearchPath = safeSchema
-        };
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = string.Format("CREATE SCHEMA IF NOT EXISTS \"{0}\";", schema);
+            cmd.ExecuteNonQuery();
+        }
 
-        var opts = new DbContextOptionsBuilder<T>()
-            .UseNpgsql(builder.ConnectionString)
+        var options = new DbContextOptionsBuilder<T>()
+            .UseNpgsql(connectionString)
             .Options;
 
-        var ctx = ctor(opts);
+        var ctx = ctor(options);
 
-        // Create the schema and tables if not already present for this test
-        ctx.Database.ExecuteSqlRaw($"CREATE SCHEMA IF NOT EXISTS \"{safeSchema}\"");
-        ctx.Database.EnsureCreated();
+        ctx.Database.OpenConnection();
+        ctx.Database.ExecuteSqlRaw(
+            string.Format("SET search_path TO \"{0}\";", schema));
+
+        ((RelationalDatabaseCreator)ctx.Database.GetService<IDatabaseCreator>())
+            .CreateTables();
 
         return ctx;
     }

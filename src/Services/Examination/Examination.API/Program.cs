@@ -1,3 +1,4 @@
+﻿using AspireApp1.ServiceDefaults;
 using Examination.API.Endpoints;
 using Examination.Application;
 using Examination.Infrastructure;
@@ -36,3 +37,4 @@ app.MapExamScheduleEndpoints();
 app.MapMarksEntryEndpoints();
 app.MapRegionHealthEndpoints();
 app.Run();
+

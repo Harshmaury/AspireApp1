@@ -1,7 +1,7 @@
-using Faculty.Application.Behaviours;
-using FluentValidation;
+﻿using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using UMS.SharedKernel.Application;
 
 namespace Faculty.Application;
 

@@ -1,0 +1,37 @@
+﻿using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+
+namespace TenantIsolation.Tests.Helpers;
+
+public static class DbFactory
+{
+    public static T Create<T>(
+        Func<DbContextOptions<T>, T> ctor,
+        string connectionString,
+        string rawSchemaName)
+        where T : DbContext
+    {
+        var schema = "t_" + Regex.Replace(rawSchemaName.ToLowerInvariant(), "[^a-z0-9]", "");
+
+        using (var conn = new NpgsqlConnection(connectionString))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = string.Format("CREATE SCHEMA IF NOT EXISTS \"{0}\";", schema);
+            cmd.ExecuteNonQuery();
+        }
+
+        var options = new DbContextOptionsBuilder<T>()
+            .UseNpgsql(connectionString)
+            .Options;
+
+        var ctx = ctor(options);
+        ctx.Database.OpenConnection();
+        ctx.Database.ExecuteSqlRaw(string.Format("SET search_path TO \"{0}\", public;", schema));
+        ctx.Database.EnsureDeleted();
+        ctx.Database.EnsureCreated();
+
+        return ctx;
+    }
+}

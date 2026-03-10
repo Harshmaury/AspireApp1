@@ -1,0 +1,208 @@
+# =============================================================================
+# FIX: TenantIsolation.Tests - NpgsqlConnection ObjectDisposedException
+# Root cause: NpgsqlConnection or DbContext disposed before EnsureTablesExist
+# =============================================================================
+
+$root     = "C:\Users\harsh\source\repos\AspireApp1"
+$filePath = "$root\src\Tests\TenantIsolation.Tests\Helpers\DbFactory.cs"
+$backup   = "$filePath.bak_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+
+# --- Guard ---------------------------------------------------------------
+if (-not (Test-Path $filePath)) {
+    Write-Error "DbFactory.cs not found at: $filePath"
+    exit 1
+}
+
+# --- Backup --------------------------------------------------------------
+Copy-Item $filePath $backup -Force
+Write-Host "Backup created: $backup" -ForegroundColor Cyan
+
+# --- Write corrected DbFactory.cs ----------------------------------------
+# KEY FIXES:
+#   1. NpgsqlConnection lifetime is NOT wrapped in 'using' — the DbContext
+#      owns the connection; callers must dispose the returned context.
+#   2. EnsureTablesExist opens a NEW, independent NpgsqlConnection so it
+#      never competes with the DbContext's internal connection state.
+#   3. DbFactory.Create<T> does NOT use 'using var ctx' — it returns the
+#      live context to the caller (test class is responsible for disposal).
+
+$newContent = @'
+using System;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+
+namespace TenantIsolation.Tests.Helpers;
+
+/// <summary>
+/// Creates isolated DbContext instances for tenant-isolation tests.
+/// Each context targets a dedicated PostgreSQL schema that is provisioned
+/// on first use.  Callers are responsible for disposing the returned context.
+/// </summary>
+public static class DbFactory
+{
+    // ------------------------------------------------------------------
+    // Public factory
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Creates a <typeparamref name="T"/> scoped to <paramref name="schemaName"/>.
+    /// The caller MUST dispose the returned context (use 'await using' or
+    /// wrap in a using block in the test).
+    /// </summary>
+    public static T Create<T>(
+        Func<DbContextOptions<T>, T> ctor,
+        string connectionString,
+        string schemaName)
+        where T : DbContext
+    {
+        // 1. Provision schema + tables via a short-lived, independent connection.
+        //    This connection is fully closed before the DbContext is constructed,
+        //    so there is zero risk of connection-state conflicts.
+        ProvisionSchema(connectionString, schemaName);   // <-- replaces old line 65
+
+        // 2. Build EF options pointing at the target schema.
+        var options = new DbContextOptionsBuilder<T>()
+            .UseNpgsql(
+                connectionString,
+                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", schemaName))
+            .Options;
+
+        // 3. Construct and return the live context.
+        //    Do NOT wrap in 'using' here — the test owns the lifetime.
+        var ctx = ctor(options);
+
+        // 4. Apply EF model-based schema search path so every query lands
+        //    in the correct schema without repeating SET search_path.
+        ctx.Database.ExecuteSqlRaw($"SET search_path TO \"{schemaName}\", public;");
+
+        return ctx;
+    }
+
+    // ------------------------------------------------------------------
+    // Private helpers
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Opens a standalone connection, creates the schema if absent, then
+    /// ensures the minimal table structure exists.  The connection is
+    /// disposed before returning — it is completely independent of any
+    /// DbContext that will be created afterwards.
+    /// </summary>
+    private static void ProvisionSchema(string connectionString, string schema)
+    {
+        // Use a brand-new, standalone connection.
+        // 'using' here is correct because we own this connection entirely.
+        using var conn = new NpgsqlConnection(connectionString);
+        conn.Open();
+
+        // Create schema
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = $"CREATE SCHEMA IF NOT EXISTS \"{schema}\";";
+            cmd.ExecuteNonQuery();
+        }
+
+        // Ensure tables (was EnsureTablesExist — line 89 previously crashed
+        // because it received a DbContext whose underlying connection was
+        // disposed; now we call it with an explicit open connection instead).
+        EnsureTablesExist(conn, schema);
+
+        // conn is disposed here — before any DbContext is built.
+    }
+
+    /// <summary>
+    /// Creates the minimal tables required by the isolation tests inside
+    /// <paramref name="schema"/>.  Accepts an already-open
+    /// <see cref="NpgsqlConnection"/> that is managed by the caller.
+    /// </summary>
+    private static void EnsureTablesExist(NpgsqlConnection conn, string schema)   // line 89 equivalent — now takes NpgsqlConnection, not DbContext
+    {
+        var ddlStatements = new[]
+        {
+            // Students
+            $"""
+            CREATE TABLE IF NOT EXISTS "{schema}"."Students" (
+                "Id"         UUID        NOT NULL PRIMARY KEY,
+                "TenantId"   UUID        NOT NULL,
+                "UserId"     UUID        NOT NULL,
+                "FullName"   TEXT        NOT NULL,
+                "CreatedAt"  TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+            """,
+
+            // Hostels
+            $"""
+            CREATE TABLE IF NOT EXISTS "{schema}"."Hostels" (
+                "Id"         UUID        NOT NULL PRIMARY KEY,
+                "TenantId"   UUID        NOT NULL,
+                "Name"       TEXT        NOT NULL,
+                "CreatedAt"  TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+            """,
+
+            // Rooms
+            $"""
+            CREATE TABLE IF NOT EXISTS "{schema}"."Rooms" (
+                "Id"         UUID        NOT NULL PRIMARY KEY,
+                "TenantId"   UUID        NOT NULL,
+                "HostelId"   UUID        NOT NULL,
+                "RoomNumber" TEXT        NOT NULL
+            );
+            """,
+
+            // Allotments
+            $"""
+            CREATE TABLE IF NOT EXISTS "{schema}"."Allotments" (
+                "Id"        UUID        NOT NULL PRIMARY KEY,
+                "TenantId"  UUID        NOT NULL,
+                "StudentId" UUID        NOT NULL,
+                "RoomId"    UUID        NOT NULL,
+                "IsActive"  BOOLEAN     NOT NULL DEFAULT TRUE,
+                "CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+            """,
+
+            // Complaints
+            $"""
+            CREATE TABLE IF NOT EXISTS "{schema}"."Complaints" (
+                "Id"        UUID        NOT NULL PRIMARY KEY,
+                "TenantId"  UUID        NOT NULL,
+                "StudentId" UUID        NOT NULL,
+                "Message"   TEXT        NOT NULL,
+                "CreatedAt" TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+            """
+        };
+
+        foreach (var ddl in ddlStatements)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = ddl;
+            cmd.ExecuteNonQuery();
+        }
+    }
+}
+'@
+
+Set-Content -Path $filePath -Value $newContent -Encoding UTF8
+Write-Host "DbFactory.cs rewritten successfully." -ForegroundColor Green
+
+# --- Verify build --------------------------------------------------------
+Write-Host "`nVerifying build..." -ForegroundColor Yellow
+$proj = "$root\src\Tests\TenantIsolation.Tests\TenantIsolation.Tests.csproj"
+
+dotnet build $proj --nologo -v quiet
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Build passed." -ForegroundColor Green
+} else {
+    Write-Warning "Build failed. Restoring backup..."
+    Copy-Item $backup $filePath -Force
+    Write-Host "Backup restored. Review the generated file manually." -ForegroundColor Red
+    exit 1
+}
+
+# --- Run tests -----------------------------------------------------------
+Write-Host "`nRunning TenantIsolation tests..." -ForegroundColor Yellow
+dotnet test $proj --nologo --logger "console;verbosity=normal"
+
+Write-Host "`nDone." -ForegroundColor Cyan

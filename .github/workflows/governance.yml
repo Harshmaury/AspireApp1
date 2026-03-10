@@ -1,4 +1,4 @@
-name: Governance
+﻿name: Governance
 
 on:
   push:
@@ -27,12 +27,12 @@ env:
   NUGET_PACKAGES:              ${{ github.workspace }}/.nuget/packages
 
 jobs:
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   # AEGIS GOVERNANCE GATE
   # Runs Aegis rule engine: layer matrix, domain isolation,
   # tenant isolation, circular deps, cross-service references,
   # event contracts, resilience, logging contracts, etc.
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   aegis:
     name: Aegis Governance Gate
     runs-on: ubuntu-latest
@@ -54,7 +54,7 @@ jobs:
           dotnet restore src/Cli/Ums.Cli/Ums.Cli.csproj
           dotnet build   src/Cli/Ums.Cli/Ums.Cli.csproj --no-restore -c Release
 
-      - name: Aegis — verify all rules
+      - name: Aegis â€” verify all rules
         run: |
           dotnet run --project src/Cli/Ums.Cli -c Release -- \
             govern verify all \
@@ -62,7 +62,7 @@ jobs:
             --format json \
             --output governance-report.json
 
-      - name: Aegis — snapshot drift check
+      - name: Aegis â€” snapshot drift check
         run: |
           SNAP="src/.ums/snapshots/baseline-latest.snap.json"
           if [ -f "$SNAP" ]; then
@@ -71,11 +71,11 @@ jobs:
               --project . \
               --fail-on-drift
           else
-            echo "⚠ No baseline snapshot — skipping drift check."
+            echo "âš  No baseline snapshot â€” skipping drift check."
             echo "  Commit src/.ums/snapshots/baseline-latest.snap.json to enable."
           fi
 
-      - name: Aegis — event contract compatibility
+      - name: Aegis â€” event contract compatibility
         run: |
           SCHEMA="src/.ums/event-schemas"
           if [ -d "$SCHEMA" ]; then
@@ -86,7 +86,7 @@ jobs:
               --format json \
               --output event-contracts-report.json
           else
-            echo "⚠ No event schemas dir — skipping event contract check."
+            echo "âš  No event schemas dir â€” skipping event contract check."
           fi
 
       - uses: actions/upload-artifact@v4
@@ -112,13 +112,13 @@ jobs:
               level = "error" if sev == "ERROR" else "warning"
               print(f"::{level} title=Aegis {rule['id']}::{v.get('message','')} ({v.get('project','')})")
           if not violations_found:
-            print("✅ No Aegis violations found")
+            print("âœ… No Aegis violations found")
           EOF
 
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   # DEPENDENCY AUDIT
   # Checks for known-vulnerable and deprecated NuGet packages.
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   dependency-audit:
     name: NuGet Dependency Audit
     runs-on: ubuntu-latest
@@ -136,7 +136,7 @@ jobs:
           restore-keys: ${{ runner.os }}-nuget-
 
       - name: Restore solution
-        run: dotnet restore AspireApp1.slnx
+        run: dotnet restore UMS.slnx
 
       - name: Check for vulnerable packages
         run: |
@@ -144,10 +144,10 @@ jobs:
           dotnet list package --vulnerable --include-transitive 2>&1 | tee vuln-report.txt
           # Fail if CRITICAL or HIGH vulnerabilities found
           if grep -qiE "(critical|high)" vuln-report.txt; then
-            echo "❌ Critical/High vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            echo "âŒ Critical/High vulnerabilities found" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
-          echo "✅ No critical/high vulnerable packages" >> $GITHUB_STEP_SUMMARY
+          echo "âœ… No critical/high vulnerable packages" >> $GITHUB_STEP_SUMMARY
 
       - name: Check for deprecated packages
         continue-on-error: true   # warn only, don't fail
@@ -164,3 +164,4 @@ jobs:
             vuln-report.txt
             deprecated-report.txt
           retention-days: 14
+

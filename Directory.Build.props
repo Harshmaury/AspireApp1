@@ -1,0 +1,19 @@
+﻿<Project>
+
+  <!-- Prevent _backups folder from being treated as a buildable project -->
+  <PropertyGroup>
+    <IsBackupFolder>true</IsBackupFolder>
+    <ExcludeFromBuild>true</ExcludeFromBuild>
+  </PropertyGroup>
+  <Target Name="Build">
+    <Error Text="_backups is not a buildable project. This folder is excluded from the solution." />
+  </Target>
+
+  <!-- SECURITY: MimeKit GHSA-g7hc-96xr-gvvx (moderate) — no upstream patch as of 2026-03-11.
+       Evaluated at restore time. Review monthly.
+       Remove once a patched MimeKit version is published. -->
+  <PropertyGroup>
+    <NuGetAuditSuppress>https://github.com/advisories/GHSA-g7hc-96xr-gvvx</NuGetAuditSuppress>
+  </PropertyGroup>
+
+</Project>

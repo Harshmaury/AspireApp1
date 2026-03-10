@@ -1,23 +1,13 @@
-using Hostel.Domain.Common;
+﻿// Hostel.Infrastructure/Persistence/DomainEventDispatcherInterceptor.cs
+// Inherits all logic from DomainEventDispatcherInterceptorBase.
+// IMediator implements IPublisher — pass directly to base.
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
+using UMS.SharedKernel.Infrastructure;
+
 namespace Hostel.Infrastructure.Persistence;
-public sealed class DomainEventDispatcherInterceptor(IMediator mediator) : SaveChangesInterceptor
+
+public sealed class DomainEventDispatcherInterceptor : DomainEventDispatcherInterceptorBase
 {
-    public override async ValueTask<int> SavedChangesAsync(SaveChangesCompletedEventData e, int result, CancellationToken ct = default)
-    {
-        if (e.Context is not null)
-        {
-            var aggregates = e.Context.ChangeTracker.Entries<AggregateRoot>()
-                .Select(x => x.Entity)
-                .Where(x => x.DomainEvents.Any())
-                .ToList();
-            var events = aggregates.SelectMany(x => x.DomainEvents).ToList();
-            aggregates.ForEach(x => x.ClearDomainEvents());
-            foreach (var domainEvent in events)
-                await mediator.Publish(domainEvent, ct);
-        }
-        return await base.SavedChangesAsync(e, result, ct);
-    }
+    public DomainEventDispatcherInterceptor(IPublisher publisher)
+        : base(publisher) { }
 }

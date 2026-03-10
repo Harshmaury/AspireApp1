@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AspireApp1.ServiceDefaults;
+using Microsoft.EntityFrameworkCore;
 using Student.API.Endpoints;
 using Student.API.Services;
 using Student.Application;
@@ -34,3 +35,4 @@ app.MapStudentEndpoints();
 app.MapRegionHealthEndpoints();
 
 app.Run();
+

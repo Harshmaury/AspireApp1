@@ -367,3 +367,23 @@ FodyWeavers.xsd
 certs/*.pfx
 *.bak
 *.zip
+
+# ── SECURITY: Kubernetes secrets (use Sealed Secrets instead) ──
+k8s/**/secret.yaml
+k8s/**/secret-*.yaml
+**/*-secret.yaml
+**/*.env.local
+**/.env
+**/.env.*
+!**/.env.example
+# ── END SECURITY ──
+
+
+# === Auto-added by fix script ===
+_backups/
+obj/
+
+# Aegis fix-script backups
+*.bak2
+*.bak3
+*.orig

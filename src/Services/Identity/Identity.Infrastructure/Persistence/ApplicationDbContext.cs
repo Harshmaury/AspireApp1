@@ -26,18 +26,19 @@ public sealed class ApplicationDbContext
     public DbSet<AuditLog>           AuditLogs          => Set<AuditLog>();
     public DbSet<VerificationToken>  VerificationTokens => Set<VerificationToken>();
 
-    protected override void OnModelCreating(ModelBuilder builder)
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(builder);
-        builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
         // AGS-007: Scope all user queries to the current tenant.
         // Nullable check allows design-time tooling (migrations) and seeder to work.
         if (_tenantContext?.IsResolved == true)
         {
             var tid = _tenantContext.TenantId;
-            builder.Entity<ApplicationUser>()
+            modelBuilder.Entity<ApplicationUser>()
                 .HasQueryFilter(u => u.TenantId == tid);
         }
     }
 }
+

@@ -1,4 +1,4 @@
-name: Deploy
+﻿name: Deploy
 
 # Triggered after Docker Build succeeds on main.
 # Owns: manifest updates, Minikube rollout, smoke tests,
@@ -15,9 +15,9 @@ env:
   IMAGE_PREFIX:   ${{ github.repository_owner }}/ums
 
 jobs:
-  # ─────────────────────────────────────────────────────────────
-  # GATE — abort if Docker Build did not succeed
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  # GATE â€” abort if Docker Build did not succeed
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   gate:
     name: Check Docker Build Status
     runs-on: ubuntu-latest
@@ -28,7 +28,7 @@ jobs:
       - name: Abort if Docker Build failed
         if: ${{ github.event.workflow_run.conclusion != 'success' }}
         run: |
-          echo "❌ Docker Build did not succeed (conclusion: ${{ github.event.workflow_run.conclusion }})"
+          echo "âŒ Docker Build did not succeed (conclusion: ${{ github.event.workflow_run.conclusion }})"
           exit 1
 
       - name: Export values
@@ -41,12 +41,12 @@ jobs:
           SHA="${{ github.event.workflow_run.head_sha }}"
           echo "value=${SHA::8}" >> $GITHUB_OUTPUT
 
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   # UPDATE K8S MANIFESTS
   # Uses yq to patch image tags in deployment YAMLs.
   # Commits back to main with [skip ci] to avoid loop.
-  # Runs on cloud runner — no self-hosted dependency.
-  # ─────────────────────────────────────────────────────────────
+  # Runs on cloud runner â€” no self-hosted dependency.
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   update-manifests:
     name: Update K8s Image Tags
     runs-on: ubuntu-latest
@@ -90,9 +90,9 @@ jobs:
             new_image="$REGISTRY/$PREFIX/$service:$TAG"
             if [ -f "$file" ]; then
               yq e ".spec.template.spec.containers[0].image = \"$new_image\"" -i "$file"
-              echo "✅ $service → $new_image"
+              echo "âœ… $service â†’ $new_image"
             else
-              echo "⚠ $file not found — skipping $service"
+              echo "âš  $file not found â€” skipping $service"
             fi
           done
 
@@ -108,11 +108,11 @@ jobs:
             git push
           fi
 
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   # DEPLOY TO MINIKUBE
   # Runs on self-hosted runner (WSL2 with Minikube).
   # Uses GitHub environment for visibility + optional approval.
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   deploy:
     name: Deploy to Minikube
     runs-on: self-hosted
@@ -128,11 +128,11 @@ jobs:
 
       - name: Verify runner environment
         run: |
-          echo "── Environment Check ──"
-          minikube version    || { echo "❌ minikube not found"; exit 1; }
-          kubectl version --client || { echo "❌ kubectl not found"; exit 1; }
-          kubectl cluster-info     || { echo "❌ Minikube not running — run: dev start"; exit 1; }
-          kubectl get namespace ums 2>/dev/null || { echo "❌ ums namespace not found"; exit 1; }
+          echo "â”€â”€ Environment Check â”€â”€"
+          minikube version    || { echo "âŒ minikube not found"; exit 1; }
+          kubectl version --client || { echo "âŒ kubectl not found"; exit 1; }
+          kubectl cluster-info     || { echo "âŒ Minikube not running â€” run: dev start"; exit 1; }
+          kubectl get namespace ums 2>/dev/null || { echo "âŒ ums namespace not found"; exit 1; }
 
       - name: Pull images into Minikube
         run: |
@@ -150,10 +150,16 @@ jobs:
             IMAGE="$REGISTRY/$PREFIX/$svc:$TAG"
             echo "Loading $IMAGE ..."
             minikube image load "$IMAGE" --overwrite=true || \
-              echo "⚠ Could not load $svc (may not have been rebuilt — continuing)"
+              echo "âš  Could not load $svc (may not have been rebuilt â€” continuing)"
           done
 
-      - name: Ensure Kafka topics
+      
+      - name: Ensure metrics-server addon is enabled
+        run: |
+          minikube addons enable metrics-server || true
+          echo "metrics-server: $(minikube addons list | grep metrics-server)"
+
+      - name: Ensure Kafka topics exist
         run: |
           kubectl exec -n ums deployment/kafka -- /bin/sh -c '
             for topic in student-events identity-events academic-events \
@@ -177,9 +183,9 @@ jobs:
       - name: Wait for all pods to be ready
         run: |
           kubectl wait --for=condition=ready pod --all -n ums --timeout=180s || \
-            echo "⚠ Some pods not ready — proceeding to smoke tests"
+            echo "âš  Some pods not ready â€” proceeding to smoke tests"
 
-      - name: Smoke tests — all 10 service health endpoints
+      - name: Smoke tests â€” all 10 service health endpoints
         run: |
           kubectl port-forward -n ums service/api-gateway 18080:8080 &
           PF_PID=$!
@@ -213,20 +219,20 @@ jobs:
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
                        --max-time 10 "${endpoints[$name]}" || echo "000")
             if [[ "$STATUS" == "200" ]]; then
-              echo "| $name | ✅ $STATUS |" >> $GITHUB_STEP_SUMMARY
-              echo "✅ $name → $STATUS"
+              echo "| $name | âœ… $STATUS |" >> $GITHUB_STEP_SUMMARY
+              echo "âœ… $name â†’ $STATUS"
             else
-              echo "| $name | ❌ $STATUS |" >> $GITHUB_STEP_SUMMARY
-              echo "❌ $name → $STATUS"
+              echo "| $name | âŒ $STATUS |" >> $GITHUB_STEP_SUMMARY
+              echo "âŒ $name â†’ $STATUS"
               FAILED=$((FAILED+1))
             fi
           done
 
           if [ $FAILED -gt 0 ]; then
-            echo "❌ $FAILED service(s) failed smoke tests"
+            echo "âŒ $FAILED service(s) failed smoke tests"
             exit 1
           fi
-          echo "✅ All smoke tests passed"
+          echo "âœ… All smoke tests passed"
 
       - name: Update architecture baseline snapshot
         if: success()
@@ -256,11 +262,11 @@ jobs:
           kubectl get pods -n ums >> $GITHUB_STEP_SUMMARY 2>&1 || true
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   # NOTIFY ON FAILURE
   # Creates a GitHub issue when deploy fails so it's visible.
   # Extend to Slack/Teams as needed.
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   notify-failure:
     name: Notify on Failure
     runs-on: ubuntu-latest
@@ -280,7 +286,7 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo:  context.repo.repo,
-              title: `🚨 Deploy failed — ${tag}`,
+              title: `ðŸš¨ Deploy failed â€” ${tag}`,
               body: [
                 `## Deploy Failure`,
                 ``,
@@ -294,3 +300,4 @@ jobs:
               ].join('\n'),
               labels: ['deploy-failure', 'ci/cd'],
             });
+

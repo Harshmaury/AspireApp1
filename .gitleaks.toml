@@ -1,0 +1,30 @@
+﻿# .gitleaks.toml
+# Gitleaks configuration for UMS repository.
+# https://github.com/gitleaks/gitleaks
+
+title = "UMS Gitleaks Config"
+
+[extend]
+  useDefault = true
+
+[[rules]]
+  id          = "ums-connection-string"
+  description = "PostgreSQL connection string with password"
+  regex       = '''Host=.{1,100};Password=[^;'"]{6,}'''
+  tags        = ["postgres", "connection-string"]
+
+[[rules]]
+  id          = "base64-secret-yaml"
+  description = "base64-encoded value in Kubernetes secret YAML"
+  regex       = '''(?i)(password|secret|key|token)\s*:\s+[A-Za-z0-9+/]{20,}={0,2}'''
+  path        = '''k8s/.*secret.*\.yaml'''
+  tags        = ["kubernetes", "secret"]
+
+[allowlist]
+  description = "Global allowlist"
+  paths       = [
+    '''.gitleaks.toml''',
+    '''secret\.yaml\.template''',
+    '''_ROTATE-CREDENTIALS\.md''',
+    '''.*\.snap\.json''',
+  ]

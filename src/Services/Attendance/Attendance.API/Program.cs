@@ -1,3 +1,4 @@
+﻿using AspireApp1.ServiceDefaults;
 using Attendance.API.Endpoints;
 using Attendance.Application;
 using Attendance.Infrastructure;
@@ -16,7 +17,7 @@ builder.Services.AddAttendanceApplication();
 builder.Services.AddAttendanceInfrastructure(builder.Configuration);
 
 // FIX PLAT-2: AddAuthentication was missing. TenantMiddleware reads ctx.User
-// to extract TenantId � without this, ctx.User is always unauthenticated,
+// to extract TenantId — without this, ctx.User is always unauthenticated,
 // TenantId is never set, and every protected endpoint throws UnauthorizedAccessException.
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -43,3 +44,4 @@ app.UseHttpsRedirection();
 app.MapAttendanceEndpoints();
 app.MapRegionHealthEndpoints();
 app.Run();
+

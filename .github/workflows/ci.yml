@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -19,11 +19,11 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   NUGET_PACKAGES:              ${{ github.workspace }}/.nuget/packages
 
-# ─────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # CHANGE DETECTION
 # Downstream jobs read these outputs to decide whether to run.
 # Shared + ServiceDefaults changes mark ALL services as changed.
-# ─────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 jobs:
   detect-changes:
     name: Detect Changed Services
@@ -94,9 +94,9 @@ jobs:
               - 'src/BFF/**'
               - 'src/ServiceDefaults/**'
 
-  # ─────────────────────────────────────────────────────────────
-  # BUILD — whole solution, uploads artifact for downstream jobs
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  # BUILD â€” whole solution, uploads artifact for downstream jobs
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -115,10 +115,10 @@ jobs:
           restore-keys: ${{ runner.os }}-nuget-
 
       - name: Restore
-        run: dotnet restore AspireApp1.slnx
+        run: dotnet restore UMS.slnx
 
       - name: Build
-        run: dotnet build AspireApp1.slnx --no-restore --configuration Release
+        run: dotnet build UMS.slnx --no-restore --configuration Release
 
       - uses: actions/upload-artifact@v4
         with:
@@ -126,9 +126,9 @@ jobs:
           path: '**/bin/Release/**'
           retention-days: 1
 
-  # ─────────────────────────────────────────────────────────────
-  # UNIT TESTS — 9 services in parallel, change-aware
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  # UNIT TESTS â€” 9 services in parallel, change-aware
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   unit-tests:
     name: "Tests: ${{ matrix.service }}"
     runs-on: ubuntu-latest
@@ -167,7 +167,7 @@ jobs:
             changed:  ${{ needs.detect-changes.outputs.hostel }}
 
     steps:
-      - name: Gate — run or skip
+      - name: Gate â€” run or skip
         id: gate
         run: |
           if [[ "${{ matrix.changed }}" == "true"                  || \
@@ -177,7 +177,7 @@ jobs:
             echo "run=true"  >> $GITHUB_OUTPUT
           else
             echo "run=false" >> $GITHUB_OUTPUT
-            echo "⏭ Skipping ${{ matrix.service }} — no relevant changes"
+            echo "â­ Skipping ${{ matrix.service }} â€” no relevant changes"
           fi
 
       - uses: actions/checkout@v4
@@ -224,9 +224,9 @@ jobs:
           path: ./TestResults/**/coverage.cobertura.xml
           retention-days: 7
 
-  # ─────────────────────────────────────────────────────────────
-  # INTEGRATION TESTS — database-backed, main + PRs only
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  # INTEGRATION TESTS â€” database-backed, main + PRs only
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
@@ -290,9 +290,9 @@ jobs:
           path: ./TestResults/*.trx
           retention-days: 7
 
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   # TEST SUMMARY + COVERAGE
-  # ─────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   test-summary:
     name: Test Summary & Coverage
     runs-on: ubuntu-latest
@@ -337,3 +337,36 @@ jobs:
         run: |
           [ -f ./CoverageReport/SummaryGithub.md ] && \
             cat ./CoverageReport/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+      - name: Enforce coverage threshold
+        if: always()
+        run: |
+          THRESHOLD=70
+          FAILED=0
+
+          # Parse line coverage from merged Cobertura report
+          if [ -f ./CoverageReport/Cobertura.xml ]; then
+            COVERAGE=$(python3 -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('./CoverageReport/Cobertura.xml')
+          root = tree.getroot()
+          lr = float(root.get('line-rate', 0)) * 100
+          print(f'{lr:.1f}')
+          " 2>/dev/null || echo "0")
+
+            echo "Line coverage: ${COVERAGE}%  (threshold: ${THRESHOLD}%)"
+            echo "| Coverage | ${COVERAGE}% | Threshold: ${THRESHOLD}% |" >> $GITHUB_STEP_SUMMARY
+
+            COVERAGE_INT=$(python3 -c "print(int(float('${COVERAGE}')))" 2>/dev/null || echo "0")
+
+            if [ "$COVERAGE_INT" -lt "$THRESHOLD" ]; then
+              echo "❌ Coverage ${COVERAGE}% is below threshold ${THRESHOLD}%" >> $GITHUB_STEP_SUMMARY
+              echo "::error title=Coverage below threshold::Line coverage ${COVERAGE}% < ${THRESHOLD}%"
+              exit 1
+            else
+              echo "✅ Coverage ${COVERAGE}% meets threshold ${THRESHOLD}%" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠ Coverage report not found — skipping threshold check"
+          fi
+
+

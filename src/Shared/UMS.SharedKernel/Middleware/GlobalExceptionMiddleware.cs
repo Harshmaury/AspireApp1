@@ -1,10 +1,10 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using UMS.SharedKernel.Exceptions;
 
 namespace UMS.SharedKernel.Middleware;
 
-public sealed class GlobalExceptionMiddleware(
+public class GlobalExceptionMiddleware(
     RequestDelegate next,
     ILogger<GlobalExceptionMiddleware> logger)
 {
@@ -60,3 +60,4 @@ public sealed class GlobalExceptionMiddleware(
     }
 
 }
+

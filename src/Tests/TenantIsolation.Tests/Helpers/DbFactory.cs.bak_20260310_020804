@@ -1,0 +1,100 @@
+﻿using System;
+using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+
+namespace TenantIsolation.Tests.Helpers;
+
+/// <summary>
+/// Creates schema-isolated DbContext instances for tenant-isolation tests.
+///
+/// Design decisions:
+///   - Each test passes a raw Guid.ToString() as the schema name.
+///     Postgres identifiers cannot contain hyphens unless quoted, and the
+///     Npgsql "Search Path" connection-string keyword does NOT quote the value,
+///     so "f47a-..." is silently misinterpreted as arithmetic → search_path
+///     falls back to "public".  We sanitize to a safe identifier up front.
+///
+///   - EnsureCreated() returns early if the database already has ANY tables
+///     (shared Testcontainer DB).  We must scope the check to the target schema
+///     by using EnsureDeleted+EnsureCreated while search_path is pinned.
+///
+///   - search_path is set via a quoted SQL command on the live DbContext
+///     connection, not via the connection string keyword, so quoting is exact.
+/// </summary>
+public static class DbFactory
+{
+    // -------------------------------------------------------------------------
+    // Public factory
+    // -------------------------------------------------------------------------
+
+    public static T Create<T>(
+        Func<DbContextOptions<T>, T> ctor,
+        string connectionString,
+        string rawSchemaName)
+        where T : DbContext
+    {
+        // Step 1: Sanitize — strip hyphens, prefix with "t_" so the name is
+        //         always a valid unquoted Postgres identifier.
+        var schema = Sanitize(rawSchemaName);
+
+        // Step 2: Create the Postgres schema via a standalone connection.
+        //         This connection is fully disposed before DbContext is built.
+        ProvisionSchema(connectionString, schema);
+
+        // Step 3: Build EF options — plain connection string, no Search Path
+        //         keyword; we will SET it via SQL after construction.
+        var options = new DbContextOptionsBuilder<T>()
+            .UseNpgsql(connectionString)
+            .Options;
+
+        // Step 4: Construct context — caller owns the lifetime.
+        var ctx = ctor(options);
+
+        // Step 5: Pin search_path on the context's connection using a quoted
+        //         identifier so every EF query resolves to the correct schema.
+        ctx.Database.OpenConnection();
+        ctx.Database.ExecuteSqlRaw(
+            string.Format("SET search_path TO \"{0}\", public;", schema));
+
+        // Step 6: Drop + recreate tables scoped to this schema.
+        //         EnsureDeleted removes only the objects EF knows about
+        //         (within the active search_path = our schema), so other
+        //         schemas are untouched.  EnsureCreated then builds fresh
+        //         tables in the schema — guaranteed, even in a shared DB.
+        ctx.Database.EnsureDeleted();
+        ctx.Database.EnsureCreated();
+
+        return ctx;
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Converts any string (including raw GUIDs with hyphens) to a safe
+    /// Postgres identifier: lowercase, hyphens removed, prefixed with "t_".
+    /// Example: "f47ac10b-58cc-4372-a567-0e02b2c3d479" → "t_f47ac10b58cc4372a5670e02b2c3d479"
+    /// </summary>
+    private static string Sanitize(string raw)
+    {
+        var clean = Regex.Replace(raw.ToLowerInvariant(), "[^a-z0-9]", "");
+        return "t_" + clean;
+    }
+
+    /// <summary>
+    /// Creates the Postgres schema using a short-lived standalone connection
+    /// that is fully disposed before any DbContext is constructed.
+    /// The schema name is double-quoted so hyphens and other specials are safe.
+    /// </summary>
+    private static void ProvisionSchema(string connectionString, string schema)
+    {
+        using var conn = new NpgsqlConnection(connectionString);
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = string.Format(
+            "CREATE SCHEMA IF NOT EXISTS \"{0}\";", schema);
+        cmd.ExecuteNonQuery();
+    }
+}

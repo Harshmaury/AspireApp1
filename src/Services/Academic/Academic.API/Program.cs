@@ -1,3 +1,4 @@
+﻿using AspireApp1.ServiceDefaults;
 using Academic.API.Endpoints;
 using Academic.Application;
 using Academic.Infrastructure;
@@ -18,7 +19,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // FIX A1/PLAT-2: AddAuthentication was missing. TenantMiddleware reads ctx.User
-// to extract TenantId � without this, ctx.User is always unauthenticated,
+// to extract TenantId — without this, ctx.User is always unauthenticated,
 // TenantId is never set, and every protected endpoint throws UnauthorizedAccessException.
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -52,3 +53,4 @@ app.MapCurriculumEndpoints();
 app.MapAcademicCalendarEndpoints();
 app.MapRegionHealthEndpoints();
 app.Run();
+

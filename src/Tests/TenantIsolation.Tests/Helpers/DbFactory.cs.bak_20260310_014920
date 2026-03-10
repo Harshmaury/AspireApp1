@@ -1,0 +1,138 @@
+﻿using System;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+
+namespace TenantIsolation.Tests.Helpers;
+
+/// <summary>
+/// Creates isolated DbContext instances scoped to a dedicated PostgreSQL schema.
+/// Callers are responsible for disposing the returned context.
+/// </summary>
+public static class DbFactory
+{
+    // -------------------------------------------------------------------------
+    // Public factory
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Provisions <paramref name="schemaName"/> in Postgres, then returns a
+    /// live <typeparamref name="T"/> scoped to that schema.
+    /// The caller MUST dispose the returned context (use `await using` in tests).
+    /// </summary>
+    public static T Create<T>(
+        Func<DbContextOptions<T>, T> ctor,
+        string connectionString,
+        string schemaName)
+        where T : DbContext
+    {
+        // 1. Provision schema + tables via a short-lived standalone connection.
+        //    This connection is fully closed BEFORE the DbContext is constructed,
+        //    eliminating the ObjectDisposedException that occurred previously.
+        ProvisionSchema(connectionString, schemaName);
+
+        // 2. Build EF Core options targeting the provisioned schema.
+        var options = new DbContextOptionsBuilder<T>()
+            .UseNpgsql(
+                connectionString,
+                npgsql => npgsql.MigrationsHistoryTable(
+                    "__EFMigrationsHistory", schemaName))
+            .Options;
+
+        // 3. Construct context — do NOT wrap in 'using'; caller owns lifetime.
+        var ctx = ctor(options);
+
+        // 4. Pin search_path so every query lands in the correct schema.
+        ctx.Database.ExecuteSqlRaw(
+            string.Format("SET search_path TO \"{0}\", public;", schemaName));
+
+        return ctx;
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Opens a standalone NpgsqlConnection, creates the schema if absent,
+    /// then calls <see cref="EnsureTablesExist"/>.
+    /// The connection is disposed before returning — completely independent
+    /// of any subsequent DbContext.
+    /// </summary>
+    private static void ProvisionSchema(string connectionString, string schema)
+    {
+        using var conn = new NpgsqlConnection(connectionString);
+        conn.Open();
+
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = string.Format(
+                "CREATE SCHEMA IF NOT EXISTS \"{0}\";", schema);
+            cmd.ExecuteNonQuery();
+        }
+
+        EnsureTablesExist(conn, schema);
+        // conn disposed here — before any DbContext is built.
+    }
+
+    /// <summary>
+    /// Creates the minimal tables required by tenant-isolation tests inside
+    /// <paramref name="schema"/>.  Receives an already-open connection
+    /// managed entirely by <see cref="ProvisionSchema"/>.
+    /// </summary>
+    private static void EnsureTablesExist(NpgsqlConnection conn, string schema)
+    {
+        var tables = new[]
+        {
+            string.Format(@"
+                CREATE TABLE IF NOT EXISTS ""{0}"".""Students"" (
+                    ""Id""        UUID         NOT NULL PRIMARY KEY,
+                    ""TenantId""  UUID         NOT NULL,
+                    ""UserId""    UUID         NOT NULL,
+                    ""FullName""  TEXT         NOT NULL,
+                    ""CreatedAt"" TIMESTAMPTZ  NOT NULL DEFAULT now()
+                );", schema),
+
+            string.Format(@"
+                CREATE TABLE IF NOT EXISTS ""{0}"".""Hostels"" (
+                    ""Id""        UUID         NOT NULL PRIMARY KEY,
+                    ""TenantId""  UUID         NOT NULL,
+                    ""Name""      TEXT         NOT NULL,
+                    ""CreatedAt"" TIMESTAMPTZ  NOT NULL DEFAULT now()
+                );", schema),
+
+            string.Format(@"
+                CREATE TABLE IF NOT EXISTS ""{0}"".""Rooms"" (
+                    ""Id""         UUID  NOT NULL PRIMARY KEY,
+                    ""TenantId""   UUID  NOT NULL,
+                    ""HostelId""   UUID  NOT NULL,
+                    ""RoomNumber"" TEXT  NOT NULL
+                );", schema),
+
+            string.Format(@"
+                CREATE TABLE IF NOT EXISTS ""{0}"".""Allotments"" (
+                    ""Id""        UUID         NOT NULL PRIMARY KEY,
+                    ""TenantId""  UUID         NOT NULL,
+                    ""StudentId"" UUID         NOT NULL,
+                    ""RoomId""    UUID         NOT NULL,
+                    ""IsActive""  BOOLEAN      NOT NULL DEFAULT TRUE,
+                    ""CreatedAt"" TIMESTAMPTZ  NOT NULL DEFAULT now()
+                );", schema),
+
+            string.Format(@"
+                CREATE TABLE IF NOT EXISTS ""{0}"".""Complaints"" (
+                    ""Id""        UUID         NOT NULL PRIMARY KEY,
+                    ""TenantId""  UUID         NOT NULL,
+                    ""StudentId"" UUID         NOT NULL,
+                    ""Message""   TEXT         NOT NULL,
+                    ""CreatedAt"" TIMESTAMPTZ  NOT NULL DEFAULT now()
+                );", schema)
+        };
+
+        foreach (var ddl in tables)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = ddl;
+            cmd.ExecuteNonQuery();
+        }
+    }
+}

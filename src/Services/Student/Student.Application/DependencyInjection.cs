@@ -1,7 +1,6 @@
-using FluentValidation;
+﻿using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using Student.Application.Behaviours;
-
+using UMS.SharedKernel.Application;
 namespace Student.Application;
 
 public static class DependencyInjection
