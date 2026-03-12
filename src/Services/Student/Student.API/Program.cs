@@ -1,10 +1,10 @@
 ﻿using AspireApp1.ServiceDefaults;
 using Microsoft.EntityFrameworkCore;
 using Student.API.Endpoints;
-using Student.API.Services;
 using Student.Application;
 using Student.Infrastructure;
 using Student.Infrastructure.Persistence;
+using Student.Infrastructure.Kafka;
 using UMS.SharedKernel.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,4 +35,6 @@ app.MapStudentEndpoints();
 app.MapRegionHealthEndpoints();
 
 app.Run();
+
+
 

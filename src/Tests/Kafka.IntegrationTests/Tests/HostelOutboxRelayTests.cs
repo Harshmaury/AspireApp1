@@ -1,6 +1,6 @@
 ﻿using Confluent.Kafka;
 using FluentAssertions;
-using Hostel.Domain.Common;
+using Hostel.Infrastructure.Outbox;
 using Hostel.Infrastructure.Kafka;
 using Hostel.Infrastructure.Persistence;
 using Kafka.IntegrationTests.Fixtures;

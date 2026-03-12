@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\Examination.Domain\Examination.Domain.csproj" />
     <ProjectReference Include="..\Examination.Application\Examination.Application.csproj" />
@@ -15,4 +15,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="TenantIsolation.Tests" />
+  </ItemGroup>
 </Project>

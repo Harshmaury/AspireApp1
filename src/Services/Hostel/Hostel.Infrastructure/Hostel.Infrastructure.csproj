@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -19,5 +19,8 @@
     <ProjectReference Include="..\Hostel.Domain\Hostel.Domain.csproj" />
     <ProjectReference Include="..\Hostel.Application\Hostel.Application.csproj" />
     <ProjectReference Include="..\..\..\..\src\Shared\UMS.SharedKernel\UMS.SharedKernel.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="TenantIsolation.Tests" />
   </ItemGroup>
 </Project>

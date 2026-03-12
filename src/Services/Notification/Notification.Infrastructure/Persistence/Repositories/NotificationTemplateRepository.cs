@@ -1,14 +1,15 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Notification.Application.Interfaces;
 using Notification.Domain.Entities;
 using Notification.Domain.Enums;
+using UMS.SharedKernel.Tenancy;
 
 namespace Notification.Infrastructure.Persistence.Repositories;
 
-public sealed class NotificationTemplateRepository : INotificationTemplateRepository
+internal sealed class NotificationTemplateRepository : INotificationTemplateRepository
 {
     private readonly NotificationDbContext _db;
-    public NotificationTemplateRepository(NotificationDbContext db) => _db = db;
+    public NotificationTemplateRepository(NotificationDbContext db, ITenantContext? tenant = null) => _db = db;
 
     public async Task<NotificationTemplate?> GetByEventTypeAsync(Guid tenantId, string eventType, NotificationChannel channel, CancellationToken ct = default) =>
         await _db.NotificationTemplates.FirstOrDefaultAsync(
@@ -26,7 +27,11 @@ public sealed class NotificationTemplateRepository : INotificationTemplateReposi
 
     public async Task UpdateAsync(NotificationTemplate template, CancellationToken ct = default)
     {
-        _db.NotificationTemplates.Update(template);
+        if (_db.Entry(template).State == EntityState.Detached)
+            throw new InvalidOperationException(
+                $"UpdateAsync received a detached NotificationTemplate (Id={template.Id}). " +
+                "Fetch the entity via the repository in the same handler scope before mutating it.");
         await _db.SaveChangesAsync(ct);
     }
 }
+

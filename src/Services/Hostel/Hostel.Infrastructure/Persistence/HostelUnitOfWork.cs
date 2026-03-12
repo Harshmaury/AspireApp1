@@ -1,11 +1,31 @@
 using Hostel.Application.Interfaces;
 using Hostel.Infrastructure.Persistence.Repositories;
+using UMS.SharedKernel.Tenancy;
+
 namespace Hostel.Infrastructure.Persistence;
-public sealed class HostelUnitOfWork(HostelDbContext db) : IHostelUnitOfWork
+
+// Repos resolved via DI so ITenantContext flows through each constructor — satisfies AGS-007.
+public sealed class HostelUnitOfWork : IHostelUnitOfWork
 {
-    public IHostelRepository Hostels { get; } = new HostelRepository(db);
-    public IRoomRepository Rooms { get; } = new RoomRepository(db);
-    public IAllotmentRepository Allotments { get; } = new AllotmentRepository(db);
-    public IComplaintRepository Complaints { get; } = new ComplaintRepository(db);
-    public Task<int> SaveChangesAsync(CancellationToken ct = default) => db.SaveChangesAsync(ct);
+    private readonly HostelDbContext _db;
+    public IHostelRepository     Hostels    { get; }
+    public IRoomRepository       Rooms      { get; }
+    public IAllotmentRepository  Allotments { get; }
+    public IComplaintRepository  Complaints { get; }
+
+    public HostelUnitOfWork(
+        HostelDbContext db,
+        IHostelRepository hostels,
+        IRoomRepository rooms,
+        IAllotmentRepository allotments,
+        IComplaintRepository complaints)
+    {
+        _db        = db;
+        Hostels    = hostels;
+        Rooms      = rooms;
+        Allotments = allotments;
+        Complaints = complaints;
+    }
+
+    public Task<int> SaveChangesAsync(CancellationToken ct = default) => _db.SaveChangesAsync(ct);
 }

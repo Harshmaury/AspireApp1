@@ -1,4 +1,4 @@
-﻿using Examination.Domain.Common;
+﻿using Examination.Infrastructure.Outbox;
 using Examination.Infrastructure.Kafka;
 using Examination.Infrastructure.Persistence;
 using FluentAssertions;

@@ -1,13 +1,14 @@
 ﻿using Academic.Application.Interfaces;
 using Academic.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using UMS.SharedKernel.Tenancy;
 
 namespace Academic.Infrastructure.Persistence.Repositories;
 
 internal sealed class AcademicCalendarRepository : IAcademicCalendarRepository
 {
     private readonly AcademicDbContext _db;
-    public AcademicCalendarRepository(AcademicDbContext db) => _db = db;
+    public AcademicCalendarRepository(AcademicDbContext db, ITenantContext? tenant = null) => _db = db;
 
     public async Task<AcademicCalendar?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken ct = default)
         => await _db.AcademicCalendars.FirstOrDefaultAsync(a => a.Id == id && a.TenantId == tenantId, ct);
@@ -26,14 +27,11 @@ internal sealed class AcademicCalendarRepository : IAcademicCalendarRepository
 
     public async Task UpdateAsync(AcademicCalendar calendar, CancellationToken ct = default)
     {
-        // FIX A2: Never call _db.Update(entity). If entity is detached, domain events
-        // are lost. Guard here so the bug surfaces immediately at the call site.
-        // Pattern copied from Faculty.Infrastructure (gold standard for this codebase).
         if (_db.Entry(calendar).State == EntityState.Detached)
             throw new InvalidOperationException(
                 $"UpdateAsync received a detached AcademicCalendar (Id={calendar.Id}). " +
                 "Fetch the entity via the repository in the same handler scope before mutating it.");
-
         await _db.SaveChangesAsync(ct);
     }
 }
+

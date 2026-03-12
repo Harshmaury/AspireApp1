@@ -16,4 +16,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Shared\UMS.SharedKernel\UMS.SharedKernel.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ServiceDefaults\AspireApp1.ServiceDefaults.csproj" />
+  </ItemGroup>
 </Project>
+
+
+

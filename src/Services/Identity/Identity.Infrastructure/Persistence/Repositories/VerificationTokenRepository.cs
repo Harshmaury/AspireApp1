@@ -1,15 +1,14 @@
-﻿// src/Services/Identity/Identity.Infrastructure/Persistence/Repositories/VerificationTokenRepository.cs
-using Identity.Application.Interfaces;
+﻿using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using UMS.SharedKernel.Tenancy;
 
 namespace Identity.Infrastructure.Persistence.Repositories;
 
 internal sealed class VerificationTokenRepository : IVerificationTokenRepository
 {
     private readonly ApplicationDbContext _db;
-
-    public VerificationTokenRepository(ApplicationDbContext db) => _db = db;
+    public VerificationTokenRepository(ApplicationDbContext db, ITenantContext? tenant = null) => _db = db;
 
     public async Task CreateAsync(VerificationToken token, CancellationToken ct = default)
     {
@@ -17,33 +16,24 @@ internal sealed class VerificationTokenRepository : IVerificationTokenRepository
         await _db.SaveChangesAsync(ct);
     }
 
-    public async Task<VerificationToken?> FindByHashAsync(
-        string tokenHash,
-        TokenPurpose purpose,
-        CancellationToken ct = default)
-        => await _db.VerificationTokens
-            .FirstOrDefaultAsync(
-                t => t.TokenHash == tokenHash
-                  && t.Purpose   == purpose
-                  && t.UsedAt    == null
-                  && t.ExpiresAt > DateTime.UtcNow,
-                ct);
+    public async Task<VerificationToken?> FindByHashAsync(string tokenHash, TokenPurpose purpose, CancellationToken ct = default)
+        => await _db.VerificationTokens.FirstOrDefaultAsync(
+            t => t.TokenHash == tokenHash && t.Purpose == purpose &&
+                 t.UsedAt == null && t.ExpiresAt > DateTime.UtcNow, ct);
 
     public async Task UpdateAsync(VerificationToken token, CancellationToken ct = default)
     {
-        _db.VerificationTokens.Update(token);
+        if (_db.Entry(token).State == EntityState.Detached)
+            throw new InvalidOperationException(
+                $"UpdateAsync received a detached VerificationToken (Id={token.Id}). " +
+                "Fetch the token via FindByHashAsync in the same handler scope before mutating it.");
         await _db.SaveChangesAsync(ct);
     }
 
-    public async Task InvalidateAllForUserAsync(
-        Guid userId,
-        TokenPurpose purpose,
-        CancellationToken ct = default)
+    public async Task InvalidateAllForUserAsync(Guid userId, TokenPurpose purpose, CancellationToken ct = default)
     {
         var tokens = await _db.VerificationTokens
-            .Where(t => t.UserId  == userId
-                     && t.Purpose == purpose
-                     && t.UsedAt  == null)
+            .Where(t => t.UserId == userId && t.Purpose == purpose && t.UsedAt == null)
             .ToListAsync(ct);
 
         foreach (var token in tokens)

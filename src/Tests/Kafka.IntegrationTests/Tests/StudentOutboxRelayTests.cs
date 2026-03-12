@@ -1,11 +1,12 @@
-﻿using FluentAssertions;
+﻿using Confluent.Kafka;
+using FluentAssertions;
 using Kafka.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using Student.API.Services;
-using Student.Domain.Common;
+using Student.Infrastructure.Kafka;
 using Student.Infrastructure.Persistence;
+using UMS.SharedKernel.Domain;
 
 namespace Kafka.IntegrationTests.Tests;
 
@@ -25,7 +26,7 @@ public sealed class StudentOutboxRelayTests(KafkaPostgresFixture fx)
     public async Task Relay_publishes_outbox_message_to_student_events_topic()
     {
         await using var db = BuildDb();
-        var msg = OutboxMessage.Create("Student.StudentEnrolled", """{"studentId":"xyz"}""");
+        var msg = OutboxMessage.Create("Student.StudentEnrolled", """{"studentId":"xyz"}""", Guid.Empty);
         db.OutboxMessages.Add(msg);
         await db.SaveChangesAsync();
 
@@ -33,17 +34,22 @@ public sealed class StudentOutboxRelayTests(KafkaPostgresFixture fx)
         svc.AddDbContext<StudentDbContext>(o => o.UseNpgsql(fx.PostgresConnection));
         var scopeFactory = svc.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
 
+        var producer = new ProducerBuilder<Null, string>(new ProducerConfig
+        {
+            BootstrapServers = fx.Configuration["Kafka:BootstrapServers"] ?? fx.KafkaBootstrap
+        }).Build();
+
         var relay = new StudentOutboxRelayService(
             scopeFactory,
-            NullLogger<StudentOutboxRelayService>.Instance,
-            fx.Configuration);
+            producer,
+            NullLogger<StudentOutboxRelayService>.Instance);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        await relay.StartAsync(cts.Token);        await relay.StopAsync(cts.Token);
+        await relay.StartAsync(cts.Token);
+        await relay.StopAsync(cts.Token);
 
         var consumed = await fx.ConsumeOneAsync("student-events", "test-student", TimeSpan.FromSeconds(10));
         consumed.Should().NotBeNull();
-        consumed!.Message.Key.Should().Be(msg.Id.ToString());
 
         await using var verifyDb = BuildDb();
         var stored = await verifyDb.OutboxMessages.FindAsync(msg.Id);

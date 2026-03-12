@@ -1,4 +1,4 @@
-﻿using Fee.Domain.Common;
+﻿using Fee.Infrastructure.Outbox;
 using Fee.Infrastructure.Kafka;
 using Fee.Infrastructure.Persistence;
 using FluentAssertions;

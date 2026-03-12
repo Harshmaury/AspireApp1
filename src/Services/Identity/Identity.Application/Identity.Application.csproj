@@ -1,20 +1,30 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="MediatR" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <!--
+      Application only needs IdentityResult (interface return type on IUserRepository).
+      That type lives in Microsoft.AspNetCore.Identity (core).
+      Microsoft.AspNetCore.Identity.EntityFrameworkCore belongs in Infrastructure only.
+    -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Identity.Domain\Identity.Domain.csproj" />
     <ProjectReference Include="..\..\..\..\src\Shared\UMS.SharedKernel\UMS.SharedKernel.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Identity.Tests" />
   </ItemGroup>
+
 </Project>

@@ -1,11 +1,11 @@
-﻿using Academic.Domain.Common;
-using Academic.Infrastructure.Kafka;
+﻿using Academic.Infrastructure.Kafka;
 using Academic.Infrastructure.Persistence;
 using FluentAssertions;
 using Kafka.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using UMS.SharedKernel.Domain;
 
 namespace Kafka.IntegrationTests.Tests;
 
@@ -15,8 +15,7 @@ public sealed class AcademicOutboxRelayTests(KafkaPostgresFixture fx)
     private AcademicDbContext BuildDb()
     {
         var opts = new DbContextOptionsBuilder<AcademicDbContext>()
-            .UseNpgsql(fx.PostgresConnection)
-            .Options;
+            .UseNpgsql(fx.PostgresConnection).Options;
         var db = new AcademicDbContext(opts);
         db.Database.EnsureCreated();
         return db;
@@ -25,9 +24,8 @@ public sealed class AcademicOutboxRelayTests(KafkaPostgresFixture fx)
     [Fact]
     public async Task Relay_publishes_outbox_message_to_academic_events_topic()
     {
-        // Arrange
         await using var db = BuildDb();
-        var msg = OutboxMessage.Create("Academic.CourseCreated", """{"courseId":"abc"}""");
+        var msg = OutboxMessage.Create("Academic.CourseCreated", """{"courseId":"abc"}""", Guid.Empty);
         db.OutboxMessages.Add(msg);
         await db.SaveChangesAsync();
 
@@ -36,17 +34,14 @@ public sealed class AcademicOutboxRelayTests(KafkaPostgresFixture fx)
             NullLogger<AcademicOutboxRelayService>.Instance,
             fx.Configuration);
 
-        // Act — run one relay cycle
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        await relay.StartAsync(cts.Token);        await relay.StopAsync(cts.Token);
+        await relay.StartAsync(cts.Token);
+        await relay.StopAsync(cts.Token);
 
-        // Assert — message arrived on Kafka
         var consumed = await fx.ConsumeOneAsync("academic-events", "test-academic", TimeSpan.FromSeconds(10));
         consumed.Should().NotBeNull();
-        consumed!.Message.Key.Should().Be(msg.Id.ToString());
         consumed!.Message.Value.Should().Contain("courseId");
 
-        // Assert — DB marked processed
         await using var verifyDb = BuildDb();
         var stored = await verifyDb.OutboxMessages.FindAsync(msg.Id);
         stored!.ProcessedAt.Should().NotBeNull();

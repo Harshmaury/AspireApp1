@@ -14,5 +14,9 @@ public sealed class OutboxMessage
     public DateTimeOffset  CreatedAt   { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? ProcessedAt { get; set; }
     public int             RetryCount  { get; set; }
+    public string?         DeadLetteredAt { get; set; }
+
+    public static OutboxMessage Create(string eventType, string payload, Guid tenantId = default) =>
+        new() { EventType = eventType, Payload = payload, TenantId = tenantId.ToString() };
     public string?         Error       { get; set; }
 }

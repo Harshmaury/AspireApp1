@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Notification.Domain.Entities;
+using UMS.SharedKernel.Domain;
 using UMS.SharedKernel.Tenancy;
 
 namespace Notification.Infrastructure.Persistence;
@@ -19,6 +20,7 @@ public sealed class NotificationDbContext : DbContext
     public DbSet<NotificationTemplate>   NotificationTemplates   => Set<NotificationTemplate>();
     public DbSet<NotificationLog>        NotificationLogs        => Set<NotificationLog>();
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
+    public DbSet<OutboxMessage>          OutboxMessages          => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

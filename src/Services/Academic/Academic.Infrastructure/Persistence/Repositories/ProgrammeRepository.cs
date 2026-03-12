@@ -1,13 +1,14 @@
 ﻿using Academic.Application.Interfaces;
 using Academic.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using UMS.SharedKernel.Tenancy;
 
 namespace Academic.Infrastructure.Persistence.Repositories;
 
 internal sealed class ProgrammeRepository : IProgrammeRepository
 {
     private readonly AcademicDbContext _db;
-    public ProgrammeRepository(AcademicDbContext db) => _db = db;
+    public ProgrammeRepository(AcademicDbContext db, ITenantContext? tenant = null) => _db = db;
 
     public async Task<Programme?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken ct = default)
         => await _db.Programmes.FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId, ct);
@@ -26,14 +27,11 @@ internal sealed class ProgrammeRepository : IProgrammeRepository
 
     public async Task UpdateAsync(Programme programme, CancellationToken ct = default)
     {
-        // FIX A2: Never call _db.Update(entity). If entity is detached, domain events
-        // are lost. Guard here so the bug surfaces immediately at the call site.
-        // Pattern copied from Faculty.Infrastructure (gold standard for this codebase).
         if (_db.Entry(programme).State == EntityState.Detached)
             throw new InvalidOperationException(
                 $"UpdateAsync received a detached Programme (Id={programme.Id}). " +
                 "Fetch the entity via the repository in the same handler scope before mutating it.");
-
         await _db.SaveChangesAsync(ct);
     }
 }
+
