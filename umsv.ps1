@@ -1,6 +1,6 @@
 function umsv {
-    $repo   = "C:\Users\harsh\source\repos\AspireApp1"
-    $drop   = "C:\Users\harsh\Downloads\ums-drop"
+    $repo  = "C:\Users\harsh\source\repos\AspireApp1"
+    $drop  = "C:\Users\harsh\Downloads\ums-drop"
 
     Push-Location $repo
 
@@ -16,14 +16,29 @@ function umsv {
     $logFile    = "$repo\UMS-LOG.md"
     $nextAction = "see UMS-LOG.md"
     $p0 = 0; $p1 = 0; $p2 = 0
+    $activeKey  = "none"
 
     if (Test-Path $logFile) {
-        $lines = Get-Content $logFile
-        $p0 = @($lines | Where-Object { $_ -match "UMS-" -and $_ -match "OPEN" -and $_ -match "P0" }).Count
-        $p1 = @($lines | Where-Object { $_ -match "UMS-" -and $_ -match "OPEN" -and $_ -match "P1" }).Count
-        $p2 = @($lines | Where-Object { $_ -match "UMS-" -and $_ -match "OPEN" -and $_ -match "P2" }).Count
+        $lines = Get-Content $logFile -Encoding UTF8
+
+        # Count open keys by scanning the backlog tables
+        # Matches lines like: | `UMS-XXX-P0-001` | Title | 🔴 OPEN |
+        $p0 = @($lines | Where-Object { $_ -match "UMS-[A-Z]+-P0-" -and $_ -match "OPEN" }).Count
+        $p1 = @($lines | Where-Object { $_ -match "UMS-[A-Z]+-P1-" -and $_ -match "OPEN" }).Count
+        $p2 = @($lines | Where-Object { $_ -match "UMS-[A-Z]+-P2-" -and $_ -match "OPEN" }).Count
+
+        # Active key — IN PROGRESS section
+        $inProgLine = $lines | Where-Object { $_ -match "UMS-[A-Z]+-P[0-9]+-" -and $_ -match "PROGRESS" } | Select-Object -First 1
+        if ($inProgLine -match "(UMS-[A-Z]+-P[0-9]+-[0-9]+(-[A-Z]+)?)") {
+            $activeKey = $Matches[1]
+        }
+
+        # Next action
         $nextIdx = ($lines | Select-String "## NEXT ACTION" | Select-Object -First 1).LineNumber
-        if ($nextIdx) { $nextAction = $lines[$nextIdx].TrimStart("0123456789. ") }
+        if ($nextIdx -and $nextIdx -lt $lines.Count) {
+            $nextLine = $lines[$nextIdx].TrimStart("0123456789. ").Trim()
+            if ($nextLine -ne "") { $nextAction = $nextLine }
+        }
     }
 
     Write-Host ""
@@ -36,14 +51,16 @@ function umsv {
     Write-Host ""
     Write-Host "-- GIT ------------------------------------------------" -ForegroundColor DarkGray
     Write-Host ("  branch       " + $branch) -ForegroundColor Green
-    Write-Host ("  last         " + $sha + "  " + $lastMsg)
+    Write-Host ("  sha          " + $sha)
+    Write-Host ("  last         " + $lastMsg)
     if ($dirty -eq "clean") {
         Write-Host "  status       clean" -ForegroundColor Green
     } else {
-        Write-Host "  status       dirty" -ForegroundColor Red
+        Write-Host "  status       dirty -- run: git add -A && git commit" -ForegroundColor Red
     }
     Write-Host ""
     Write-Host "-- KEYS -----------------------------------------------" -ForegroundColor DarkGray
+    Write-Host ("  active       " + $activeKey) -ForegroundColor $(if ($activeKey -ne "none") {"Yellow"} else {"DarkGray"})
     if ($p0 -gt 0) { Write-Host ("  open P0      " + $p0) -ForegroundColor Red }
     else           { Write-Host "  open P0      0" -ForegroundColor Green }
     Write-Host ("  open P1      " + $p1) -ForegroundColor Yellow
@@ -52,11 +69,11 @@ function umsv {
     Write-Host "-- ENV ------------------------------------------------" -ForegroundColor DarkGray
     Write-Host ("  dotnet       " + $dotnet)
     if ($dropOk) { Write-Host "  drop zone    ready" -ForegroundColor Green }
-    else         { Write-Host "  drop zone    MISSING" -ForegroundColor Red }
+    else         { Write-Host "  drop zone    MISSING -- create: $drop" -ForegroundColor Red }
     Write-Host ("  repo         " + $repo)
     Write-Host ""
     Write-Host "-- NEXT -----------------------------------------------" -ForegroundColor DarkGray
-    Write-Host ("  " + $nextAction)
+    Write-Host ("  " + $nextAction) -ForegroundColor White
     Write-Host ""
 
     Pop-Location
