@@ -1,4 +1,4 @@
-﻿using UMS.SharedKernel.Domain;
+using Academic.Domain.Common;
 using Academic.Domain.Enums;
 using Academic.Domain.Events;
 using Academic.Domain.Exceptions;
