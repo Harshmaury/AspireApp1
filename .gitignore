@@ -387,3 +387,8 @@ obj/
 *.bak2
 *.bak3
 *.orig
+
+ums-secrets.env.local
+**/binDebug/
+_backups/
+ums-drop/
