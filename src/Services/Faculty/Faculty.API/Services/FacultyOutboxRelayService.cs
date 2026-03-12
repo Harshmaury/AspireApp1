@@ -1,6 +1,13 @@
+// UMS - University Management System
+// Key:     UMS-SHARED-P0-003-RESIDUAL
+// Layer:   Infrastructure
 using Confluent.Kafka;
 using Faculty.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using UMS.SharedKernel.Kafka;
 
 namespace Faculty.API.Services;
@@ -55,13 +62,14 @@ public sealed class FacultyOutboxRelayService : BackgroundService
                 await producer.ProduceAsync(
                     KafkaTopics.FacultyEvents,
                     new Message<string, string> { Key = message.Id.ToString(), Value = message.Payload }, ct);
-                message.MarkProcessed();
-                _logger.LogInformation("Published faculty outbox message {Id} of type {Type}", message.Id, message.EventType);
+                message.ProcessedAt = DateTimeOffset.UtcNow;
+                _logger.LogInformation("Published Faculty outbox relay message {Id} of type {Type}", message.Id, message.EventType);
             }
             catch (Exception ex)
             {
-                message.MarkFailed(ex.Message);
-                _logger.LogWarning(ex, "Failed to publish faculty outbox message {Id}", message.Id);
+                message.RetryCount++;
+                message.Error = ex.Message;
+                _logger.LogWarning(ex, "Failed to publish Faculty outbox relay message {Id}", message.Id);
             }
         }
 

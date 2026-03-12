@@ -1,4 +1,4 @@
-﻿using Student.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 
 namespace Student.Domain.Events;
 

@@ -5,13 +5,13 @@
 //       DDD, CQRS, and state machines better than the exam syllabus.
 //       If this code works, it works. If it does not, blame the attendance policy.
 // =============================================================================
-using Student.Domain.Common;
+using UMS.SharedKernel.Domain;
 using Student.Domain.Enums;
 using Student.Domain.Events;
 
 namespace Student.Domain.Entities;
 
-public sealed class StudentAggregate : BaseEntity, IAggregateRoot
+public sealed class StudentAggregate : AggregateRoot
 {
     public Guid          TenantId          { get; private set; }
     public Guid          UserId            { get; private set; }

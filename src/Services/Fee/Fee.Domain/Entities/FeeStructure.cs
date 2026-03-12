@@ -1,4 +1,4 @@
-using Fee.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Fee.Domain.Exceptions;
 namespace Fee.Domain.Entities;
 public sealed class FeeStructure : AggregateRoot

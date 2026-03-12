@@ -1,4 +1,4 @@
-using Hostel.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace Hostel.Infrastructure.Persistence.Configurations;

@@ -2,8 +2,10 @@
 // Key:     UMS-SHARED-P0-002
 // Service: SharedKernel
 // Layer:   Domain
-using MediatR;
-
 namespace UMS.SharedKernel.Domain;
 
-public interface IDomainEvent : INotification { }
+public interface IAggregateRoot
+{
+    IReadOnlyList<IDomainEvent> DomainEvents { get; }
+    void ClearDomainEvents();
+}

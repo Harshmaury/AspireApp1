@@ -1,6 +1,6 @@
 ﻿// src/Services/Identity/Identity.Tests/Domain/TenantTests.cs
 using FluentAssertions;
-using Identity.Domain.Common;
+using UMS.SharedKernel.Domain;
 using Identity.Domain.Entities;
 using Identity.Domain.Events;
 using Xunit;

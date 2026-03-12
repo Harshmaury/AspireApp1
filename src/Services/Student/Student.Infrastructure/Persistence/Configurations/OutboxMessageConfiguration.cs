@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Student.Domain.Common;
+using UMS.SharedKernel.Domain;
 
 namespace Student.Infrastructure.Persistence.Configurations;
 

@@ -1,4 +1,4 @@
-namespace Ums.Cli.Commands;
+﻿namespace Ums.Cli.Commands;
 
 using System.CommandLine;
 using Aegis.Core.Building;
@@ -29,7 +29,7 @@ public static class GovernCommands
         return govern;
     }
 
-    // ── verify ────────────────────────────────────────────────────────────
+    // â”€â”€ verify â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static Command BuildVerify()
     {
@@ -145,7 +145,7 @@ public static class GovernCommands
         return cmd;
     }
 
-    // ── snapshot ──────────────────────────────────────────────────────────
+    // â”€â”€ snapshot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static Command BuildSnapshot()
     {
@@ -252,7 +252,7 @@ public static class GovernCommands
         return cmd;
     }
 
-    // ── report ────────────────────────────────────────────────────────────
+    // â”€â”€ report â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static Command BuildReport()
     {
@@ -282,8 +282,9 @@ public static class GovernCommands
             });
 
             var report = builder
-            .AddRule(new LayerMatrixRule(LayerMatrix.CleanArchitecture())).Build().Evaluate(model);
-            .AddRule(new EventSchemaCompatibilityRule(Path.Combine(proj, "src", ".ums", "event-schemas")))
+                .AddRule(new LayerMatrixRule(LayerMatrix.CleanArchitecture()))
+    .AddRule(new EventSchemaCompatibilityRule(Path.Combine(proj, "src", ".ums", "event-schemas")))
+    .Build().Evaluate(model);
             report = VerifyDependenciesAdapter.ApplyExceptions(report, cfg);
             var text = RendererFactory.Create(fmt).Render(report);
             var dest = out_ ?? $"governance-report-{DateTime.Now:yyyyMMdd-HHmmss}.{fmt}";
@@ -294,7 +295,7 @@ public static class GovernCommands
         return cmd;
     }
 
-    // ── helpers ───────────────────────────────────────────────────────────
+    // â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static Option<string> ProjectOption() =>
         new("--project", () => DefaultProject, "Path to .sln, .csproj, or root directory");

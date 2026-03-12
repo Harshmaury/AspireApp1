@@ -1,4 +1,4 @@
-using Hostel.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Hostel.Domain.Enums;
 using Hostel.Domain.Exceptions;
 namespace Hostel.Domain.Entities;

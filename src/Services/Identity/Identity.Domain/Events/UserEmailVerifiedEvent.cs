@@ -1,5 +1,5 @@
 ﻿// src/Services/Identity/Identity.Domain/Events/UserEmailVerifiedEvent.cs
-using Identity.Domain.Common;
+using UMS.SharedKernel.Domain;
 
 namespace Identity.Domain.Events;
 

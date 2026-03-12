@@ -22,7 +22,7 @@ namespace Student.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Student.Domain.Common.OutboxMessage", b =>
+            modelBuilder.Entity("UMS.SharedKernel.Domain.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()

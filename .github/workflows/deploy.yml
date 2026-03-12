@@ -62,7 +62,8 @@ jobs:
       - name: Install yq
         run: |
           wget -qO /usr/local/bin/yq \
-            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+            https://github.com/mikefarah/yq/releases/download/v4.44.1/yq_linux_amd64
+          echo "e3cc78b66c1c75f1ef7ba6a8b3dac40f  /usr/local/bin/yq" | md5sum -c -
           chmod +x /usr/local/bin/yq
 
       - name: Update image tags in K8s manifests

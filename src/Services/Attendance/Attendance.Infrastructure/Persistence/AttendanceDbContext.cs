@@ -1,4 +1,4 @@
-﻿using Attendance.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Attendance.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using UMS.SharedKernel.Tenancy;

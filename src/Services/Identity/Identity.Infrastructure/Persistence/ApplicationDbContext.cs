@@ -1,5 +1,5 @@
 ﻿// src/Services/Identity/Identity.Infrastructure/Persistence/ApplicationDbContext.cs
-using Identity.Domain.Common;
+using UMS.SharedKernel.Domain;
 using Identity.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -33,12 +33,9 @@ public sealed class ApplicationDbContext
 
         // AGS-007: Scope all user queries to the current tenant.
         // Nullable check allows design-time tooling (migrations) and seeder to work.
-        if (_tenantContext?.IsResolved == true)
-        {
-            var tid = _tenantContext.TenantId;
-            modelBuilder.Entity<ApplicationUser>()
-                .HasQueryFilter(u => u.TenantId == tid);
-        }
+        // AGS-007: field reference re-evaluated per query (not cached local variable)
+        modelBuilder.Entity<ApplicationUser>().HasQueryFilter(
+            u => _tenantContext == null || !_tenantContext.IsResolved || u.TenantId == _tenantContext.TenantId);
     }
 }
 

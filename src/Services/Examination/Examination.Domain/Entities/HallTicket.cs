@@ -1,4 +1,4 @@
-using Examination.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Examination.Domain.Exceptions;
 namespace Examination.Domain.Entities;
 public sealed class HallTicket : AggregateRoot

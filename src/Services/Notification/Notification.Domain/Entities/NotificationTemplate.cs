@@ -1,4 +1,4 @@
-using Notification.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Notification.Domain.Enums;
 using Notification.Domain.Exceptions;
 namespace Notification.Domain.Entities;

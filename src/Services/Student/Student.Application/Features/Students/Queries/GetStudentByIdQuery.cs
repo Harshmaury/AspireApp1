@@ -1,3 +1,7 @@
+// UMS - University Management System
+// Key:     UMS-SHARED-P0-003-RESIDUAL
+// Service: Student
+// Layer:   Application
 using MediatR;
 using Student.Application.Interfaces;
 
@@ -26,7 +30,7 @@ public sealed class GetStudentByIdQueryHandler
             s.Id, s.TenantId, s.UserId,
             s.FirstName, s.LastName, s.Email,
             s.StudentNumber, s.Status.ToString(),
-            s.CreatedAt, s.UpdatedAt,
+            s.CreatedAt.UtcDateTime, s.UpdatedAt.UtcDateTime,
             s.AdmittedAt, s.EnrolledAt,
             s.GraduatedAt, s.SuspensionReason);
     }

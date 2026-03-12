@@ -1,4 +1,4 @@
-using Notification.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Notification.Domain.Exceptions;
 namespace Notification.Domain.Entities;
 public sealed class NotificationPreference : AggregateRoot

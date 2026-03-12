@@ -1,3 +1,6 @@
+// UMS - University Management System
+// Key:     UMS-SHARED-P0-003-RESIDUAL
+// Layer:   Infrastructure
 using Confluent.Kafka;
 using Fee.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -59,13 +62,14 @@ public sealed class FeeOutboxRelayService : BackgroundService
                 await producer.ProduceAsync(
                     KafkaTopics.FeeEvents,
                     new Message<string, string> { Key = message.Id.ToString(), Value = message.Payload }, ct);
-                message.MarkProcessed();
-                _logger.LogInformation("Published fee outbox message {Id} of type {Type}", message.Id, message.EventType);
+                message.ProcessedAt = DateTimeOffset.UtcNow;
+                _logger.LogInformation("Published Fee outbox relay message {Id} of type {Type}", message.Id, message.EventType);
             }
             catch (Exception ex)
             {
-                message.MarkFailed(ex.Message);
-                _logger.LogWarning(ex, "Failed to publish fee outbox message {Id}", message.Id);
+                message.RetryCount++;
+                message.Error = ex.Message;
+                _logger.LogWarning(ex, "Failed to publish Fee outbox relay message {Id}", message.Id);
             }
         }
 

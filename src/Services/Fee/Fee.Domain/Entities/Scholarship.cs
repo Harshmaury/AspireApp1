@@ -1,4 +1,4 @@
-using Fee.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Fee.Domain.Events;
 using Fee.Domain.Exceptions;
 namespace Fee.Domain.Entities;

@@ -1,5 +1,5 @@
 ﻿// src/Services/Identity/Identity.Domain/Events/TenantUpgradedEvent.cs
-using Identity.Domain.Common;
+using UMS.SharedKernel.Domain;
 using Identity.Domain.Entities;
 
 namespace Identity.Domain.Events;

@@ -1,4 +1,4 @@
-using Attendance.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Attendance.Domain.Events;
 using Attendance.Domain.Exceptions;
 namespace Attendance.Domain.Entities;

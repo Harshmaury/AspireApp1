@@ -1,4 +1,4 @@
-using Academic.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace Academic.Infrastructure.Persistence.Configurations;

@@ -25,7 +25,7 @@ namespace Identity.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Identity.Domain.Common.OutboxMessage", b =>
+            modelBuilder.Entity("UMS.SharedKernel.Domain.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()

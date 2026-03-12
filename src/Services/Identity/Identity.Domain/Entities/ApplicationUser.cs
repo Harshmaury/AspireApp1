@@ -1,4 +1,8 @@
-﻿using Identity.Domain.Common;
+// UMS - University Management System
+// Key:     UMS-SHARED-P0-003-RESIDUAL
+// Service: Identity
+// Layer:   Domain
+using UMS.SharedKernel.Domain;
 using Identity.Domain.Events;
 using Microsoft.AspNetCore.Identity;
 
@@ -13,14 +17,16 @@ public sealed class ApplicationUser : IdentityUser<Guid>, IAggregateRoot
     public DateTime CreatedAt { get; private set; }
     public DateTime? LastLoginAt { get; private set; }
 
-    // Optimistic concurrency token â€” managed by EF, never set manually
+    // Optimistic concurrency token - managed by EF, never set manually
     public byte[]? RowVersion { get; private set; }
 
     public Tenant? Tenant { get; private set; }
 
-    private readonly List<DomainEvent> _domainEvents = [];
-    public IReadOnlyCollection<DomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+    // IAggregateRoot - cannot extend AggregateRoot (IdentityUser<Guid> is the base)
+    private readonly List<IDomainEvent> _domainEvents = [];
+    public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
     public void ClearDomainEvents() => _domainEvents.Clear();
+    private void RaiseDomainEvent(IDomainEvent e) => _domainEvents.Add(e);
 
     private ApplicationUser() { }
 
@@ -46,7 +52,7 @@ public sealed class ApplicationUser : IdentityUser<Guid>, IAggregateRoot
             SecurityStamp = Guid.NewGuid().ToString()
         };
 
-        user._domainEvents.Add(new UserRegisteredEvent(user.Id, tenantId, email));
+        user.RaiseDomainEvent(new UserRegisteredEvent(user.Id, tenantId, email));
         return user;
     }
 
@@ -54,8 +60,7 @@ public sealed class ApplicationUser : IdentityUser<Guid>, IAggregateRoot
     public void Deactivate()
     {
         IsActive = false;
-        _domainEvents.Add(new UserDeactivatedEvent(Id, TenantId, Email!));
+        RaiseDomainEvent(new UserDeactivatedEvent(Id, TenantId, Email!));
     }
     public string FullName => $"{FirstName} {LastName}";
 }
-

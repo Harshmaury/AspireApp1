@@ -1,4 +1,4 @@
-﻿using Faculty.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Faculty.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using UMS.SharedKernel.Tenancy;

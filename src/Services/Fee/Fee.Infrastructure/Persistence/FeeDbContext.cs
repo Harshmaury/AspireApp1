@@ -1,4 +1,4 @@
-﻿using Fee.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Fee.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using UMS.SharedKernel.Tenancy;

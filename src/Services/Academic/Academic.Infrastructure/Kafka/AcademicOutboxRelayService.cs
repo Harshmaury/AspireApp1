@@ -1,3 +1,7 @@
+// UMS - University Management System
+// Key:     UMS-SHARED-P0-003-RESIDUAL
+// Service: Academic
+// Layer:   Infrastructure
 using Academic.Infrastructure.Persistence;
 using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
@@ -59,12 +63,13 @@ public sealed class AcademicOutboxRelayService : BackgroundService
                 await producer.ProduceAsync(
                     KafkaTopics.AcademicEvents,
                     new Message<string, string> { Key = message.Id.ToString(), Value = message.Payload }, ct);
-                message.MarkProcessed();
+                message.ProcessedAt = DateTimeOffset.UtcNow;
                 _logger.LogInformation("Published academic outbox message {Id} of type {Type}", message.Id, message.EventType);
             }
             catch (Exception ex)
             {
-                message.MarkFailed(ex.Message);
+                message.RetryCount++;
+                message.Error = ex.Message;
                 _logger.LogWarning(ex, "Failed to publish academic outbox message {Id}", message.Id);
             }
         }

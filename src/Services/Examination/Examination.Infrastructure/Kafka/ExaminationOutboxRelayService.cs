@@ -1,3 +1,6 @@
+// UMS - University Management System
+// Key:     UMS-SHARED-P0-003-RESIDUAL
+// Layer:   Infrastructure
 using Confluent.Kafka;
 using Examination.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -59,13 +62,14 @@ public sealed class ExaminationOutboxRelayService : BackgroundService
                 await producer.ProduceAsync(
                     KafkaTopics.ExaminationEvents,
                     new Message<string, string> { Key = message.Id.ToString(), Value = message.Payload }, ct);
-                message.MarkProcessed();
-                _logger.LogInformation("Published examination outbox message {Id} of type {Type}", message.Id, message.EventType);
+                message.ProcessedAt = DateTimeOffset.UtcNow;
+                _logger.LogInformation("Published Examination outbox relay message {Id} of type {Type}", message.Id, message.EventType);
             }
             catch (Exception ex)
             {
-                message.MarkFailed(ex.Message);
-                _logger.LogWarning(ex, "Failed to publish examination outbox message {Id}", message.Id);
+                message.RetryCount++;
+                message.Error = ex.Message;
+                _logger.LogWarning(ex, "Failed to publish Examination outbox relay message {Id}", message.Id);
             }
         }
 

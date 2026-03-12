@@ -1,4 +1,4 @@
-﻿using Hostel.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Hostel.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using UMS.SharedKernel.Tenancy;

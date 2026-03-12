@@ -1,4 +1,4 @@
-using Academic.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Academic.Domain.Exceptions;
 namespace Academic.Domain.Entities;
 public sealed class AcademicCalendar : AggregateRoot

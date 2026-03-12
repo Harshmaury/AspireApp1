@@ -1,4 +1,4 @@
-using Identity.Domain.Common;
+﻿using UMS.SharedKernel.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

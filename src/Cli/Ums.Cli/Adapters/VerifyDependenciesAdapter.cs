@@ -1,4 +1,4 @@
-namespace Ums.Cli.Adapters;
+﻿namespace Ums.Cli.Adapters;
 
 using Aegis.Core.Building;
 using Aegis.Core.Config;
@@ -32,7 +32,7 @@ public static class VerifyDependenciesAdapter
 
             var builder = new RuleEngineBuilder()
                 .AddRule<CircularDependencyRule>()
-                .AddRule<CrossServiceDirectReferenceRule>()
+                .AddRule<CrossServiceDirectReferenceRule>();
 
             aegisConfig.Apply(builder);
             foreach (var id in dis.SelectMany(d => d.Split(',', StringSplitOptions.RemoveEmptyEntries)))
@@ -40,8 +40,9 @@ public static class VerifyDependenciesAdapter
 
             var model  = await new ArchitectureModelBuilder().BuildAsync(proj);
             var report = builder
-            .AddRule(new LayerMatrixRule(LayerMatrix.CleanArchitecture())).Build().Evaluate(model);
-            .AddRule(new EventSchemaCompatibilityRule(Path.Combine(proj, "src", ".ums", "event-schemas")))
+                .AddRule(new LayerMatrixRule(LayerMatrix.CleanArchitecture()))
+    .AddRule(new EventSchemaCompatibilityRule(Path.Combine(proj, "src", ".ums", "event-schemas")))
+    .Build().Evaluate(model);
             report     = ApplyExceptions(report, aegisConfig);
 
             var text = RendererFactory.Create(fmt).Render(report);

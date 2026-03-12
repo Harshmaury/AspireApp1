@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Student.Domain.Common;
+using UMS.SharedKernel.Domain;
 using Student.Domain.Entities;
 using UMS.SharedKernel.Tenancy;
 
