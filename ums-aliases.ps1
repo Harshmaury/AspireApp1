@@ -76,3 +76,12 @@ function ut-all {
 }
 
 function ut_identity_int { dotnet test 'src/Tests/Identity.IntegrationTests/Identity.IntegrationTests.csproj' -v normal 2>&1 | ue }
+# UMS-LOG updater — run after every done <KEY>
+# Usage: ums-log "UMS-SHARED-P0-003" "Consolidated Domain primitives across all 9 services"
+function ums-log($key, $summary) {
+    $date = Get-Date -Format "yyyy-MM-dd"
+    git add UMS-LOG.md
+    git commit -m "log: $key done — $summary"
+    git push origin main
+    Write-Host "? Log updated ? $key"
+}
