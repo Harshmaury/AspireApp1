@@ -1,20 +1,37 @@
-﻿// UMS.SharedKernel/Infrastructure/OutboxRelayServiceBase.cs
-// Property names matched from actual OutboxMessage in this solution.
-using System;
-using System.Linq;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
+// UMS — University Management System
+// Key: UMS-SHARED-P0-002 (bug fix — TenantId was string.Empty)
+// Layer: Shared / Infrastructure
+// ─────────────────────────────────────────────────────────────
+// BUG FIXED: TenantId was hardcoded to string.Empty in KafkaEventEnvelope.
+// Now reads from OutboxMessage.TenantId correctly.
+// ─────────────────────────────────────────────────────────────
 using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 using UMS.SharedKernel.Domain;
 using UMS.SharedKernel.Kafka;
 
 namespace UMS.SharedKernel.Infrastructure;
 
+/// <summary>
+/// Abstract base for all outbox relay background services in UMS.
+/// Polls the outbox table, publishes pending messages to Kafka,
+/// then marks them as processed — all in a resilient polling loop.
+/// <para>
+/// Inherit in each service's Infrastructure layer:
+/// <code>
+///   public sealed class StudentOutboxRelayService
+///       : OutboxRelayServiceBase&lt;StudentDbContext&gt;
+///   {
+///       public StudentOutboxRelayService(...) : base(...) { }
+///       protected override string TopicName => KafkaTopics.StudentEvents;
+///   }
+/// </code>
+/// </para>
+/// </summary>
 public abstract class OutboxRelayServiceBase<TDbContext> : BackgroundService
     where TDbContext : DbContext
 {
@@ -22,6 +39,7 @@ public abstract class OutboxRelayServiceBase<TDbContext> : BackgroundService
     private readonly IProducer<Null, string> _producer;
     private readonly ILogger                 _logger;
     private readonly TimeSpan                _pollingInterval;
+    private const    int                     BatchSize = 50;
 
     protected OutboxRelayServiceBase(
         IServiceScopeFactory    scopeFactory,
@@ -35,18 +53,31 @@ public abstract class OutboxRelayServiceBase<TDbContext> : BackgroundService
         _pollingInterval = pollingInterval ?? TimeSpan.FromSeconds(5);
     }
 
+    /// <summary>
+    /// Kafka topic to publish to — use <see cref="KafkaTopics"/> constants.
+    /// </summary>
     protected abstract string TopicName { get; }
 
+    /// <inheritdoc/>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("[OutboxRelay:{Topic}] Started", TopicName);
+        _logger.LogInformation("[OutboxRelay:{Topic}] Started. Polling every {Interval}s",
+            TopicName, _pollingInterval.TotalSeconds);
+
         while (!stoppingToken.IsCancellationRequested)
         {
-            try   { await ProcessBatchAsync(stoppingToken); }
+            try
+            {
+                await ProcessBatchAsync(stoppingToken);
+            }
             catch (Exception ex) when (ex is not OperationCanceledException)
-            { _logger.LogError(ex, "[OutboxRelay:{Topic}] Relay cycle error", TopicName); }
+            {
+                _logger.LogError(ex, "[OutboxRelay:{Topic}] Relay cycle error", TopicName);
+            }
+
             await Task.Delay(_pollingInterval, stoppingToken);
         }
+
         _logger.LogInformation("[OutboxRelay:{Topic}] Stopped", TopicName);
     }
 
@@ -58,32 +89,41 @@ public abstract class OutboxRelayServiceBase<TDbContext> : BackgroundService
         var pending = await db.Set<OutboxMessage>()
             .Where(m => m.ProcessedAt == null)
             .OrderBy(m => m.OccurredAt)
-            .Take(50)
+            .Take(BatchSize)
             .ToListAsync(ct);
 
         if (pending.Count == 0) return;
 
-        _logger.LogDebug("[OutboxRelay:{Topic}] Relaying {Count} messages", TopicName, pending.Count);
+        _logger.LogDebug("[OutboxRelay:{Topic}] Relaying {Count} messages",
+            TopicName, pending.Count);
 
         foreach (var msg in pending)
         {
-            var envelope = new KafkaEventEnvelope
-            {
-                EventId    = msg.Id,
-                EventType  = msg.EventType,
-                OccurredAt = msg.OccurredAt.UtcDateTime,
-                TenantId   = string.Empty,
-                Payload    = msg.Payload
-            };
+            // ── FIX: read TenantId from the outbox message, not string.Empty ──
+            var tenantId = msg.TenantId.HasValue
+                ? msg.TenantId.Value
+                : Guid.Empty;
+
+            var envelope = KafkaEventEnvelope.Create(
+                eventType:    msg.EventType,
+                tenantId:     tenantId,
+                regionOrigin: msg.RegionOrigin ?? string.Empty,
+                payload:      msg.Payload);
 
             var json = JsonSerializer.Serialize(envelope);
-            await _producer.ProduceAsync(TopicName, new Message<Null, string> { Value = json }, ct);
+
+            await _producer.ProduceAsync(
+                TopicName,
+                new Message<Null, string> { Value = json },
+                ct);
+
             msg.ProcessedAt = DateTimeOffset.UtcNow;
+
+            _logger.LogDebug(
+                "[OutboxRelay:{Topic}] Published {EventType} | MsgId={MsgId} TenantId={TenantId}",
+                TopicName, msg.EventType, msg.Id, tenantId);
         }
 
         await db.SaveChangesAsync(ct);
     }
 }
-
-
-
