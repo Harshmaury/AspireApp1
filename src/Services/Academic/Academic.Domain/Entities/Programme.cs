@@ -5,8 +5,8 @@ using Academic.Domain.Exceptions;
 namespace Academic.Domain.Entities;
 public sealed class Programme : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid DepartmentId { get; private set; }
     public string Name { get; private set; } = default!;
     public string Code { get; private set; } = default!;
@@ -15,8 +15,8 @@ public sealed class Programme : AggregateRoot
     public int TotalCredits { get; private set; }
     public int IntakeCapacity { get; private set; }
     public ProgramStatus Status { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
+    public new DateTime? UpdatedAt { get; private set; }
 
     private Programme() { }
 

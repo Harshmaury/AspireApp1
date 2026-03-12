@@ -5,8 +5,8 @@ using Faculty.Domain.Exceptions;
 namespace Faculty.Domain.Entities;
 public sealed class Faculty : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid UserId { get; private set; }
     public Guid DepartmentId { get; private set; }
     public string EmployeeId { get; private set; } = default!;
@@ -20,8 +20,8 @@ public sealed class Faculty : AggregateRoot
     public bool IsPhD { get; private set; }
     public DateOnly JoiningDate { get; private set; }
     public FacultyStatus Status { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
+    public new DateTime? UpdatedAt { get; private set; }
     private Faculty() { }
     public static Faculty Create(Guid tenantId, Guid userId, Guid departmentId, string employeeId, string firstName, string lastName, string email, Designation designation, string specialization, string highestQualification, int experienceYears, bool isPhD, DateOnly joiningDate)
     {

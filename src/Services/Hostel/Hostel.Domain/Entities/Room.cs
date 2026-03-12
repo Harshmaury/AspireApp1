@@ -4,8 +4,8 @@ using Hostel.Domain.Exceptions;
 namespace Hostel.Domain.Entities;
 public sealed class Room : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid HostelId { get; private set; }
     public string RoomNumber { get; private set; } = default!;
     public int Floor { get; private set; }
@@ -13,7 +13,7 @@ public sealed class Room : AggregateRoot
     public int Capacity { get; private set; }
     public int CurrentOccupancy { get; private set; }
     public RoomStatus Status { get; private set; }
-    public DateTime CreatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
     private Room() { }
     public static Room Create(Guid tenantId, Guid hostelId, string roomNumber, int floor, RoomType type, int capacity)
     {

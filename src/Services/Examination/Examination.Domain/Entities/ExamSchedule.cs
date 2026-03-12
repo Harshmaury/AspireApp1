@@ -5,8 +5,8 @@ using Examination.Domain.Exceptions;
 namespace Examination.Domain.Entities;
 public sealed class ExamSchedule : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid CourseId { get; private set; }
     public string AcademicYear { get; private set; } = default!;
     public int Semester { get; private set; }
@@ -17,8 +17,8 @@ public sealed class ExamSchedule : AggregateRoot
     public int MaxMarks { get; private set; }
     public int PassingMarks { get; private set; }
     public ExamStatus Status { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
+    public new DateTime? UpdatedAt { get; private set; }
     private ExamSchedule() { }
     public static ExamSchedule Create(Guid tenantId, Guid courseId, string academicYear, int semester, ExamType examType, DateTime examDate, int duration, string venue, int maxMarks, int passingMarks)
     {

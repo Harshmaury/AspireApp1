@@ -5,15 +5,15 @@ using Hostel.Domain.Exceptions;
 namespace Hostel.Domain.Entities;
 public sealed class HostelComplaint : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid StudentId { get; private set; }
     public Guid HostelId { get; private set; }
     public ComplaintCategory Category { get; private set; }
     public string Description { get; private set; } = default!;
     public ComplaintStatus Status { get; private set; }
     public string? ResolutionNote { get; private set; }
-    public DateTime CreatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
     public DateTime? ResolvedAt { get; private set; }
     private HostelComplaint() { }
     public static HostelComplaint Create(Guid tenantId, Guid studentId, Guid hostelId, ComplaintCategory category, string description)

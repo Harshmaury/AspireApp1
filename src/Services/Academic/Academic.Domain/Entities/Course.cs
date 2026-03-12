@@ -5,8 +5,8 @@ using Academic.Domain.Exceptions;
 namespace Academic.Domain.Entities;
 public sealed class Course : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid DepartmentId { get; private set; }
     public string Name { get; private set; } = default!;
     public string Code { get; private set; } = default!;
@@ -18,8 +18,8 @@ public sealed class Course : AggregateRoot
     public string CourseType { get; private set; } = default!;
     public int MaxEnrollment { get; private set; }
     public CourseStatus Status { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
+    public new DateTime? UpdatedAt { get; private set; }
 
     private Course() { }
 

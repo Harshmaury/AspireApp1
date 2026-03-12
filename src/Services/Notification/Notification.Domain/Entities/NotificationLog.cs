@@ -4,8 +4,8 @@ using Notification.Domain.Exceptions;
 namespace Notification.Domain.Entities;
 public sealed class NotificationLog : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid RecipientId { get; private set; }
     public string RecipientAddress { get; private set; } = default!;
     public string EventType { get; private set; } = default!;
@@ -15,7 +15,7 @@ public sealed class NotificationLog : AggregateRoot
     public NotificationStatus Status { get; private set; }
     public int RetryCount { get; private set; }
     public string? ErrorMessage { get; private set; }
-    public DateTime CreatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
     public DateTime? SentAt { get; private set; }
     private NotificationLog() { }
     public static NotificationLog Create(Guid tenantId, Guid recipientId, string recipientAddress, string eventType, NotificationChannel channel, string subject, string body)

@@ -5,8 +5,8 @@ using Fee.Domain.Exceptions;
 namespace Fee.Domain.Entities;
 public sealed class FeePayment : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid StudentId { get; private set; }
     public Guid FeeStructureId { get; private set; }
     public decimal AmountPaid { get; private set; }
@@ -16,8 +16,8 @@ public sealed class FeePayment : AggregateRoot
     public PaymentStatus Status { get; private set; }
     public DateTime? PaidAt { get; private set; }
     public string ReceiptNumber { get; private set; } = default!;
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
+    public new DateTime? UpdatedAt { get; private set; }
     private FeePayment() { }
     public static FeePayment Create(Guid tenantId, Guid studentId, Guid feeStructureId, decimal amountPaid, PaymentMode paymentMode, string? transactionId = null, string? gateway = null)
     {

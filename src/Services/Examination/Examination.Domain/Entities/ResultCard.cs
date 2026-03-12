@@ -4,8 +4,8 @@ using Examination.Domain.Exceptions;
 namespace Examination.Domain.Entities;
 public sealed class ResultCard : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid StudentId { get; private set; }
     public string AcademicYear { get; private set; } = default!;
     public int Semester { get; private set; }
@@ -15,7 +15,7 @@ public sealed class ResultCard : AggregateRoot
     public int TotalCreditsAttempted { get; private set; }
     public bool HasBacklog { get; private set; }
     public DateTime? PublishedAt { get; private set; }
-    public DateTime CreatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
     private ResultCard() { }
     public static ResultCard Create(Guid tenantId, Guid studentId, string academicYear, int semester, decimal sgpa, decimal cgpa, int creditsEarned, int creditsAttempted)
     {

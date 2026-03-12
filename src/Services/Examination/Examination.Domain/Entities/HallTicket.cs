@@ -3,8 +3,8 @@ using Examination.Domain.Exceptions;
 namespace Examination.Domain.Entities;
 public sealed class HallTicket : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid StudentId { get; private set; }
     public Guid ExamScheduleId { get; private set; }
     public string RollNumber { get; private set; } = default!;

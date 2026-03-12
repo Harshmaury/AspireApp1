@@ -4,15 +4,15 @@ using Notification.Domain.Exceptions;
 namespace Notification.Domain.Entities;
 public sealed class NotificationTemplate : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public string EventType { get; private set; } = default!;
     public NotificationChannel Channel { get; private set; }
     public string SubjectTemplate { get; private set; } = default!;
     public string BodyTemplate { get; private set; } = default!;
     public bool IsActive { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
+    public new DateTime? UpdatedAt { get; private set; }
     private NotificationTemplate() { }
     public static NotificationTemplate Create(Guid tenantId, string eventType, NotificationChannel channel, string subjectTemplate, string bodyTemplate)
     {

@@ -4,15 +4,15 @@ using Hostel.Domain.Exceptions;
 namespace Hostel.Domain.Entities;
 public sealed class Hostel : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public string Name { get; private set; } = default!;
     public HostelType Type { get; private set; }
     public int TotalRooms { get; private set; }
     public string WardenName { get; private set; } = default!;
     public string WardenContact { get; private set; } = default!;
     public bool IsActive { get; private set; }
-    public DateTime CreatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
     private Hostel() { }
     public static Hostel Create(Guid tenantId, string name, HostelType type, int totalRooms, string wardenName, string wardenContact)
     {

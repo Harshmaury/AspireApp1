@@ -5,8 +5,8 @@ using Attendance.Domain.Exceptions;
 namespace Attendance.Domain.Entities;
 public sealed class AttendanceRecord : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid StudentId { get; private set; }
     public Guid CourseId { get; private set; }
     public string AcademicYear { get; private set; } = default!;

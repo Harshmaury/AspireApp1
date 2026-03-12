@@ -5,8 +5,8 @@ using Hostel.Domain.Exceptions;
 namespace Hostel.Domain.Entities;
 public sealed class RoomAllotment : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid StudentId { get; private set; }
     public Guid RoomId { get; private set; }
     public Guid HostelId { get; private set; }

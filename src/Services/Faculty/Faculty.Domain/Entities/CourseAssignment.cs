@@ -5,8 +5,8 @@ using Faculty.Domain.Exceptions;
 namespace Faculty.Domain.Entities;
 public sealed class CourseAssignment : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid FacultyId { get; private set; }
     public Guid CourseId { get; private set; }
     public string AcademicYear { get; private set; } = default!;

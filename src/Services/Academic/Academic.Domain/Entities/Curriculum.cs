@@ -3,15 +3,15 @@ using Academic.Domain.Exceptions;
 namespace Academic.Domain.Entities;
 public sealed class Curriculum : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid ProgrammeId { get; private set; }
     public Guid CourseId { get; private set; }
     public int Semester { get; private set; }
     public bool IsElective { get; private set; }
     public bool IsOptional { get; private set; }
     public string Version { get; private set; } = default!;
-    public DateTime CreatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
 
     private Curriculum() { }
 

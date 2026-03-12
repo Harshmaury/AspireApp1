@@ -5,8 +5,8 @@ using Attendance.Domain.Exceptions;
 namespace Attendance.Domain.Entities;
 public sealed class CondonationRequest : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid StudentId { get; private set; }
     public Guid CourseId { get; private set; }
     public string Reason { get; private set; } = default!;
@@ -14,7 +14,7 @@ public sealed class CondonationRequest : AggregateRoot
     public CondonationStatus Status { get; private set; }
     public Guid? ReviewedBy { get; private set; }
     public string? ReviewNote { get; private set; }
-    public DateTime CreatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
     public DateTime? ReviewedAt { get; private set; }
     private CondonationRequest() { }
     public static CondonationRequest Create(Guid tenantId, Guid studentId, Guid courseId, string reason, string? documentUrl = null)

@@ -5,8 +5,8 @@ using Examination.Domain.Exceptions;
 namespace Examination.Domain.Entities;
 public sealed class MarksEntry : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid StudentId { get; private set; }
     public Guid ExamScheduleId { get; private set; }
     public Guid CourseId { get; private set; }
@@ -18,7 +18,7 @@ public sealed class MarksEntry : AggregateRoot
     public Guid? ApprovedBy { get; private set; }
     public MarksStatus Status { get; private set; }
     public DateTime EnteredAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
+    public new DateTime? UpdatedAt { get; private set; }
     private MarksEntry() { }
     private static (string Grade, decimal GradePoint) ComputeGrade(decimal marks, int maxMarks)
     {

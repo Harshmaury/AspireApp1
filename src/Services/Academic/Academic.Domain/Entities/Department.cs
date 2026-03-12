@@ -1,20 +1,21 @@
-using Academic.Domain.Common;
+﻿using Academic.Domain.Common;
 using Academic.Domain.Enums;
 using Academic.Domain.Events;
 using Academic.Domain.Exceptions;
+using UMS.SharedKernel.Domain;
 namespace Academic.Domain.Entities;
 public sealed class Department : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public string Name { get; private set; } = default!;
     public string Code { get; private set; } = default!;
     public string? Description { get; private set; }
     public int EstablishedYear { get; private set; }
     public Guid? HeadOfDepartmentId { get; private set; }
     public DepartmentStatus Status { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
+    public new DateTime? UpdatedAt { get; private set; }
 
     private Department() { }
 

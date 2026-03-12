@@ -13,7 +13,7 @@ namespace Student.Domain.Entities;
 
 public sealed class StudentAggregate : AggregateRoot
 {
-    public Guid          TenantId          { get; private set; }
+    public new Guid          TenantId          { get; private set; }
     public Guid          UserId            { get; private set; }
     public string        FirstName         { get; private set; } = string.Empty;
     public string        LastName          { get; private set; } = string.Empty;

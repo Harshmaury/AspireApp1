@@ -3,14 +3,14 @@ using Notification.Domain.Exceptions;
 namespace Notification.Domain.Entities;
 public sealed class NotificationPreference : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid UserId { get; private set; }
     public bool EmailEnabled { get; private set; }
     public bool SmsEnabled { get; private set; }
     public bool PushEnabled { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
+    public new DateTime? UpdatedAt { get; private set; }
     private NotificationPreference() { }
     public static NotificationPreference Create(Guid tenantId, Guid userId, bool emailEnabled = true, bool smsEnabled = true, bool pushEnabled = false)
     {

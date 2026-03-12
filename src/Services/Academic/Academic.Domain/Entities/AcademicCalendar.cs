@@ -3,8 +3,8 @@ using Academic.Domain.Exceptions;
 namespace Academic.Domain.Entities;
 public sealed class AcademicCalendar : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public string AcademicYear { get; private set; } = default!;
     public int Semester { get; private set; }
     public DateTime StartDate { get; private set; }
@@ -14,8 +14,8 @@ public sealed class AcademicCalendar : AggregateRoot
     public DateTime RegistrationOpenDate { get; private set; }
     public DateTime RegistrationCloseDate { get; private set; }
     public bool IsActive { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime? UpdatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
+    public new DateTime? UpdatedAt { get; private set; }
 
     private AcademicCalendar() { }
 

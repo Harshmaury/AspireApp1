@@ -5,8 +5,8 @@ using Faculty.Domain.Exceptions;
 namespace Faculty.Domain.Entities;
 public sealed class Publication : AggregateRoot
 {
-    public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public new Guid Id { get; private set; }
+    public new Guid TenantId { get; private set; }
     public Guid FacultyId { get; private set; }
     public string Title { get; private set; } = default!;
     public string Journal { get; private set; } = default!;
@@ -14,7 +14,7 @@ public sealed class Publication : AggregateRoot
     public string? DOI { get; private set; }
     public PublicationType Type { get; private set; }
     public int CitationCount { get; private set; }
-    public DateTime CreatedAt { get; private set; }
+    public new DateTime CreatedAt { get; private set; }
     private Publication() { }
     public static Publication Create(Guid tenantId, Guid facultyId, string title, string journal, int publishedYear, PublicationType type, string? doi = null)
     {
