@@ -85,3 +85,6 @@ function ums-log($key, $summary) {
     git push origin main
     Write-Host "? Log updated ? $key"
 }
+
+# Source the session verifier
+. "$PSScriptRoot\umsv.ps1"
