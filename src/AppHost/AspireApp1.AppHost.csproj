@@ -16,7 +16,6 @@
     <PackageReference Include="Aspire.Hosting.Kafka" />
     <PackageReference Include="Aspire.Hosting.PostgreSQL" />
     <PackageReference Include="Aspire.Hosting.Seq" />
-    <PackageReference Include="KubernetesClient" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,4 +38,5 @@
   </ItemGroup>
 
 </Project>
+
 
