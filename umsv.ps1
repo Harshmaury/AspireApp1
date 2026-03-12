@@ -21,23 +21,30 @@ function umsv {
     if (Test-Path $logFile) {
         $lines = Get-Content $logFile -Encoding UTF8
 
-        # Count open keys by scanning the backlog tables
-        # Matches lines like: | `UMS-XXX-P0-001` | Title | 🔴 OPEN |
-        $p0 = @($lines | Where-Object { $_ -match "UMS-[A-Z]+-P0-" -and $_ -match "OPEN" }).Count
-        $p1 = @($lines | Where-Object { $_ -match "UMS-[A-Z]+-P1-" -and $_ -match "OPEN" }).Count
-        $p2 = @($lines | Where-Object { $_ -match "UMS-[A-Z]+-P2-" -and $_ -match "OPEN" }).Count
+        # Count open keys — match table rows with key pattern
+        # Log format: | `UMS-SEC-P0-001` | Title |
+        $p0 = @($lines | Where-Object { $_ -match "\`UMS-[A-Z]+-P0-[0-9]+" }).Count
+        $p1 = @($lines | Where-Object { $_ -match "\`UMS-[A-Z]+-P1-[0-9]+" }).Count
+        $p2 = @($lines | Where-Object { $_ -match "\`UMS-[A-Z]+-P2-[0-9]+" }).Count
 
-        # Active key — IN PROGRESS section
-        $inProgLine = $lines | Where-Object { $_ -match "UMS-[A-Z]+-P[0-9]+-" -and $_ -match "PROGRESS" } | Select-Object -First 1
+        # Active key — IN PROGRESS section row
+        $inProgLine = $lines | Where-Object {
+            $_ -match "\`UMS-[A-Z]+-P[0-9]+-[0-9]+" -and $_ -match "PROGRESS"
+        } | Select-Object -First 1
         if ($inProgLine -match "(UMS-[A-Z]+-P[0-9]+-[0-9]+(-[A-Z]+)?)") {
             $activeKey = $Matches[1]
         }
 
-        # Next action
+        # Next action — first non-empty, non-fence line after ## NEXT ACTION
         $nextIdx = ($lines | Select-String "## NEXT ACTION" | Select-Object -First 1).LineNumber
-        if ($nextIdx -and $nextIdx -lt $lines.Count) {
-            $nextLine = $lines[$nextIdx].TrimStart("0123456789. ").Trim()
-            if ($nextLine -ne "") { $nextAction = $nextLine }
+        if ($nextIdx) {
+            for ($i = $nextIdx; $i -lt [Math]::Min($nextIdx + 6, $lines.Count); $i++) {
+                $candidate = $lines[$i].Trim().TrimStart("0123456789. ")
+                if ($candidate -ne "" -and $candidate -ne '```' -and -not $candidate.StartsWith("#")) {
+                    $nextAction = $candidate
+                    break
+                }
+            }
         }
     }
 
@@ -69,7 +76,7 @@ function umsv {
     Write-Host "-- ENV ------------------------------------------------" -ForegroundColor DarkGray
     Write-Host ("  dotnet       " + $dotnet)
     if ($dropOk) { Write-Host "  drop zone    ready" -ForegroundColor Green }
-    else         { Write-Host "  drop zone    MISSING -- create: $drop" -ForegroundColor Red }
+    else         { Write-Host "  drop zone    MISSING" -ForegroundColor Red }
     Write-Host ("  repo         " + $repo)
     Write-Host ""
     Write-Host "-- NEXT -----------------------------------------------" -ForegroundColor DarkGray
