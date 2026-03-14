@@ -1,4 +1,4 @@
-﻿// src/Services/Identity/Identity.API/Program.cs
+// src/Services/Identity/Identity.API/Program.cs
 using Identity.API.Endpoints;
 using Identity.API.Middleware;
 using Identity.API.Services;

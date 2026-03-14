@@ -62,5 +62,13 @@ public sealed class ApplicationUser : IdentityUser<Guid>, IAggregateRoot
         IsActive = false;
         RaiseDomainEvent(new UserDeactivatedEvent(Id, TenantId, Email!));
     }
+    public void UpdateProfile(string firstName, string lastName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
+        FirstName = firstName;
+        LastName  = lastName;
+    }
+
     public string FullName => $"{FirstName} {LastName}";
 }
