@@ -1,5 +1,6 @@
 # UMS — Universal AI Development Context
-> Paste this file at the start of any AI session. The AI will have full context to code immediately.
+> Auto-updated from actual source code — 2026-03-14
+> .NET 10 | Aspire 9.3.1 | Kubernetes | Minikube
 
 ---
 
@@ -7,14 +8,16 @@
 
 | Property | Value |
 |---|---|
-| Solution | `AspireApp1` — University Management System (UMS) |
-| Repo | `C:\Users\harsh\source\repos\AspireApp1` |
-| Drop folder | `C:\Users\harsh\Downloads\ums-drop` |
-| Framework | .NET 10 + .NET Aspire 9.3.1 |
-| Runtime | `net10.0` across all projects |
-| Shell | PowerShell (Windows 11) |
-| IDE | Visual Studio 2022 |
-| Package management | Central Package Management via `Directory.Packages.props` |
+| Solution file | `UMS.slnx` (NOT AspireApp1.slnx — that is gone) |
+| Repo (Windows) | `C:\Users\harsh\source\repos\AspireApp1` |
+| Repo (WSL2) | `/mnt/c/Users/harsh/source/repos/AspireApp1` |
+| AI file drop | `C:\Users\harsh\Downloads\AII-DUMP` |
+| AI bridge script | `C:\Users\harsh\Downloads\AII-DUMP\BRIDGE\apply_patch.py` |
+| Framework | .NET 10 + .NET Aspire AppHost SDK 9.3.1 |
+| Runtime | `net10.0` across ALL projects |
+| Shell | PowerShell (Windows) + Bash (WSL2) |
+| IDE | Visual Studio 2022/2026 |
+| Package management | Central Package Management — `Directory.Packages.props` |
 | Container runtime | Docker + Minikube (namespace: `ums`) |
 | Orchestration | Kubernetes with Kustomize (`k8s/base` + `k8s/overlays/dev-local`) |
 
@@ -24,702 +27,394 @@
 
 ```
 AspireApp1/
-├── Directory.Packages.props          # ALL NuGet versions — never add Version= to .csproj
+├── UMS.slnx                          ← Solution file (use this, not AspireApp1.slnx)
+├── Directory.Packages.props          ← ALL NuGet versions — NEVER add Version= to .csproj
+├── Directory.Build.props             ← _backups excluded from build; MimeKit audit suppress
+├── aegis.config.json                 ← Aegis linter config (AGS-006 disabled)
 ├── src/
-│   ├── AppHost/                      # .NET Aspire orchestrator — registers all services
-│   ├── ServiceDefaults/              # Shared: OTel, Serilog, health checks, resilience
-│   ├── Shared/UMS.SharedKernel/      # Domain primitives only (see Section 5)
-│   ├── ApiGateway/                   # YARP reverse proxy + JWT validation
-│   ├── BFF/                          # Backend-for-Frontend (HTTP aggregation)
-│   ├── Web/                          # Blazor/web UI (Redis output cache)
+│   ├── AppHost/                      ← Aspire orchestrator (SDK 9.3.1)
+│   ├── ServiceDefaults/              ← Shared: OTel, Serilog, health, resilience, EF Core
+│   ├── Shared/UMS.SharedKernel/      ← Domain primitives (see Section 5)
+│   ├── ApiGateway/                   ← YARP + JWT + ServiceDefaults ✅ (fixed)
+│   ├── BFF/                          ← Backend-for-Frontend
+│   ├── Web/                          ← Blazor UI (Redis output cache)
+│   ├── Cli/Ums.Cli/                  ← Architecture CLI tool (ums scan / snapshot)
+│   ├── Governance/Aegis.Core/        ← Roslyn Clean Architecture linter
 │   └── Services/
-│       ├── Academic/                 # Courses, curriculum, departments, programmes
-│       ├── Attendance/               # Session attendance, condonation
-│       ├── Examination/              # Schedules, hall tickets, marks, results
-│       ├── Faculty/                  # Faculty profiles, assignments, publications
-│       ├── Fee/                      # Fee structures, payments, scholarships
-│       ├── Hostel/                   # Rooms, allotments, complaints
-│       ├── Identity/                 # Auth, tenants, users (OpenIddict + ASP.NET Identity)
-│       ├── Notification/             # Email/SMS dispatch (MailKit + Kafka consumer)
-│       └── Student/                  # Student profiles, enrollment
+│       ├── Academic/
+│       ├── Attendance/
+│       ├── Examination/
+│       ├── Faculty/
+│       ├── Fee/
+│       ├── Hostel/
+│       ├── Identity/
+│       ├── Notification/
+│       └── Student/
 ├── src/Tests/
-│   ├── AppHost.IntegrationTests/     # Full-stack integration (Testcontainers)
-│   ├── Identity.IntegrationTests/    # Identity API integration
-│   ├── Kafka.IntegrationTests/       # Outbox + broker integration
-│   └── TenantIsolation.Tests/        # Multi-tenancy row-level isolation
-├── k8s/
-│   ├── base/                         # Kustomize base (all services, infra, RBAC)
-│   └── overlays/dev-local/           # Local overrides (image pull policy, env patches)
-├── .github/workflows/                # CI: build, test, governance, security, deploy
-└── src/Governance/
-    ├── Aegis.Core/                   # Roslyn-based Clean Architecture linter
-    └── Aegis.Tests/                  # Linter tests
+│   ├── AppHost.IntegrationTests/
+│   ├── Identity.IntegrationTests/
+│   ├── Kafka.IntegrationTests/
+│   └── TenantIsolation.Tests/        ← Uses real Postgres (no Testcontainers)
+├── src/.ums/snapshots/               ← Aegis baseline snapshots (committed)
+└── k8s/
+    ├── base/                         ← All services + infra + monitoring (Prometheus + Grafana)
+    └── overlays/dev-local/           ← Patches: REGION_ID=dev-local, REGION_ROLE=PRIMARY
 ```
 
 ---
 
-## 3. SERVICE ANATOMY — EVERY SERVICE IS IDENTICAL
-
-Each service follows **strict 4-layer Clean Architecture**. No exceptions.
+## 3. SERVICE ANATOMY — ALL 9 SERVICES ARE IDENTICAL
 
 ```
 Services/{Name}/
-├── {Name}.Domain/          # Layer 1 — pure business logic, zero external dependencies
-├── {Name}.Application/     # Layer 2 — CQRS handlers, interfaces, validators
-├── {Name}.Infrastructure/  # Layer 3 — EF Core, Kafka, repositories
-├── {Name}.API/             # Layer 4 — HTTP endpoints, DI wiring, middleware
-└── {Name}.Tests/           # xUnit tests for Domain + Application
+├── {Name}.Domain/          ← Entities, Value Objects, Domain Events, Exceptions
+├── {Name}.Application/     ← CQRS commands/queries, validators, interfaces
+├── {Name}.Infrastructure/  ← EF Core, Kafka, repos, OutboxRelayService
+├── {Name}.API/             ← Endpoints, middleware, DI wiring, Dockerfile
+└── {Name}.Tests/           ← xUnit unit tests
 ```
 
-### Dependency Rule (enforced by Aegis linter)
-
+**Dependency rule (enforced by Aegis):**
 ```
-Domain        <-- no dependencies on other layers
-Application   <-- depends on Domain only
-Infrastructure <-- depends on Application (and Domain transitively)
-API           <-- depends on Application + Infrastructure (wiring only)
-Tests         <-- depends on Domain + Application (never Infrastructure directly)
+Domain        ← zero external project dependencies
+Application   ← Domain only
+Infrastructure ← Application (+ Domain transitively)
+API           ← Application + Infrastructure (wiring only)
 ```
-
-**Violations the linter catches:**
-- Infrastructure referenced from Domain or Application
-- Kafka (`Confluent.Kafka`) in API layer — belongs in Infrastructure
-- EF Core DbContext in Domain — belongs in Infrastructure
-- `HttpClient` in Domain or Application
 
 ---
 
-## 4. ARCHITECTURE PATTERNS
+## 4. SHAREDKERNEL — ACTUAL CONTENTS
 
-### 4.1 CQRS with MediatR
+Located at `src/Shared/UMS.SharedKernel/`
 
-Every feature is a Command or Query. No service calls between layers except through MediatR.
+### Domain Layer
 
 ```csharp
-// Command — mutates state
-public sealed record CreateCourseCommand(
-    Guid TenantId,
-    string Code,
-    string Title,
-    int Credits) : IRequest<Guid>;
-
-// Command Handler — in Application layer
-internal sealed class CreateCourseCommandHandler
-    : IRequestHandler<CreateCourseCommand, Guid>
+// BaseEntity — ALL entities inherit this
+public abstract class BaseEntity
 {
-    private readonly ICourseRepository _courses;
-    private readonly IUnitOfWork _uow;
-
-    public CreateCourseCommandHandler(ICourseRepository courses, IUnitOfWork uow)
-    {
-        _courses = courses;
-        _uow = uow;
-    }
-
-    public async Task<Guid> Handle(CreateCourseCommand cmd, CancellationToken ct)
-    {
-        var course = Course.Create(cmd.TenantId, cmd.Code, cmd.Title, cmd.Credits);
-        await _courses.AddAsync(course, ct);
-        await _uow.SaveChangesAsync(ct);
-        return course.Id;
-    }
+    public Guid           Id        { get; protected set; } = Guid.NewGuid();
+    public Guid           TenantId  { get; protected set; }
+    public DateTimeOffset CreatedAt { get; protected set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedAt { get; protected set; } = DateTimeOffset.UtcNow;
+    public uint           RowVersion { get; private set; }  // optimistic concurrency
+    protected void Touch() => UpdatedAt = DateTimeOffset.UtcNow;
 }
 
-// Query — reads state, never mutates
-public sealed record GetCourseQuery(Guid TenantId, Guid CourseId)
-    : IRequest<CourseDto?>;
-```
-
-**Naming conventions:**
-| Type | Pattern | Example |
-|---|---|---|
-| Command | `{Verb}{Entity}Command` | `CreateCourseCommand` |
-| Query | `Get{Entity}Query` / `List{Entity}sQuery` | `GetCourseQuery` |
-| Handler | `{Command/Query}Handler` | `CreateCourseCommandHandler` |
-| Validator | `{Command}Validator` | `CreateCourseCommandValidator` |
-| Result/DTO | `{Entity}Dto` / `{Entity}Response` | `CourseDto` |
-
-### 4.2 Domain Model Pattern
-
-```csharp
-// Domain entity — in {Name}.Domain/Entities/
-public sealed class Course : AggregateRoot  // from UMS.SharedKernel
+// AggregateRoot — entities that own domain events
+public abstract class AggregateRoot : BaseEntity, IAggregateRoot
 {
-    public Guid TenantId { get; private set; }
-    public string Code { get; private set; } = string.Empty;
-    public string Title { get; private set; } = string.Empty;
-    public int Credits { get; private set; }
-    public bool IsActive { get; private set; }
-
-    private Course() { } // EF Core constructor
-
-    public static Course Create(Guid tenantId, string code, string title, int credits)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(code);
-        ArgumentException.ThrowIfNullOrWhiteSpace(title);
-        if (credits <= 0) throw new DomainException("Credits must be positive.");
-
-        var course = new Course
-        {
-            Id       = Guid.NewGuid(),
-            TenantId = tenantId,
-            Code     = code.ToUpperInvariant(),
-            Title    = title,
-            Credits  = credits,
-            IsActive = true
-        };
-
-        course.RaiseDomainEvent(new CourseCreatedEvent(course.Id, tenantId, code));
-        return course;
-    }
-
-    public void Deactivate()
-    {
-        if (!IsActive) return; // idempotent
-        IsActive = false;
-        RaiseDomainEvent(new CourseDeactivatedEvent(Id, TenantId));
-    }
+    private readonly List<IDomainEvent> _domainEvents = [];
+    public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+    public void ClearDomainEvents() => _domainEvents.Clear();
+    protected void RaiseDomainEvent(IDomainEvent e) => _domainEvents.Add(e);
 }
-```
 
-### 4.3 Transactional Outbox Pattern
+// DomainEvent — base for all domain events (abstract)
+public abstract class DomainEvent : IDomainEvent, ITenantedEvent
+{
+    public Guid           EventId    { get; } = Guid.NewGuid();
+    public DateTimeOffset OccurredAt { get; } = DateTimeOffset.UtcNow;
+    public abstract Guid  TenantId   { get; }   // must be overridden
+}
 
-**Never publish directly to Kafka from a handler.** Always write to the outbox table in the same transaction, then let the `OutboxRelayService` publish asynchronously.
-
-```csharp
-// Domain event raised inside aggregate
-public sealed record CourseCreatedEvent(Guid CourseId, Guid TenantId, string Code)
-    : IDomainEvent;
-
-// Infrastructure: DomainEventDispatcherInterceptor converts domain events
-// to OutboxMessage rows during SaveChangesAsync — automatic, no handler change needed.
-
-// OutboxMessage schema (in each service's DbContext)
+// OutboxMessage — stored in EACH service's DB, relayed by OutboxRelayServiceBase
 public sealed class OutboxMessage
 {
-    public Guid     Id          { get; init; } = Guid.NewGuid();
-    public string   Type        { get; init; } = string.Empty;  // event type name
-    public string   Payload     { get; init; } = string.Empty;  // JSON
-    public Guid     TenantId    { get; init; }
-    public DateTime OccurredAt  { get; init; } = DateTime.UtcNow;
-    public DateTime? ProcessedAt { get; set; }
-    public string?  Error        { get; set; }
+    public Guid            Id             { get; init; } = Guid.NewGuid();
+    public string          EventType      { get; init; } = string.Empty;
+    public string          Payload        { get; init; } = string.Empty;
+    public string?         TenantId       { get; init; }        // string, not Guid
+    public DateTimeOffset  OccurredAt     { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset  CreatedAt      { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? ProcessedAt    { get; set; }
+    public int             RetryCount     { get; set; }
+    public string?         DeadLetteredAt { get; set; }
+    public string?         Error          { get; set; }
+
+    public static OutboxMessage Create(string eventType, string payload, Guid tenantId = default)
+        => new() { EventType = eventType, Payload = payload, TenantId = tenantId.ToString() };
 }
 ```
 
-### 4.4 Multi-Tenancy
-
-Every DB query is automatically scoped to `TenantId`. Never query without it.
+### Exceptions
 
 ```csharp
-// Infrastructure: all DbContext queries use global query filters
-protected override void OnModelCreating(ModelBuilder builder)
+// Domain exceptions implement IDomainException (interface, not base class)
+public interface IDomainException
 {
-    // Applied automatically to every entity implementing ITenantScoped
-    builder.Entity<Course>().HasQueryFilter(c => c.TenantId == _tenantContext.TenantId);
+    string Code    { get; }
+    string Message { get; }
 }
 
-// API: TenantMiddleware resolves X-Tenant-Id header → ITenantContext
-// Registration in Program.cs — must be before UseAuthorization()
-app.UseTenantResolution();
+// GlobalExceptionMiddleware maps codes to HTTP status:
+// DomainExceptionCodes.NotFound  → 404
+// DomainExceptionCodes.Conflict  → 409
+// Code starts with "INVALID_"    → 422
+// Other IDomainException         → 400
+// ArgumentException              → 422
+// KeyNotFoundException           → 404
+// Unhandled                      → 500
 ```
 
-### 4.5 FluentValidation
-
-Every command has a validator. Registered automatically via DI assembly scan.
+### Tenancy
 
 ```csharp
-public sealed class CreateCourseCommandValidator
-    : AbstractValidator<CreateCourseCommand>
+public interface ITenantContext
 {
-    public CreateCourseCommandValidator()
-    {
-        RuleFor(x => x.TenantId).NotEmpty();
-        RuleFor(x => x.Code)
-            .NotEmpty()
-            .MaximumLength(10)
-            .Matches(@"^[A-Z0-9]+$").WithMessage("Code must be alphanumeric uppercase.");
-        RuleFor(x => x.Title).NotEmpty().MaximumLength(200);
-        RuleFor(x => x.Credits).InclusiveBetween(1, 10);
-    }
+    Guid   TenantId   { get; }   // throws if not resolved
+    string Slug       { get; }
+    string Tier       { get; }   // e.g. "standard", "premium"
+    bool   IsResolved { get; }
 }
+// TenantContext.SetTenant() throws if called twice — immutable once set
+```
+
+### Kafka
+
+```csharp
+// KafkaTopics — ALWAYS use these constants, never hardcode topic strings
+KafkaTopics.IdentityEvents     = "identity-events"
+KafkaTopics.StudentEvents      = "student-events"
+KafkaTopics.AcademicEvents     = "academic-events"
+KafkaTopics.AttendanceEvents   = "attendance-events"
+KafkaTopics.ExaminationEvents  = "examination-events"
+KafkaTopics.FeeEvents          = "fee-events"
+KafkaTopics.FacultyEvents      = "faculty-events"
+KafkaTopics.HostelEvents       = "hostel-events"
+KafkaTopics.NotificationEvents = "notification-events"
+
+// KafkaEventEnvelope — standard wire format for all events
+public sealed class KafkaEventEnvelope
+{
+    public Guid     EventId       { get; init; }
+    public string   EventType     { get; init; }
+    public string   TenantId      { get; init; }   // string
+    public string   RegionOrigin  { get; init; }   // e.g. "dev-local"
+    public DateTime OccurredAt    { get; init; }   // DateTime UTC (NOT DateTimeOffset)
+    public string   SchemaVersion { get; init; } = "1.0";
+    public string   Payload       { get; init; }   // nested JSON
+}
+
+// KafkaConsumerBase<TEvent> — REQUIRES REGION_ID in configuration
+// Group ID format: {serviceName}.{regionId}.{purpose}
+// Throws InvalidOperationException on startup if REGION_ID is missing
+```
+
+### Infrastructure Bases
+
+```csharp
+// OutboxRelayServiceBase<TDbContext> — extend once per service
+// Polls every 5s, batch size 50, publishes to Kafka topic
+// Must override: protected abstract string TopicName { get; }
+
+// DomainEventDispatcherInterceptorBase — EF SaveChanges interceptor
+// Automatically dispatches domain events via MediatR after SaveChangesAsync
+// Attach to DbContext in AddDbContext() options
+```
+
+### Application
+
+```csharp
+// ValidationBehavior<TRequest, TResponse>  (American spelling — no 'u')
+// Runs all IValidator<TRequest> before handler
+// Register: cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>))
 ```
 
 ---
 
-## 5. SHAREDKERNEL — WHAT BELONGS, WHAT DOES NOT
+## 5. ACTUAL KNOWN VIOLATIONS (as of 2026-03-14)
 
-`src/Shared/UMS.SharedKernel/` is referenced by every service. Keep it lean.
-
-**ALLOWED in SharedKernel:**
-```csharp
-// Base classes
-public abstract class Entity { public Guid Id { get; protected set; } }
-public abstract class AggregateRoot : Entity, IAggregateRoot
-{
-    private readonly List<IDomainEvent> _events = [];
-    public IReadOnlyList<IDomainEvent> DomainEvents => _events.AsReadOnly();
-    public void ClearDomainEvents() => _events.Clear();
-    protected void RaiseDomainEvent(IDomainEvent e) => _events.Add(e);
-}
-public abstract class ValueObject { /* equality by value */ }
-
-// Interfaces
-public interface IDomainEvent : INotification { }
-public interface IAggregateRoot { IReadOnlyList<IDomainEvent> DomainEvents { get; } }
-public interface IRepository<T> where T : AggregateRoot { }
-public interface IUnitOfWork { Task<int> SaveChangesAsync(CancellationToken ct); }
-public interface ICurrentTenant { Guid TenantId { get; } string Slug { get; } }
-
-// Common exceptions
-public class DomainException : Exception { }
-public class NotFoundException : Exception { }
-public class ValidationException : Exception { }
-
-// MediatR pipeline behaviors
-public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> { }
-```
-
-**NEVER in SharedKernel:**
-- Service-specific entities or logic
-- `HttpClient` or HTTP concerns
-- Direct Kafka producer/consumer
-- EF Core `DbContext` subclasses
-- Any `using` of a specific service's namespace
+| # | Status | Issue |
+|---|---|---|
+| 1 | ✅ Fixed | `k8s/base/secret.yaml` had real credentials |
+| 2 | ✅ Fixed | Identity.Domain/Application referenced EF Identity package |
+| 3 | ❌ Open | `Faculty.API.csproj` + `Student.API.csproj` have `Confluent.Kafka` in API layer |
+| 4 | ✅ Fixed | `ApiGateway` missing `ServiceDefaults` |
+| 5 | ❌ Open | `Identity.API.csproj` still has `Confluent.Kafka` directly in API layer |
+| 6 | ❌ Open | `binDebug/` from Identity service is committed to git — should be gitignored |
 
 ---
 
-## 6. DEPENDENCY INJECTION PATTERN — EVERY SERVICE
+## 6. CI/CD — THREE SEPARATE WORKFLOWS
 
-### Application layer DI
+The pipeline is NOT a single 7-stage file. It's three chained workflows:
 
-```csharp
-// {Name}.Application/DependencyInjection.cs
-public static class DependencyInjection
-{
-    public static IServiceCollection AddApplication(this IServiceCollection services)
-    {
-        services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
-        services.AddMediatR(cfg =>
-        {
-            cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
-            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-        });
-        return services;
-    }
-}
+### Workflow 1: `ci.yml` — triggered on push to main/feature/**, PRs
+
+```
+detect-changes (paths-filter — per service + shared)
+     │
+     ▼
+build (dotnet build UMS.slnx --configuration Release)
+     │
+     ▼
+unit-tests (9 services in parallel, change-aware, skips unchanged)
+     │  Coverage threshold: 70% (enforced, CI fails below)
+     ▼
+integration-tests (TenantIsolation.Tests, real Postgres service container)
+     │  Only runs on: main branch, PRs, or shared/* changes
+     ▼
+test-summary (dorny/test-reporter + ReportGenerator coverage merge)
 ```
 
-### Infrastructure layer DI
+### Workflow 2: `docker-build.yml` — triggered on CI success on main only
 
-```csharp
-// {Name}.Infrastructure/DependencyInjection.cs
-public static class DependencyInjection
-{
-    public static IServiceCollection AddInfrastructure(
-        this IServiceCollection services,
-        IConfiguration configuration)
-    {
-        services.AddDbContext<AcademicDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("AcademicDb")));
-
-        services.AddScoped<ICourseRepository, CourseRepository>();
-        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AcademicDbContext>());
-
-        // Outbox relay
-        services.AddHostedService<OutboxRelayService>();
-
-        return services;
-    }
-}
+```
+gate (abort if CI failed)
+     │
+     ▼
+detect-changes (re-runs paths-filter on triggering commit)
+     │
+     ▼
+build-push (11 images in parallel, change-aware, GHA cache per service)
+     │  Tags: <sha8> + latest → ghcr.io/harshmaury/ums/<service>
+     ▼
+collect-digests (merges all image-digest artifacts into one)
 ```
 
-### API layer DI (Program.cs pattern)
+### Workflow 3: `deploy.yml` — triggered on Docker Build success on main
 
-```csharp
-// {Name}.API/Program.cs
-var builder = WebApplication.CreateBuilder(args);
-
-builder.AddServiceDefaults();           // OTel, Serilog, health, resilience
-builder.Services.AddApplication();      // MediatR, validators
-builder.Services.AddInfrastructure(builder.Configuration); // EF, repos, outbox
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options => { /* JWT config */ });
-
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var app = builder.Build();
-
-app.UseServiceDefaults();
-app.UseTenantResolution();          // MUST be before UseAuthorization
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapDefaultEndpoints();          // /health, /alive from ServiceDefaults
-// Map feature endpoints here
-
-app.Run();
 ```
+gate (abort if Docker Build failed, exports SHA + tag)
+     │
+     ▼
+update-manifests (yq patches image tags in k8s YAML → commits [skip ci])
+     │  Runs on: ubuntu-latest (NOT self-hosted)
+     ▼
+deploy (runs-on: self-hosted WSL2 runner)
+     │  1. minikube image load all 11 images
+     │  2. minikube addons enable metrics-server
+     │  3. Ensure 9 Kafka topics exist
+     │  4. kubectl apply -k k8s/overlays/dev-local
+     │  5. Smoke tests: all 10 /health endpoints via api-gateway
+     │  6. Update Aegis baseline snapshot → commits [skip ci]
+     ▼
+notify-failure (creates GitHub issue if deploy fails)
+```
+
+**Branch behaviour:**
+- `feature/**` push → `ci.yml` stages 1-4 only (Docker Build not triggered)
+- `main` push → full chain: ci → docker-build → deploy
+- PR to main → `ci.yml` only
 
 ---
 
-## 7. REPOSITORY PATTERN
+## 7. RUNNING LOCALLY (Aspire — fastest for dev)
 
-```csharp
-// Interface — in Application layer
-public interface ICourseRepository
-{
-    Task<Course?> FindByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
-    Task<List<Course>> ListByDepartmentAsync(Guid tenantId, Guid deptId, CancellationToken ct = default);
-    Task AddAsync(Course course, CancellationToken ct = default);
-    Task UpdateAsync(Course course, CancellationToken ct = default);
-}
-
-// Implementation — in Infrastructure layer
-internal sealed class CourseRepository : ICourseRepository
-{
-    private readonly AcademicDbContext _db;
-
-    public CourseRepository(AcademicDbContext db) => _db = db;
-
-    public Task<Course?> FindByIdAsync(Guid tenantId, Guid id, CancellationToken ct)
-        => _db.Courses
-              .Where(c => c.TenantId == tenantId && c.Id == id)
-              .FirstOrDefaultAsync(ct);
-
-    public async Task AddAsync(Course course, CancellationToken ct)
-        => await _db.Courses.AddAsync(course, ct);
-
-    public Task UpdateAsync(Course course, CancellationToken ct)
-    {
-        _db.Courses.Update(course);
-        return Task.CompletedTask;
-    }
-}
-```
-
----
-
-## 8. EF CORE CONVENTIONS
-
-```csharp
-// DbContext — in Infrastructure/Persistence/
-public sealed class AcademicDbContext : DbContext, IUnitOfWork
-{
-    private readonly ICurrentTenant _tenant;
-
-    public AcademicDbContext(
-        DbContextOptions<AcademicDbContext> options,
-        ICurrentTenant tenant) : base(options)
-    {
-        _tenant = tenant;
-    }
-
-    public DbSet<Course>     Courses     => Set<Course>();
-    public DbSet<Department> Departments => Set<Department>();
-    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
-
-    protected override void OnModelCreating(ModelBuilder builder)
-    {
-        builder.HasDefaultSchema("academic");
-        builder.ApplyConfigurationsFromAssembly(typeof(AcademicDbContext).Assembly);
-
-        // Global tenant filter on every entity
-        builder.Entity<Course>().HasQueryFilter(c => c.TenantId == _tenant.TenantId);
-    }
-}
-
-// Entity configuration — in Infrastructure/Persistence/Configurations/
-internal sealed class CourseConfiguration : IEntityTypeConfiguration<Course>
-{
-    public void Configure(EntityTypeBuilder<Course> builder)
-    {
-        builder.HasKey(c => c.Id);
-        builder.Property(c => c.Code).HasMaxLength(10).IsRequired();
-        builder.Property(c => c.Title).HasMaxLength(200).IsRequired();
-        builder.HasIndex(c => new { c.TenantId, c.Code }).IsUnique();
-        builder.Property(c => c.RowVersion).IsRowVersion(); // optimistic concurrency
-    }
-}
-```
-
-**Migration commands:**
 ```powershell
-$Svc = "Academic"
+$Repo = "C:\Users\harsh\source\repos\AspireApp1"
+
+# Kill any stale dotnet processes first
+Get-Process -Name "dotnet","BFF","dcp","dcpctrl","dcpproc" -ErrorAction SilentlyContinue | Stop-Process -Force
+
+# Start Aspire (no Docker, no Minikube needed)
+dotnet run --project "$Repo\src\AppHost\AspireApp1.AppHost.csproj" --launch-profile https
+```
+
+Aspire dashboard opens in browser. Hot-reload active. All 9 services + Kafka + Postgres + Seq spin up locally.
+
+---
+
+## 8. RUNNING IN KUBERNETES (Minikube, WSL2)
+
+```bash
+dev start       # Minikube + pods + Kafka topics + port-forwards + runner
+dev watch       # Auto-deploy on .cs file save (~30s rebuild cycle)
+dev status      # Live dashboard
+dev recovery    # Auto-fix crashed pods, missing topics, dropped port-forwards
+```
+
+**Service names for dev commands:**
+```
+identity-api  academic-api  student-api  attendance-api
+examination-api  fee-api  faculty-api  hostel-api
+notification-api  api-gateway  bff
+```
+
+---
+
+## 9. ACCESS URLS
+
+| Service | URL | Notes |
+|---|---|---|
+| API Gateway | http://localhost:8080 | Main entry |
+| API Gateway Health | http://localhost:8080/health | All services proxied |
+| BFF | http://localhost:5001 | |
+| Identity API | http://localhost:5002 | Token endpoint |
+| Seq | http://localhost:8081 | Structured logs |
+| Jaeger | http://localhost:16686 | Distributed traces |
+| Prometheus | (port-forward) | Metrics scraping |
+| Grafana | (port-forward) | Dashboards — provisioned ✅ |
+
+---
+
+## 10. BUILD & TEST COMMANDS
+
+```powershell
+$Repo = "C:\Users\harsh\source\repos\AspireApp1"
+
+# Build entire solution
+dotnet build "$Repo\UMS.slnx" --no-incremental
+
+# Build single service
+dotnet build "$Repo\src\Services\Academic\Academic.API" --no-incremental
+
+# Test single service
+dotnet test "$Repo\src\Services\Academic\Academic.Tests" --logger "console;verbosity=minimal"
+
+# Integration tests (needs Postgres running via Aspire or Docker)
+dotnet test "$Repo\src\Tests\TenantIsolation.Tests"
+
+# Architecture scan
+dotnet run --project "$Repo\src\Cli\Ums.Cli" -- scan --solution UMS.slnx
+
+# Architecture snapshot (after intentional change)
+dotnet run --project "$Repo\src\Cli\Ums.Cli" -- govern snapshot create baseline --project .
+```
+
+---
+
+## 11. EF CORE MIGRATIONS
+
+```powershell
+$Svc  = "Academic"  # Change per service
 $Repo = "C:\Users\harsh\source\repos\AspireApp1"
 Set-Location "$Repo\src\Services\$Svc\$Svc.Infrastructure"
 dotnet ef migrations add <MigrationName> --startup-project "..\$Svc.API"
-dotnet ef database update --startup-project "..\$Svc.API"
+dotnet ef database update               --startup-project "..\$Svc.API"
 ```
 
 ---
 
-## 9. INFRASTRUCTURE — EXTERNAL SYSTEMS
+## 12. AI FILE EXCHANGE (AII-Bridge)
 
-| System | Package | Connection string key | Used in |
-|---|---|---|---|
-| PostgreSQL | `Npgsql.EntityFrameworkCore.PostgreSQL` | `{Service}Db` | All services |
-| Kafka | `Confluent.Kafka` | `kafka` (from ConfigMap) | Infrastructure only |
-| Seq | Serilog sink | `Seq__ServerUrl` | ServiceDefaults |
-| Jaeger | OTel exporter | `OTEL_EXPORTER_OTLP_ENDPOINT` | ServiceDefaults |
-| Redis | `Aspire.StackExchange.Redis.OutputCaching` | (Aspire wired) | Web UI |
-| OpenIddict | `OpenIddict.AspNetCore` + EFCore | `IdentityDb` | Identity service only |
-
-### Kafka producer pattern (Infrastructure only)
-
-```csharp
-// Always in Infrastructure — never in API or Application
-internal sealed class CourseEventPublisher
-{
-    private readonly IProducer<string, string> _producer;
-
-    public async Task PublishAsync(string topic, string key, string payload)
-    {
-        await _producer.ProduceAsync(topic, new Message<string, string>
-        {
-            Key   = key,
-            Value = payload
-        });
-    }
-}
-```
-
----
-
-## 10. KUBERNETES — KEY FACTS
-
-```yaml
-# Namespace: ums
-# Every service has: Deployment + Service + (optionally) HPA
-
-# Secret: ums-secrets  (NEVER commit real values — use placeholders only)
-# ConfigMap: ums-config (non-sensitive config, patched by overlay)
-
-# Apply secrets from local env file:
-kubectl create secret generic ums-secrets \
-  --from-env-file=ums-secrets.env.local -n ums \
-  --dry-run=client -o yaml | kubectl apply -f -
-
-# Common commands:
-kubectl get pods -n ums
-kubectl logs <pod> -n ums --follow
-kubectl describe pod <pod> -n ums
-kubectl apply -k k8s/overlays/dev-local    # dev deployment
-kubectl rollout restart deployment/<name> -n ums
-```
-
-**K8s environment variables every service reads:**
-
-| Key | Source | Purpose |
-|---|---|---|
-| `ConnectionStrings__{Service}Db` | Secret | PostgreSQL connection |
-| `ConnectionStrings__kafka` | ConfigMap | Kafka broker |
-| `Auth__Authority` | ConfigMap | Identity API URL |
-| `Seq__ServerUrl` | ConfigMap | Structured log sink |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | ConfigMap | Jaeger trace export |
-| `REGION_WRITE_ALLOWED` | ConfigMap overlay | Primary/replica routing |
-| `ASPNETCORE_ENVIRONMENT` | ConfigMap | `Production` in cluster |
-
----
-
-## 11. TESTING STRATEGY
+All AI-generated files must use this naming convention:
 
 ```
-{Name}.Tests/
-├── Domain/         # Pure unit tests — no mocks, no DB, just domain logic
-├── Application/    # Handler tests — mock repositories via Moq/NSubstitute
-└── Fakers/         # Bogus-based test data builders
+[PROJECT]__[OBJECT]__[ACTION]__[TARGET]__[YYYYMMDDTHHMMSS]__[TRACEID].[EXT]
 ```
 
-### Domain test pattern (pure, fast)
-
-```csharp
-public sealed class CourseTests
-{
-    [Fact]
-    public void Create_WithValidData_RaisesCourseCreatedEvent()
-    {
-        var course = Course.Create(Guid.NewGuid(), "CS101", "Intro to CS", 3);
-
-        course.DomainEvents.Should().ContainSingle()
-            .Which.Should().BeOfType<CourseCreatedEvent>();
-    }
-
-    [Fact]
-    public void Create_WithEmptyCode_ThrowsDomainException()
-    {
-        var act = () => Course.Create(Guid.NewGuid(), "", "Title", 3);
-        act.Should().Throw<ArgumentException>();
-    }
-}
+Example:
+```
+UMS__FILE__PATCH__IDENTITY_DOMAIN_EVENTS__20260314T160000__A3F1.cs
+UMS__ZIP__REFACTOR__SHARED_KERNEL__20260314T170000__C5D8.zip
 ```
 
-### Application handler test pattern
-
-```csharp
-public sealed class CreateCourseCommandHandlerTests
-{
-    private readonly Mock<ICourseRepository> _courses = new();
-    private readonly Mock<IUnitOfWork> _uow = new();
-
-    [Fact]
-    public async Task Handle_ValidCommand_ReturnsNewId()
-    {
-        var handler = new CreateCourseCommandHandler(_courses.Object, _uow.Object);
-        var cmd = new CreateCourseCommand(Guid.NewGuid(), "CS101", "Intro to CS", 3);
-
-        var id = await handler.Handle(cmd, CancellationToken.None);
-
-        id.Should().NotBeEmpty();
-        _courses.Verify(r => r.AddAsync(It.IsAny<Course>(), It.IsAny<CancellationToken>()), Times.Once);
-        _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-    }
-}
-```
-
-**Run tests:**
+**Apply a generated file:**
 ```powershell
-dotnet test C:\Users\harsh\source\repos\AspireApp1\src\Services\Academic\Academic.Tests --logger "console;verbosity=minimal"
-dotnet test C:\Users\harsh\source\repos\AspireApp1\src\Tests\TenantIsolation.Tests  # Testcontainers — needs Docker
+cd C:\Users\harsh\Downloads\AII-DUMP\BRIDGE
+python apply_patch.py UMS          # review + confirm
+python apply_patch.py UMS --auto   # skip confirmation
 ```
 
----
-
-## 12. CODEGEN RULES — HOW AI GENERATES FILES
-
-### File naming convention
-
-```
-[project]__[service]__[feature]__[YYYYMMDD_HHMM].[ext]
-```
-
-Examples:
-```
-ums__academic__create-course-command__20260313_1000.cs
-ums__academic__course-repository__20260313_1005.cs
-ums__student__enroll-command-handler__20260313_1010.cs
-```
-
-### AI response format — every code generation
-
-```
-FILE:
-ums__academic__create-course-command__20260313_1000.cs
-
-PATH:
-src/Services/Academic/Academic.Application/Features/Courses/Commands/
-
-COMMAND:
-Copy-Item "C:\Users\harsh\Downloads\ums-drop\ums__academic__create-course-command__20260313_1000.cs" `
-  "C:\Users\harsh\source\repos\AspireApp1\src\Services\Academic\Academic.Application\Features\Courses\Commands\CreateCourseCommand.cs" -Force
-
-VERIFY:
-dotnet build C:\Users\harsh\source\repos\AspireApp1\src\Services\Academic\Academic.API --no-incremental
-```
-
-### Integration workflow (every time)
-
+**Upload project context to Claude:**
 ```powershell
-# 1. Download generated file to drop folder
-$Drop = "C:\Users\harsh\Downloads\ums-drop"
+$Svc = "Academic"
 $Repo = "C:\Users\harsh\source\repos\AspireApp1"
-
-# 2. Copy to destination (AI provides exact command above)
-Copy-Item "$Drop\<filename>" "$Repo\<path>\<TargetName>.cs" -Force
-
-# 3. Build the affected service
-dotnet build "$Repo\src\Services\<Service>\<Service>.API" --no-incremental
-
-# 4. Run tests
-dotnet test "$Repo\src\Services\<Service>\<Service>.Tests"
-
-# 5. Commit
-git add src\Services\<Service>\
-git commit -m "feat(<service>): <description>"
-```
-
----
-
-## 13. PACKAGE RULES — CRITICAL
-
-**Central Package Management is ACTIVE.** `Directory.Packages.props` owns all versions.
-
-- **NEVER** add `Version="..."` to any `PackageReference` in `.csproj` files
-- **ALWAYS** add new packages to `Directory.Packages.props` first, then reference in `.csproj`
-- **ASP.NET Core types** (`IdentityUser`, `IHttpContextAccessor`, etc.) → use `<FrameworkReference Include="Microsoft.AspNetCore.App" />`, NOT a PackageReference
-- **EF Core in Domain/Application** → NEVER. Use `FrameworkReference` if ASP.NET Core types needed; keep EF Core in Infrastructure only
-
-### Package layer rules
-
-| Package | Domain | Application | Infrastructure | API |
-|---|---|---|---|---|
-| `MediatR` | - | YES | YES | YES |
-| `FluentValidation` | - | YES | - | - |
-| `Microsoft.EntityFrameworkCore` | - | - | YES | (Design only) |
-| `Npgsql.EntityFrameworkCore.PostgreSQL` | - | - | YES | - |
-| `Confluent.Kafka` | - | - | YES | - |
-| `Microsoft.AspNetCore.App` (FrameworkRef) | if needed | if needed | YES | YES |
-| `Microsoft.AspNetCore.Identity.EntityFrameworkCore` | - | - | YES (Identity only) | - |
-| `Microsoft.AspNetCore.Authentication.JwtBearer` | - | - | - | YES |
-
----
-
-## 14. SECURITY RULES (NON-NEGOTIABLE)
-
-1. **`k8s/base/secret.yaml` contains ONLY empty placeholders** — real values live in `ums-secrets.env.local` (gitignored)
-2. **`ums-secrets.env.local` is gitignored** — never commit it
-3. **`_backups/` is gitignored** — never commit build artifacts or backup files
-4. **`binDebug/` is gitignored** — never commit IDE build outputs
-5. **Connection strings** — never hardcode; always read from `IConfiguration`
-6. **OpenIddict keys** — regenerate RSA key pairs before any production deployment
-7. **`appsettings.Production.json`** — must contain NO secrets; use environment variables or K8s secrets
-
----
-
-## 15. GOVERNANCE — AEGIS LINTER
-
-The `Aegis.Core` + `Ums.Cli` tooling enforces Clean Architecture automatically.
-
-```powershell
-# Run architecture scan (from repo root)
-.\dev.ps1 scan
-
-# Or directly
-dotnet run --project src\Cli\Ums.Cli -- scan --solution AspireApp1.sln
-
-# Baseline snapshot (after intentional architecture change)
-dotnet run --project src\Cli\Ums.Cli -- snapshot
-```
-
-Violations are stored as `.snap.json` files in `src/.ums/snapshots/`. CI pipeline (`governance.yml`) fails the build on any new violation.
-
----
-
-## 16. CI/CD PIPELINES
-
-| Workflow | Trigger | Does |
-|---|---|---|
-| `ci.yml` | PR + push to main | build, test, Aegis scan |
-| `governance.yml` | PR | architecture violation check |
-| `security.yml` | Push | secret scanning, dependency audit |
-| `docker-build.yml` | Push to main | build + push images |
-| `deploy.yml` | Manual / tag | kubectl apply to cluster |
-
----
-
-## 17. INSTANT CONTEXT COMMANDS
-
-Use these to generate a ZIP of any service for AI upload:
-
-```powershell
-# Single service (source files only, no build artifacts)
-$Svc = "Academic"   # Change this
-$Repo = "C:\Users\harsh\source\repos\AspireApp1"
-$Out  = "C:\Users\harsh\Downloads\ums-$Svc-$(Get-Date -Format 'yyyyMMdd_HHmm').zip"
-$Tmp  = Join-Path $env:TEMP "ums-ctx-$Svc"
+$Out  = "C:\Users\harsh\Downloads\AII-DUMP\UMS__ZIP__CONTEXT__${Svc}__$(Get-Date -Format 'yyyyMMddTHHmmss')__A0B1.zip"
+$Tmp  = "$env:TEMP\ums-ctx"
 Remove-Item $Tmp -Recurse -Force -ErrorAction SilentlyContinue
 Copy-Item "$Repo\src\Services\$Svc" $Tmp -Recurse -Force
 Get-ChildItem $Tmp -Recurse -Directory |
@@ -727,59 +422,101 @@ Get-ChildItem $Tmp -Recurse -Directory |
   Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 Compress-Archive "$Tmp\*" $Out -Force
 Remove-Item $Tmp -Recurse -Force
-Write-Host "Ready: $Out" -ForegroundColor Green
-
-# Skeleton only (csproj + json + yaml — no .cs files, tiny size)
-$Out = "C:\Users\harsh\Downloads\ums-skeleton-$(Get-Date -Format 'yyyyMMdd_HHmm').zip"
-$Tmp = Join-Path $env:TEMP "ums-skeleton"
-Remove-Item $Tmp -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory $Tmp | Out-Null
-Get-ChildItem $Repo -Recurse -Include "*.csproj","*.sln","*.json","*.yaml","*.yml" |
-  Where-Object { $_.FullName -notmatch "\\(bin|obj|\.vs|binDebug)\\" } |
-  ForEach-Object {
-    $Dest = Join-Path $Tmp $_.FullName.Substring($Repo.Length)
-    New-Item -ItemType Directory -Force (Split-Path $Dest) | Out-Null
-    Copy-Item $_.FullName $Dest
-  }
-Compress-Archive "$Tmp\*" $Out -Force
-Remove-Item $Tmp -Recurse -Force
-Write-Host "Ready: $Out" -ForegroundColor Green
+Write-Host "Ready: $Out"
 ```
 
 ---
 
-## 18. CURRENT KNOWN ISSUES (BACKLOG)
+## 13. PACKAGE RULES
 
-| # | Severity | Issue | Status |
-|---|---|---|---|
-| 1 | DONE | `k8s/base/secret.yaml` had real credentials committed | Fixed — Step 1 |
-| 2 | DONE | `Identity.Domain` + `Identity.Application` referenced `EF Identity` package | Fixed — Step 2 |
-| 3 | TODO | `Faculty.API` + `Student.API` have `Confluent.Kafka` directly in API layer | Step 3 |
-| 4 | TODO | `ApiGateway` missing `ServiceDefaults` (no OTel, no health checks) | Step 4 |
-| 5 | TODO | `ApiService` (Aspire template stub) still registered in `AppHost` — dead code | Step 5 |
+- **NEVER** add `Version="..."` to any `PackageReference` in `.csproj`
+- **ALWAYS** add new packages to `Directory.Packages.props` first
+- ASP.NET Core types → `<FrameworkReference Include="Microsoft.AspNetCore.App" />`
+- EF Core → Infrastructure only (`{Name}.Infrastructure.csproj`)
+- `Confluent.Kafka` → Infrastructure only (violations exist in Faculty.API + Student.API + Identity.API — backlog)
+- `MediatR` → Application + Infrastructure + API (not Domain)
 
 ---
 
-## 19. QUICK DIAGNOSTIC CHECKLIST
+## 14. SECURITY RULES
 
-Before every coding session, verify:
+1. `k8s/base/secret.yaml` — empty placeholders only, real values in `ums-secrets.env.local` (gitignored)
+2. `ums-secrets.env.local` — gitignored, never commit
+3. `_backups/` — gitignored (Directory.Build.props excludes from build)
+4. `binDebug/` — must be gitignored (**currently partially committed in Identity service — needs cleanup**)
+5. Connection strings — always from `IConfiguration`, never hardcoded
+6. `REGION_ID` — required env var for all Kafka consumers; injected by k8s overlay
 
-```powershell
-$Repo = "C:\Users\harsh\source\repos\AspireApp1"
+---
 
-# 1. Build entire solution
-dotnet build $Repo --no-incremental
+## 15. AEGIS LINTER CONFIG (aegis.config.json)
 
-# 2. Check for accidental secrets in git index
-git -C $Repo diff --cached --name-only | Select-String "secret|password|key|token"
-
-# 3. Check for binDebug in git index
-git -C $Repo ls-files | Select-String "binDebug|binRelease"
-
-# 4. Run architecture linter
-dotnet run --project "$Repo\src\Cli\Ums.Cli" -- scan
+```json
+{
+  "failLevel": "Error",
+  "disabledRules": ["AGS-006"],
+  "excludedPaths": ["_backups/"],
+  "severityOverrides": {
+    "AGS-008": "Info",
+    "AGS-014": "Info",
+    "AGS-015": "Info"
+  },
+  "sharedKernelAssemblies": ["UMS.SharedKernel"]
+}
 ```
 
 ---
 
-*Last updated: 2026-03-13 | Maintained by Harsh | UMS Platform Engineering*
+## 16. GITHUB ACTIONS RUNNER
+
+| Property | Value |
+|---|---|
+| Location | `~/actions-runner/` |
+| Name | `wsl2-minikube` |
+| Labels | `self-hosted, linux, minikube` |
+| Service | `actions.runner.Harshmaury-AspireApp1.wsl2-minikube` |
+
+```bash
+sudo systemctl status  actions.runner.Harshmaury-AspireApp1.wsl2-minikube
+sudo systemctl restart actions.runner.Harshmaury-AspireApp1.wsl2-minikube
+journalctl -u actions.runner.Harshmaury-AspireApp1.wsl2-minikube -f
+```
+
+---
+
+## 17. TROUBLESHOOTING
+
+| Symptom | Fix |
+|---|---|
+| `dev` not found | `source ~/.bashrc` |
+| Port-forwards dropped | `dev start` |
+| Pod CrashLoopBackOff | `dev logs <svc>` → `dev recovery` |
+| Kafka consumer crash on startup | Check `REGION_ID` is set in configmap overlay |
+| Kafka topics missing | `dev recovery` |
+| identity-api crashing | Check `OpenIddict__SigningKeyXml` in `ums-secrets` |
+| Build fails: wrong solution file | Use `UMS.slnx`, not `AspireApp1.slnx` |
+| CI coverage gate fails | Line coverage below 70% threshold |
+| Deploy: runner offline | `sudo systemctl restart actions.runner...` |
+| Minikube won't start | `minikube delete && minikube start --driver=docker --cpus=4 --memory=8192` |
+| After minikube delete | `kubectl apply -k k8s/overlays/dev-local` then `dev start` |
+
+---
+
+## 18. WHAT WAS OUTDATED IN PREVIOUS DOCS
+
+| Item | Old (wrong) | Actual |
+|---|---|---|
+| Solution file | `AspireApp1.slnx` | `UMS.slnx` |
+| AI drop folder | `ums-drop` | `AII-DUMP` (Chrome configured) |
+| CI pipeline | "7 stages in ci.yml" | 3 separate workflows (ci/docker-build/deploy) |
+| ApiGateway ServiceDefaults | "missing (backlog #4)" | Fixed — present in csproj |
+| Monitoring (Grafana/Prometheus) | "pending" | Deployed — in kustomization.yaml |
+| `OutboxMessage.TenantId` type | `Guid` | `string?` |
+| `OutboxMessage.OccurredAt` type | `DateTime` | `DateTimeOffset` |
+| `BaseEntity.CreatedAt` type | `DateTime` | `DateTimeOffset` |
+| Domain exception type | `DomainException : Exception` | `IDomainException` interface |
+| `ValidationBehaviour` spelling | British 'u' | American: `ValidationBehavior` |
+| `ITenantContext` members | `TenantId`, `Slug` only | + `Tier`, `IsResolved` |
+| Kafka consumer group format | undocumented | `{service}.{regionId}.{purpose}` (KAFKA-001) |
+| `REGION_ID` requirement | not mentioned | Required env var — consumers throw without it |
+| Codegen file format | `[project]__[service]__[feature]__[YYYYMMDD_HHMM].[ext]` | AII-Bridge 7-token format |

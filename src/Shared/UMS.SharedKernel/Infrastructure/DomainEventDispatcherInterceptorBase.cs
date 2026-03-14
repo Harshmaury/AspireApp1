@@ -1,40 +1,30 @@
-﻿// UMS â€” University Management System
-// Key:     UMS-SHARED-P0-002
-// Service: SharedKernel
-// Layer:   Infrastructure
-using MediatR;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using System.Text.Json;
 using UMS.SharedKernel.Domain;
 
 namespace UMS.SharedKernel.Infrastructure;
 
 public abstract class DomainEventDispatcherInterceptorBase : SaveChangesInterceptor
 {
-    private readonly IPublisher _publisher;
-
-    protected DomainEventDispatcherInterceptorBase(IPublisher publisher)
-        => _publisher = publisher;
-
-    public override async ValueTask<int> SavedChangesAsync(
-        SaveChangesCompletedEventData eventData,
-        int                           result,
-        CancellationToken             cancellationToken = default)
+    public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+        DbContextEventData eventData,
+        InterceptionResult<int> result,
+        CancellationToken cancellationToken = default)
     {
-        await DispatchEventsAsync(eventData.Context, cancellationToken);
+        ConvertDomainEventsToOutbox(eventData.Context);
+        return ValueTask.FromResult(result);
+    }
+
+    public override InterceptionResult<int> SavingChanges(
+        DbContextEventData eventData,
+        InterceptionResult<int> result)
+    {
+        ConvertDomainEventsToOutbox(eventData.Context);
         return result;
     }
 
-    public override int SavedChanges(
-        SaveChangesCompletedEventData eventData,
-        int                           result)
-    {
-        DispatchEventsAsync(eventData.Context, CancellationToken.None)
-            .GetAwaiter().GetResult();
-        return result;
-    }
-
-    private async Task DispatchEventsAsync(DbContext? context, CancellationToken ct)
+    private static void ConvertDomainEventsToOutbox(DbContext? context)
     {
         if (context is null) return;
 
@@ -44,8 +34,24 @@ public abstract class DomainEventDispatcherInterceptorBase : SaveChangesIntercep
             .Select(e => e.Entity)
             .ToList();
 
-        var events = aggregates.SelectMany(a => a.DomainEvents).ToList();
-        foreach (var aggregate in aggregates) aggregate.ClearDomainEvents();
-        foreach (var evt in events) await _publisher.Publish(evt, ct);
+        if (aggregates.Count == 0) return;
+
+        var outboxRows = aggregates
+            .SelectMany(a => a.DomainEvents)
+            .Select(evt => new OutboxMessage
+            {
+                Id         = Guid.NewGuid(),
+                EventType  = evt.GetType().FullName ?? evt.GetType().Name,
+                Payload    = JsonSerializer.Serialize(evt, evt.GetType()),
+                TenantId   = (evt as Kafka.ITenantedEvent)?.TenantId.ToString(),
+                OccurredAt = DateTimeOffset.UtcNow,
+                CreatedAt  = DateTimeOffset.UtcNow,
+            })
+            .ToList();
+
+        context.Set<OutboxMessage>().AddRange(outboxRows);
+
+        foreach (var aggregate in aggregates)
+            aggregate.ClearDomainEvents();
     }
 }

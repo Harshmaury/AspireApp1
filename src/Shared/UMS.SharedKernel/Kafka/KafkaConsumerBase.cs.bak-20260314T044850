@@ -50,13 +50,10 @@ public abstract class KafkaConsumerBase<TEvent> : BackgroundService
         _topic            = topic;
         _bootstrapServers = configuration.GetConnectionString("kafka") ?? "localhost:9092";
 
-        // REGION_ID is required in K8s (injected by configmap overlay).
-        // Falls back to "local" in local Aspire dev mode so services don't crash.
-        var regionId = configuration["REGION_ID"] ?? "local";
-        if (regionId == "local")
-            logger.LogWarning(
-                "REGION_ID not configured â€” using 'local' fallback. " +
-                "Set REGION_ID in appsettings.Development.json for local Kafka testing.");
+        var regionId = configuration["REGION_ID"]
+            ?? throw new InvalidOperationException(
+                "REGION_ID is not configured. " +
+                "Ensure k8s overlay configmap-patch.yaml injects REGION_ID into the pod.");
 
         _groupId = BuildGroupId(serviceName, regionId, purpose);
 
@@ -136,4 +133,3 @@ public abstract class KafkaConsumerBase<TEvent> : BackgroundService
         IServiceProvider  services,
         CancellationToken ct);
 }
-
