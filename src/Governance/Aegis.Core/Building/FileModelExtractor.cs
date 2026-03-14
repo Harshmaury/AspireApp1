@@ -65,7 +65,8 @@ internal sealed class FileModelExtractor(
         path.EndsWith("Program.cs",        StringComparison.OrdinalIgnoreCase) ||
         path.EndsWith("Startup.cs",        StringComparison.OrdinalIgnoreCase) ||
         path.Contains("Extensions",        StringComparison.OrdinalIgnoreCase) ||
-        path.Contains("ServiceCollection", StringComparison.OrdinalIgnoreCase);
+        path.Contains("ServiceCollection", StringComparison.OrdinalIgnoreCase) ||
+        path.Contains("DependencyInjection", StringComparison.OrdinalIgnoreCase);
 }
 
 internal record FileExtractionResult(
@@ -74,3 +75,4 @@ internal record FileExtractionResult(
     List<DiRegistration>   DiRegistrations,
     List<KafkaProduction>  KafkaProducers,
     List<KafkaConsumption> KafkaConsumers);
+

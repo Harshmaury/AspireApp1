@@ -23,6 +23,14 @@ public static class DependencyInjection
             options.AddInterceptors(sp.GetRequiredService<DomainEventDispatcherInterceptor>());
         });
 
+        services.AddDbContext<AttendanceDbContextReadOnly>((sp, options) =>
+            options.UseNpgsql(
+                configuration.GetConnectionString("AttendanceDbReadOnly")
+                ?? configuration.GetConnectionString("AttendanceDb"))
+                       .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        services.AddScoped<AttendanceDbContextReadOnly, AttendanceDbContextReadOnly>();
+
+
         // Repositories registered as interfaces — DI injects ITenantContext into each,
         // satisfying AGS-007 tenant-awareness rule. AttendanceUnitOfWork receives the
         // same scoped instances via constructor injection (no `new` anti-pattern).
@@ -34,3 +42,4 @@ public static class DependencyInjection
         return services;
     }
 }
+

@@ -1,4 +1,4 @@
-﻿using Fee.Application.Interfaces;
+using Fee.Application.Interfaces;
 using Fee.Infrastructure.Kafka;
 using Fee.Infrastructure.Persistence;
 using Fee.Infrastructure.Persistence.Repositories;
@@ -21,6 +21,14 @@ public static class DependencyInjection
             options.AddInterceptors(sp.GetRequiredService<DomainEventDispatcherInterceptor>());
         });
 
+        services.AddDbContext<FeeDbContextReadOnly>((sp, options) =>
+            options.UseNpgsql(
+                configuration.GetConnectionString("FeeDbReadOnly")
+                ?? configuration.GetConnectionString("FeeDb"))
+                       .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        services.AddScoped<FeeDbContextReadOnly, FeeDbContextReadOnly>();
+
+
         services.AddScoped<IFeeStructureRepository, FeeStructureRepository>();
         services.AddScoped<IFeePaymentRepository, FeePaymentRepository>();
         services.AddScoped<IScholarshipRepository, ScholarshipRepository>();
@@ -29,3 +37,4 @@ public static class DependencyInjection
         return services;
     }
 }
+

@@ -1,4 +1,4 @@
-﻿using Examination.Application.Interfaces;
+using Examination.Application.Interfaces;
 using Examination.Infrastructure.Kafka;
 using Examination.Infrastructure.Persistence;
 using Examination.Infrastructure.Persistence.Repositories;
@@ -21,6 +21,14 @@ public static class DependencyInjection
             options.AddInterceptors(sp.GetRequiredService<DomainEventDispatcherInterceptor>());
         });
 
+        services.AddDbContext<ExaminationDbContextReadOnly>((sp, options) =>
+            options.UseNpgsql(
+                configuration.GetConnectionString("ExaminationDbReadOnly")
+                ?? configuration.GetConnectionString("ExaminationDb"))
+                       .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        services.AddScoped<ExaminationDbContextReadOnly, ExaminationDbContextReadOnly>();
+
+
         services.AddScoped<IExamScheduleRepository, ExamScheduleRepository>();
         services.AddScoped<IMarksEntryRepository, MarksEntryRepository>();
         services.AddScoped<IResultCardRepository, ResultCardRepository>();
@@ -30,3 +38,4 @@ public static class DependencyInjection
         return services;
     }
 }
+

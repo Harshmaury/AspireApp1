@@ -17,6 +17,14 @@ public static class DependencyInjection
                 npgsql => npgsql.MigrationsAssembly(typeof(AcademicDbContext).Assembly.FullName));
             options.AddInterceptors(sp.GetRequiredService<DomainEventDispatcherInterceptor>());
         });
+
+        services.AddDbContext<AcademicDbContextReadOnly>((sp, options) =>
+            options.UseNpgsql(
+                configuration.GetConnectionString("AcademicDbReadOnly")
+                ?? configuration.GetConnectionString("AcademicDb"))
+                       .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        services.AddScoped<AcademicDbContextReadOnly, AcademicDbContextReadOnly>();
+
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
         services.AddScoped<IProgrammeRepository, ProgrammeRepository>();
         services.AddScoped<ICourseRepository, CourseRepository>();

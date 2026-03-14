@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Student.Application.Interfaces;
@@ -24,8 +24,17 @@ public static class DependencyInjection
             options.AddInterceptors(sp.GetRequiredService<DomainEventDispatcherInterceptor>());
         });
 
+        services.AddDbContext<StudentDbContextReadOnly>((sp, options) =>
+            options.UseNpgsql(
+                configuration.GetConnectionString("StudentDbReadOnly")
+                ?? configuration.GetConnectionString("StudentDb"))
+                       .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        services.AddScoped<StudentDbContextReadOnly, StudentDbContextReadOnly>();
+
+
         services.AddScoped<IStudentRepository, StudentRepository>();
 
         return services;
     }
 }
+
