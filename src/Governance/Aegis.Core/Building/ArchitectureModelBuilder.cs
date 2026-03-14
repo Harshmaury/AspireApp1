@@ -205,14 +205,40 @@ public sealed class ArchitectureModelBuilder
         foreach (var svc in services)
         foreach (var edge in svc.Edges)
         {
-            if (edge.ToProjectName != null
-                && !edge.ToProjectName.Equals(svc.ProjectName, StringComparison.OrdinalIgnoreCase)
-                && projectNames.Contains(edge.ToProjectName))
-            {
-                crossEdges.Add(edge);
-            }
+            if (edge.ToProjectName == null) continue;
+
+            // Same project — not cross-service
+            if (edge.ToProjectName.Equals(svc.ProjectName, StringComparison.OrdinalIgnoreCase)) continue;
+
+            // Target is not a known solution project
+            if (!projectNames.Contains(edge.ToProjectName)) continue;
+
+            // SharedKernel / ServiceDefaults are shared libraries — every service legitimately references them
+            if (IsSharedKernelProject(edge.ToProjectName)) continue;
+
+            // Same logical service, different layer (e.g. Academic.Infrastructure → Academic.Application)
+            // This is Clean Architecture by design — not a cross-service violation
+            if (GetServiceFamily(svc.ProjectName).Equals(
+                    GetServiceFamily(edge.ToProjectName), StringComparison.OrdinalIgnoreCase)) continue;
+
+            crossEdges.Add(edge);
         }
 
         return crossEdges;
     }
+
+    private static readonly HashSet<string> _layerSuffixes =
+        new(StringComparer.OrdinalIgnoreCase)
+        { "Domain", "Application", "Infrastructure", "API", "Tests", "IntegrationTests" };
+
+    private static string GetServiceFamily(string projectName)
+    {
+        var parts = projectName.Split('.');
+        var meaningful = parts.TakeWhile(p => !_layerSuffixes.Contains(p)).ToArray();
+        return meaningful.Length > 0 ? string.Join(".", meaningful) : projectName;
+    }
+
+    private static bool IsSharedKernelProject(string projectName) =>
+        projectName.Contains("SharedKernel",    StringComparison.OrdinalIgnoreCase) ||
+        projectName.Contains("ServiceDefaults", StringComparison.OrdinalIgnoreCase);
 }

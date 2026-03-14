@@ -5,9 +5,7 @@
 using UMS.SharedKernel.Domain;
 using Identity.Domain.Events;
 using Microsoft.AspNetCore.Identity;
-
 namespace Identity.Domain.Entities;
-
 public sealed class ApplicationUser : IdentityUser<Guid>, IAggregateRoot
 {
     public Guid TenantId { get; private set; }
@@ -16,27 +14,21 @@ public sealed class ApplicationUser : IdentityUser<Guid>, IAggregateRoot
     public bool IsActive { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime? LastLoginAt { get; private set; }
-
     // Optimistic concurrency token - managed by EF, never set manually
     public byte[]? RowVersion { get; private set; }
-
     public Tenant? Tenant { get; private set; }
-
     // IAggregateRoot - cannot extend AggregateRoot (IdentityUser<Guid> is the base)
     private readonly List<IDomainEvent> _domainEvents = [];
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
     public void ClearDomainEvents() => _domainEvents.Clear();
     private void RaiseDomainEvent(IDomainEvent e) => _domainEvents.Add(e);
-
     private ApplicationUser() { }
-
     public static ApplicationUser Create(
         Guid tenantId, string email, string firstName, string lastName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
         ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
         ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
-
         var user = new ApplicationUser
         {
             Id = Guid.NewGuid(),
@@ -51,16 +43,32 @@ public sealed class ApplicationUser : IdentityUser<Guid>, IAggregateRoot
             CreatedAt = DateTime.UtcNow,
             SecurityStamp = Guid.NewGuid().ToString()
         };
-
         user.RaiseDomainEvent(new UserRegisteredEvent(user.Id, tenantId, email));
         return user;
     }
-
     public void RecordLogin() => LastLoginAt = DateTime.UtcNow;
     public void Deactivate()
     {
         IsActive = false;
         RaiseDomainEvent(new UserDeactivatedEvent(Id, TenantId, Email!));
     }
+    public void UpdateProfile(string firstName, string lastName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
+        FirstName = firstName;
+        LastName  = lastName;
+    }
     public string FullName => $"{FirstName} {LastName}";
+    public void RaisePasswordResetRequested(string rawToken, DateTime expiresAt, string ipAddress)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rawToken);
+        ArgumentException.ThrowIfNullOrWhiteSpace(ipAddress);
+        RaiseDomainEvent(new PasswordResetRequestedEvent(Id, TenantId, Email!, rawToken, expiresAt, ipAddress));
+    }
+    public void RaiseEmailVerificationRequested(string rawToken, DateTime expiresAt)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rawToken);
+        RaiseDomainEvent(new EmailVerificationRequestedEvent(Id, TenantId, Email!, rawToken, expiresAt));
+    }
 }

@@ -1,4 +1,4 @@
-﻿// src/Services/Identity/Identity.Application/Features/Auth/Commands/ResetPasswordCommandHandler.cs
+// src/Services/Identity/Identity.Application/Features/Auth/Commands/ResetPasswordCommandHandler.cs
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Identity.Domain.Events;
@@ -64,7 +64,7 @@ internal sealed class ResetPasswordCommandHandler
         await _tokens.CreateAsync(token, ct);
 
         // 5. Invalidate all remaining reset tokens for this user
-        await _tokens.InvalidateAllForUserAsync(
+        await _tokens.InvalidateByUserAsync(
             user.Id, TokenPurpose.PasswordReset, ct);
 
         // 6. Raise event - Notification service sends confirmation email via Kafka

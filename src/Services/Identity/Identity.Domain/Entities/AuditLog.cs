@@ -1,4 +1,4 @@
-﻿namespace Identity.Domain.Entities;
+namespace Identity.Domain.Entities;
 
 public sealed class AuditLog
 {
@@ -45,5 +45,9 @@ public static class AuditActions
     public const string Deactivated     = "USER_DEACTIVATED";
     public const string TenantCreated   = "TENANT_CREATED";
     public const string TenantSuspended = "TENANT_SUSPENDED";
-    public const string TokenRevoked    = "TOKEN_REVOKED";
+    public const string TokenRevoked      = "TOKEN_REVOKED";
+    public const string UserDeactivated   = "USER_DEACTIVATED";
+    public const string RolesAssigned     = "ROLES_ASSIGNED";
+    public const string TenantReinstated  = "TENANT_REINSTATED";
+    public const string TenantUpgraded    = "TENANT_UPGRADED";
 }

@@ -1,4 +1,4 @@
-﻿// src/Services/Identity/Identity.Tests/Application/ResetPasswordCommandHandlerTests.cs
+// src/Services/Identity/Identity.Tests/Application/ResetPasswordCommandHandlerTests.cs
 using FluentAssertions;
 using Identity.Application.Features.Auth.Commands;
 using Identity.Application.Interfaces;
@@ -64,7 +64,7 @@ public sealed class ResetPasswordCommandHandlerTests
         _userMgr.Setup(x => x.GeneratePasswordResetTokenAsync(user)).ReturnsAsync("identity-token");
         _userMgr.Setup(x => x.ResetPasswordAsync(user, "identity-token", "NewPass1"))
                 .ReturnsAsync(IdentityResult.Success);
-        _tokens.Setup(x => x.InvalidateAllForUserAsync(user.Id, TokenPurpose.PasswordReset, default))
+        _tokens.Setup(x => x.InvalidateByUserAsync(user.Id, TokenPurpose.PasswordReset, default))
                .Returns(Task.CompletedTask);
 
         var result = await Sut().Handle(new ResetPasswordCommand(raw, "NewPass1"), default);

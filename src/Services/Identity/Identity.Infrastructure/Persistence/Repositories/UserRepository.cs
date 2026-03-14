@@ -1,73 +1,95 @@
-﻿// src/Services/Identity/Identity.Infrastructure/Persistence/Repositories/UserRepository.cs
+// UMS — University Management System
+// Key:     UMS-IDENTITY-P2-011
+// Service: Identity
+// Layer:   Infrastructure / Persistence / Repositories
+namespace Identity.Infrastructure.Persistence.Repositories;
+
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace Identity.Infrastructure.Persistence.Repositories;
-
 internal sealed class UserRepository : IUserRepository
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationDbContext         _db;
 
-    public UserRepository(UserManager<ApplicationUser> userManager)
-        => _userManager = userManager;
+    public UserRepository(
+        UserManager<ApplicationUser> userManager,
+        ApplicationDbContext db)
+    {
+        _userManager = userManager;
+        _db          = db;
+    }
 
-    public async Task<ApplicationUser?> FindByEmailAsync(Guid tenantId, string email, CancellationToken ct = default)
-        => await _userManager.Users
-            .Where(u => u.TenantId == tenantId && u.NormalizedEmail == email.ToUpperInvariant())
+    public async Task<ApplicationUser?> FindByIdAsync(
+        Guid userId, CancellationToken ct = default)
+        => await _userManager.FindByIdAsync(userId.ToString());
+
+    public async Task<ApplicationUser?> FindByEmailAsync(
+        Guid tenantId, string email, CancellationToken ct = default)
+        => await _db.Users
+            .Where(u => u.TenantId == tenantId &&
+                        u.NormalizedEmail == email.ToUpperInvariant())
             .FirstOrDefaultAsync(ct);
 
-    public async Task<bool> ExistsAsync(Guid tenantId, string email, CancellationToken ct = default)
-        => await _userManager.Users
-            .AnyAsync(u => u.TenantId == tenantId && u.NormalizedEmail == email.ToUpperInvariant(), ct);
+    public async Task<bool> ExistsAsync(
+        Guid tenantId, string email, CancellationToken ct = default)
+        => await _db.Users
+            .AnyAsync(u => u.TenantId == tenantId &&
+                           u.NormalizedEmail == email.ToUpperInvariant(), ct);
 
-    public async Task<int> CountByTenantAsync(Guid tenantId, CancellationToken ct = default)
-        => await _userManager.Users
-            .CountAsync(u => u.TenantId == tenantId, ct);
+    public async Task<int> CountByTenantAsync(
+        Guid tenantId, CancellationToken ct = default)
+        => await _db.Users.CountAsync(u => u.TenantId == tenantId, ct);
 
-    public async Task<IdentityResult> CreateAsync(ApplicationUser user, string password)
+    public async Task<IList<ApplicationUser>> ListByTenantAsync(
+        Guid tenantId, int page, int pageSize, CancellationToken ct = default)
+        => await _db.Users
+            .Where(u => u.TenantId == tenantId)
+            .OrderBy(u => u.LastName).ThenBy(u => u.FirstName)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+    public async Task<IdentityResult> CreateAsync(
+        ApplicationUser user, string password)
         => await _userManager.CreateAsync(user, password);
 
-    // Legacy - used by existing callers that do not need lockout tracking
-    public async Task<bool> CheckPasswordAsync(ApplicationUser user, string password)
+    public async Task UpdateAsync(ApplicationUser user)
+        => await _userManager.UpdateAsync(user);
+
+    public async Task<bool> CheckPasswordAsync(
+        ApplicationUser user, string password)
         => await _userManager.CheckPasswordAsync(user, password);
 
-    // Lockout-aware password check - use this for all login flows
     public async Task<PasswordCheckResult> CheckPasswordWithLockoutAsync(
         ApplicationUser user, string password, CancellationToken ct = default)
     {
-        // 1. Reject immediately if already locked out
         if (await _userManager.IsLockedOutAsync(user))
             return PasswordCheckResult.LockedOut;
 
-        // 2. Verify password
-        var correct = await _userManager.CheckPasswordAsync(user, password);
-        if (correct)
+        var valid = await _userManager.CheckPasswordAsync(user, password);
+
+        if (!valid)
         {
-            // 3. Reset fail counter on success
-            await _userManager.ResetAccessFailedCountAsync(user);
-            return PasswordCheckResult.Success;
+            await _userManager.AccessFailedAsync(user);
+            return PasswordCheckResult.Failed;
         }
 
-        // 4. Increment fail counter - may trigger lockout
-        await _userManager.AccessFailedAsync(user);
-
-        // 5. Check if this failure triggered lockout
-        if (await _userManager.IsLockedOutAsync(user))
-            return PasswordCheckResult.LockedOut;
-
-        return PasswordCheckResult.Failed;
+        await _userManager.ResetAccessFailedCountAsync(user);
+        return PasswordCheckResult.Success;
     }
 
-    public async Task<IList<string>> GetRolesAsync(ApplicationUser user, CancellationToken ct = default)
+    public async Task<IList<string>> GetRolesAsync(
+        ApplicationUser user, CancellationToken ct = default)
         => await _userManager.GetRolesAsync(user);
 
-    public async Task UpdateAsync(ApplicationUser user)
-    {
-        var result = await _userManager.UpdateAsync(user);
-        if (!result.Succeeded)
-            throw new InvalidOperationException(
-                $"User update failed: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-    }
+    public async Task<IdentityResult> AddToRoleAsync(
+        ApplicationUser user, string role)
+        => await _userManager.AddToRoleAsync(user, role);
+
+    public async Task<IdentityResult> RemoveFromRoleAsync(
+        ApplicationUser user, string role)
+        => await _userManager.RemoveFromRoleAsync(user, role);
 }
