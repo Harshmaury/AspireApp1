@@ -1,9 +1,8 @@
 {
   "failLevel": "Error",
-  "disabledRules": ["AGS-006"],
+  "disabledRules": [],
   "excludedPaths": ["_backups/", "_backups\\", "_backups/**", "_backups\\**"],
   "severityOverrides": {
-    "AGS-008": "Info",
     "AGS-014": "Info",
     "AGS-015": "Info"
   },

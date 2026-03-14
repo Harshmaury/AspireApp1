@@ -1,4 +1,4 @@
-﻿namespace Ums.Cli.Commands;
+namespace Ums.Cli.Commands;
 
 using System.CommandLine;
 using Aegis.Core.Building;
@@ -94,7 +94,10 @@ public static class GovernCommands
             });
 
             var report = builder
-            .AddRule(new LayerMatrixRule(LayerMatrix.CleanArchitecture())).Build().Evaluate(model);
+                .AddRule(new LayerMatrixRule(LayerMatrix.CleanArchitecture()))
+                .AddRule(new EventSchemaCompatibilityRule(
+                    Path.Combine(proj, "src", ".ums", "event-schemas")))
+                .Build().Evaluate(model);
             report = VerifyDependenciesAdapter.ApplyExceptions(report, cfg);
             var text = RendererFactory.Create(fmt).Render(report);
             Console.Write(text);
