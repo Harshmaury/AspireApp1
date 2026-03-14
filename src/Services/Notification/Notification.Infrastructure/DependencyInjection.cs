@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Notification.Application.Interfaces;
@@ -16,6 +16,14 @@ public static class DependencyInjection
     {
         services.AddDbContext<NotificationDbContext>((sp, options) =>
             options.UseNpgsql(configuration.GetConnectionString("NotificationDb")));
+
+        // AGS-015: ReadOnly variant for SECONDARY region read routing.
+        services.AddDbContext<NotificationDbContextReadOnly>((sp, options) =>
+            options.UseNpgsql(
+                configuration.GetConnectionString("NotificationDbReadOnly")
+                ?? configuration.GetConnectionString("NotificationDb"))
+                   .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        services.AddScoped<NotificationDbContextReadOnly, NotificationDbContextReadOnly>();
 
         services.AddScoped<INotificationTemplateRepository, NotificationTemplateRepository>();
         services.AddScoped<INotificationLogRepository, NotificationLogRepository>();

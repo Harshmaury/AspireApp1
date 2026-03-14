@@ -24,6 +24,14 @@ public static class DependencyInjection
             options.AddInterceptors(sp.GetRequiredService<DomainEventDispatcherInterceptor>());
         });
 
+        services.AddDbContext<FacultyDbContextReadOnly>((sp, options) =>
+            options.UseNpgsql(
+                configuration.GetConnectionString("FacultyDbReadOnly")
+                ?? configuration.GetConnectionString("FacultyDb"))
+                       .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        services.AddScoped<FacultyDbContextReadOnly, FacultyDbContextReadOnly>();
+
+
         services.AddScoped<IFacultyRepository, FacultyRepository>();
         services.AddScoped<ICourseAssignmentRepository, CourseAssignmentRepository>();
         services.AddScoped<IPublicationRepository, PublicationRepository>();
