@@ -1,10 +1,10 @@
-﻿// src/Services/Identity/Identity.Tests/Application/ForgotPasswordCommandHandlerTests.cs
+// src/Services/Identity/Identity.Tests/Application/ForgotPasswordCommandHandlerTests.cs
 using FluentAssertions;
 using Identity.Application.Features.Auth.Commands;
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Identity.Tests.Fakers;
-using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using Xunit;
 
@@ -12,23 +12,26 @@ namespace Identity.Tests.Application;
 
 public sealed class ForgotPasswordCommandHandlerTests
 {
-    private readonly Mock<IVerificationTokenRepository> _tokens  = new();
-    private readonly Mock<ITenantRepository>            _tenants = new();
     private readonly Mock<IUserRepository>              _users   = new();
+    private readonly Mock<ITenantRepository>            _tenants = new();
+    private readonly Mock<IVerificationTokenRepository> _tokens  = new();
     private readonly Mock<IAuditLogger>                 _audit   = new();
-    private readonly IHttpContextAccessor               _http;
+    private readonly IConfiguration                     _config;
 
     public ForgotPasswordCommandHandlerTests()
     {
-        var accessor = new Mock<IHttpContextAccessor>();
-        accessor.Setup(x => x.HttpContext).Returns(new DefaultHttpContext());
-        _http = accessor.Object;
+        _config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["App:BaseUrl"] = "https://app.ums.edu"
+            })
+            .Build();
     }
 
     private ForgotPasswordCommandHandler Sut() =>
-        new(_tokens.Object, _tenants.Object, _users.Object, _audit.Object, _http);
+        new(_users.Object, _tenants.Object, _tokens.Object, _audit.Object, _config);
 
-    // â”€â”€ Anti-enumeration: unknown tenant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Anti-enumeration: unknown tenant ──────────────────────────────────────
 
     [Fact]
     public async Task Handle_should_return_success_when_tenant_not_found()
@@ -42,7 +45,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         _tokens.Verify(x => x.CreateAsync(It.IsAny<VerificationToken>(), default), Times.Never);
     }
 
-    // â”€â”€ Anti-enumeration: unknown user â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Anti-enumeration: unknown user ────────────────────────────────────────
 
     [Fact]
     public async Task Handle_should_return_success_when_user_not_found()
@@ -59,7 +62,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         _tokens.Verify(x => x.CreateAsync(It.IsAny<VerificationToken>(), default), Times.Never);
     }
 
-    // â”€â”€ Happy path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Happy path ────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Handle_should_create_token_and_return_success_for_valid_user()
@@ -69,10 +72,11 @@ public sealed class ForgotPasswordCommandHandlerTests
 
         _tenants.Setup(x => x.FindBySlugAsync(tenant.Slug, default)).ReturnsAsync(tenant);
         _users.Setup(x => x.FindByEmailAsync(tenant.Id, user.Email!, default)).ReturnsAsync(user);
-        _tokens.Setup(x => x.InvalidateAllForUserAsync(user.Id, TokenPurpose.PasswordReset, default))
+        _tokens.Setup(x => x.InvalidateByUserAsync(user.Id, TokenPurpose.PasswordReset, default))
                .Returns(Task.CompletedTask);
         _tokens.Setup(x => x.CreateAsync(It.IsAny<VerificationToken>(), default))
                .Returns(Task.CompletedTask);
+        _users.Setup(x => x.UpdateAsync(user)).Returns(Task.CompletedTask);
 
         var result = await Sut().Handle(
             new ForgotPasswordCommand(tenant.Slug, user.Email!), default);
@@ -81,27 +85,27 @@ public sealed class ForgotPasswordCommandHandlerTests
         _tokens.Verify(x => x.CreateAsync(It.IsAny<VerificationToken>(), default), Times.Once);
     }
 
-    // â”€â”€ P0-2: domain event must be published â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── P0-2: domain event must be raised ─────────────────────────────────────
 
     [Fact]
     public async Task Handle_should_publish_PasswordResetRequestedEvent()
     {
-        var tenant    = TenantFaker.Active();
-        var user      = ApplicationUserFaker.Active(tenant.Id);
-        var published = new List<object>();
+        var tenant = TenantFaker.Active();
+        var user   = ApplicationUserFaker.Active(tenant.Id);
 
         _tenants.Setup(x => x.FindBySlugAsync(tenant.Slug, default)).ReturnsAsync(tenant);
         _users.Setup(x => x.FindByEmailAsync(tenant.Id, user.Email!, default)).ReturnsAsync(user);
-        _tokens.Setup(x => x.InvalidateAllForUserAsync(user.Id, TokenPurpose.PasswordReset, default))
+        _tokens.Setup(x => x.InvalidateByUserAsync(user.Id, TokenPurpose.PasswordReset, default))
                .Returns(Task.CompletedTask);
         _tokens.Setup(x => x.CreateAsync(It.IsAny<VerificationToken>(), default))
                .Returns(Task.CompletedTask);
+        _users.Setup(x => x.UpdateAsync(user)).Returns(Task.CompletedTask);
 
-        // After fix P0-2 is applied, the handler publishes via IPublisher.
-        // This test documents the expected behaviour â€” will pass once the fix is in place.
         var result = await Sut().Handle(
             new ForgotPasswordCommand(tenant.Slug, user.Email!), default);
 
         result.Succeeded.Should().BeTrue();
+        user.DomainEvents.Should().ContainSingle(e =>
+            e is Identity.Domain.Events.PasswordResetRequestedEvent);
     }
 }

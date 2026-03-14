@@ -1,4 +1,4 @@
-﻿using Identity.Application.Interfaces;
+using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using UMS.SharedKernel.Tenancy;
@@ -29,6 +29,9 @@ internal sealed class VerificationTokenRepository : IVerificationTokenRepository
                 "Fetch the token via FindByHashAsync in the same handler scope before mutating it.");
         await _db.SaveChangesAsync(ct);
     }
+
+    public Task InvalidateByUserAsync(Guid userId, TokenPurpose purpose, CancellationToken ct = default)
+        => InvalidateAllForUserAsync(userId, purpose, ct);
 
     public async Task InvalidateAllForUserAsync(Guid userId, TokenPurpose purpose, CancellationToken ct = default)
     {
